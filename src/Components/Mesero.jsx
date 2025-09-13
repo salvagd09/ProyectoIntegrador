@@ -57,16 +57,16 @@ function Mesero() {
           <ul className="nav nav-pills flex-column mb-0">
             <li>
               <Link
-                to="/admin/Menu"
-                className={`nav-link ${estaActivo("/admin/Menu")}`}
+                to="/mesero/Menu"
+                className={`nav-link ${estaActivo("/mesero/Menu")}`}
               >
                 <i className="fa-solid fa-utensils me-2"></i>Menu
               </Link>
             </li>
             <li>
               <Link
-                to="/admin/Pedidos_Fisicos"
-                className={`nav-link ${estaActivo("/admin/Pedidos_Fisicos")}`}
+                to="/mesero/Pedidos_Fisicos"
+                className={`nav-link ${estaActivo("/mesero/Pedidos_Fisicos")}`}
               >
                 <i className="bi bi-ticket me-2"></i>Pedidos Físicos
               </Link>
@@ -114,7 +114,7 @@ function Mesero() {
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>
                 <Route path="menu" element={<Menu />} />
-                <Route path="Pedidos_Fisico" element={<Pedidos_Fisicos />} />
+                <Route path="Pedidos_Fisicos" element={<Pedidos_Fisicos />} />
                 <Route path="/" element={<Pedidos_Fisicos />} />
               </Routes>
             </div>

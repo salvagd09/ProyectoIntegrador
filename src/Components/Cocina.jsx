@@ -28,7 +28,7 @@ function Cocinero() {
             <i className="bi bi-list" style={{ fontSize: "1.75rem" }}></i>
           </label>
         </header>
-        {/*Tu sidebar (SIN JS)*/}
+        {/*El sidebar (SIN JS)*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
@@ -51,67 +51,29 @@ function Cocinero() {
               alt="Cocinero"
               className="rounded-circle mb-2 usuario"
             />
-            <h6 className="m-0 text-white">Salvador Goicochea</h6>
-            <h6 className="text-white">Mesero</h6>
+            <h6 className="text-white">Área de cocina</h6>
           </div>
           <ul className="nav nav-pills flex-column mb-0">
             <li>
               <Link
-                to="/cocinero/Pedidos_Cocinero"
-                className={`nav-link ${estaActivo(
-                  "/cocinero/Pedidos_Cocinero"
-                )}`}
+                to="/cocina/Pedidos_Cocinero"
+                className={`nav-link ${estaActivo("/cocina/Pedidos_Cocinero")}`}
               >
                 <i className="bi bi-ticket  me-2"></i>Pedidos
               </Link>
             </li>
             <li>
               <Link
-                to="/cocinero/Insumos"
-                className={`nav-link ${estaActivo("/cocinero/Insumos")}`}
+                to="/cocina/Insumos"
+                className={`nav-link ${estaActivo("/cocina/Insumos")}`}
               >
-                <i class="bi bi-box2 me-2">Insumos</i>
+                <i className="bi bi-box2 me-2">Insumos</i>
               </Link>
             </li>
           </ul>
         </aside>
         {/*Columna derecha */}
         <div className="main">
-          <header className="app-header d-flex align-items-center shadow">
-            {/*Si quieres algo a la izquierda, iría aquí 
-                 Bloque de acciones al lado derecho*/}
-            <div className="header-inner d-flex align-items-center gap-2 ms-auto">
-              {/*Notificaciones*/}
-              <div className="action">
-                <button className="btn-icon" aria-label="Notificaciones">
-                  <i className="fa-solid fa-bell"></i>
-                  <span className="badge-dot"></span>
-                </button>
-              </div>
-              <div className="vr mx-auto"></div>
-              {/*Avatar*/}
-              <div className="action">
-                <img
-                  src={cocinero}
-                  alt="Cocinero"
-                  className="rounded-circle usuario2"
-                />
-              </div>
-              <div className="vr mx-auto"></div>
-              {/*Salir */}
-              <div className="action">
-                <form>
-                  <button
-                    type="submit"
-                    className="btn-icon"
-                    aria-label="Cerrar sesión"
-                  >
-                    <i className="fa-solid fa-right-from-bracket"></i>
-                  </button>
-                </form>
-              </div>
-            </div>
-          </header>
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>

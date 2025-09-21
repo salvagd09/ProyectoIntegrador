@@ -1,9 +1,10 @@
-function Pedidos_Cocinero(){
-    return (
-        <>
-        <div>
-            <h1>E.2</h1>
-        </div></>
-    )
+function Pedidos_Cocinero() {
+  return (
+    <>
+      <div>
+        <h1>Área de manejo de pedidos del cocinero</h1>
+      </div>
+    </>
+  );
 }
-export default Pedidos_Cocinero
+export default Pedidos_Cocinero;

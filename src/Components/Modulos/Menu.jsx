@@ -1,9 +1,10 @@
-function Menú(){
-    return (
-        <>
-        <div>
-            <h1>D</h1>
-        </div></>
-    )
+function Menu() {
+  return (
+    <>
+      <div>
+        <h1>Área del menú</h1>
+      </div>
+    </>
+  );
 }
-export default Menú
+export default Menu;

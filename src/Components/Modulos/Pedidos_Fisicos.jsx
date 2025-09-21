@@ -1,9 +1,10 @@
-function Pedidos_Fisicos(){
-    return (
-        <>
-        <div>
-            <h1>F</h1>
-        </div></>
-    )
+function Pedidos_Fisicos() {
+  return (
+    <>
+      <div>
+        <h1>Área de pedidos en salón</h1>
+      </div>
+    </>
+  );
 }
-export default Pedidos_Fisicos
+export default Pedidos_Fisicos;

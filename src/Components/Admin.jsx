@@ -2,13 +2,10 @@ import usuario from "../assets/usuario.png";
 import "./tarjetas.css";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import "./VentanaC.css";
-import Dashboard from "./Modulos/Dashboard";
-import GestorC from "./Modulos/GestorC";
 import Menu from "./Modulos/Menu";
 import Pedidos_Aplicativo from "./Modulos/Pedidos_Aplicativo";
 import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
-import Usuarios from "./Modulos/Usuario";
-import Ventas from "./Modulos/Ventas";
+import Usuario from "./Modulos/Usuario";
 import comida from "../assets/comida.png";
 function Admin() {
   const ubicacion = useLocation();
@@ -62,10 +59,12 @@ function Admin() {
           <ul className="nav nav-pills flex-column mb-0">
             <li>
               <Link
-                to="/admin/Dashboard"
-                className={`nav-link ${estaActivo("/admin/Dashboard")}`}
+                to="/admin/MétricasYConfiguracion"
+                className={`nav-link ${estaActivo(
+                  "/admin/MétricasYConfiguracion"
+                )}`}
               >
-                <i className="bi bi-bar-chart me-2"></i>Dashboard
+                <i className="bi bi-bar-chart me-2"></i>Métricas y configuración
               </Link>
             </li>
             <li>
@@ -96,24 +95,24 @@ function Admin() {
             </li>
             <li>
               <Link
-                to="/admin/Ventas"
-                className={`nav-link ${estaActivo("/Admin/Ventas")}`}
+                to="/admin/Insumos"
+                className={`nav-link ${estaActivo("/Admin/Insumos")}`}
               >
-                <i className="bi bi-cash-coin me-2"></i>Ventas
+                <i className="bi bi-cash-coin me-2"></i>Insumos
               </Link>
             </li>
             <li>
               <Link
-                to="/admin/GestorC"
-                className={`nav-link ${estaActivo("/admin/GestorC")}`}
+                to="/admin/Pagos"
+                className={`nav-link ${estaActivo("/admin/Pagos")}`}
               >
-                <i className="bi bi-compass me-2"></i>Gestión de contenido
+                <i className="bi bi-compass me-2"></i>Pagos
               </Link>
             </li>
             <li>
               <Link
-                to="/admin/Usuarios"
-                className={`nav-link ${estaActivo("/admin/Usuarios")}`}
+                to="/admin/Usuario"
+                className={`nav-link ${estaActivo("/admin/Usuario")}`}
               >
                 <i className="bi bi-people me-2"></i>Usuarios
               </Link>
@@ -169,7 +168,7 @@ function Admin() {
                 />
                 <Route path="Ventas" element={<Ventas />} />
                 <Route path="GestorC" element={<GestorC />} />
-                <Route path="Usuarios" element={<Usuarios />} />
+                <Route path="Usuario" element={<Usuario />} />
                 <Route path="/" element={<Dashboard />} />
                 {/* Ruta por defecto */}
               </Routes>

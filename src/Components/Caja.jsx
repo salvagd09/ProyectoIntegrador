@@ -3,8 +3,7 @@ import "./tarjetas.css";
 import "./VentanaC.css";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import cajero from "../assets/cajero.png";
-import Pedidos_Aplicativo from "./Modulos/Pedidos_Aplicativo";
-import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
+import Pagos from "./Modulos/Pagos";
 function Cajero() {
   const ubicacion = useLocation();
   const estaActivo = (ruta) => {
@@ -52,25 +51,15 @@ function Cajero() {
               className="rounded-circle mb-2 usuario"
             />
             <h6 className="m-0 text-white">Salvador Goicochea</h6>
-            <h6 className="text-white">Cajero</h6>
+            <h6 className="text-white">Área de caja</h6>
           </div>
           <ul className="nav nav-pills flex-column mb-0">
             <li>
               <Link
-                to="/cajero/Pedidos_Fisicos"
-                className={`nav-link ${estaActivo("/cajero/Pedidos_Fisicos")}`}
+                to="/caja/Pagos"
+                className={`nav-link ${estaActivo("/caja/Pagos")}`}
               >
-                <i className="bi bi-ticket me-2"></i>Pedidos Físicos
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/cajero/Pedidos_Aplicativo"
-                className={`nav-link ${estaActivo(
-                  "/cajero/Pedidos_Aplicativo"
-                )}`}
-              >
-                <i className="bi bi-window me-2"></i>Pedidos por Aplicativo
+                <i className="bi bi-window me-2"></i>Pagos
               </Link>
             </li>
           </ul>
@@ -115,12 +104,7 @@ function Cajero() {
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>
-                <Route path="Pedidos_Fisicos" element={<Pedidos_Fisicos />} />
-                <Route
-                  path="Pedidos_Aplicativo"
-                  element={<Pedidos_Aplicativo />}
-                />
-                <Route path="/" element={<Pedidos_Fisicos />} />
+                <Route path="Pagos" element={<Pagos />} />
               </Routes>
             </div>
           </main>

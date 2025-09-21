@@ -1,6 +1,6 @@
 import { useState } from "react";
 import comida from "../assets/comida.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "./App.css";
 function App() {
   const [nombreUsuario, setNombreUsuario] = useState("");
@@ -17,14 +17,6 @@ function App() {
       localStorage.setItem("userRole", "cajero");
       localStorage.setItem("isAuthenticated", "true");
       navigate("/cajero");
-    } else if (nombreUsuario === "mesero" && contrasena === "mesero123") {
-      localStorage.setItem("userRole", "mesero");
-      localStorage.setItem("isAuthenticated", "true");
-      navigate("/mesero");
-    } else if (nombreUsuario === "cocinero" && contrasena === "cocinero123") {
-      localStorage.setItem("userRole", "cocinero");
-      localStorage.setItem("isAuthenticated", "true");
-      navigate("/cocinero");
     } else {
       alert("Credenciales inválidas");
     }
@@ -80,9 +72,17 @@ function App() {
               onClick={toggleMostrarContrasena}
             ></i>
           </div>
-          <button type="submit" className="btn btn-success fs-4  mt-3 ">
-            Ingresar
-          </button>
+          <div>
+            <Link to="/mesero" className="px-4 text-dark">
+              Soy mesero
+            </Link>
+            <button type="submit" className="btn btn-success fs-4  mt-3 ">
+              Ingresar
+            </button>
+            <Link to="/cocina" className="px-4 text-dark">
+              Soy del área de cocina
+            </Link>
+          </div>
         </form>
       </div>
     </>

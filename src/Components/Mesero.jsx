@@ -2,7 +2,7 @@ import mesero from "../assets/mesero.png";
 import "./tarjetas.css";
 import "./VentanaC.css";
 import comida from "../assets/comida.png";
-import Menu from "./Modulos/Menu";
+import Mesas from "./Modulos/Mesas";
 import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 function Mesero() {
@@ -51,16 +51,15 @@ function Mesero() {
               alt="Mesero"
               className="rounded-circle mb-2 usuario"
             />
-            <h6 className="m-0 text-white">Salvador Goicochea</h6>
-            <h6 className="text-white">Mesero</h6>
+            <h6 className="m-0 text-white">Área de meseros</h6>
           </div>
           <ul className="nav nav-pills flex-column mb-0">
             <li>
               <Link
-                to="/mesero/Menu"
-                className={`nav-link ${estaActivo("/mesero/Menu")}`}
+                to="/mesero/Mesas"
+                className={`nav-link ${estaActivo("/mesero/Mesas")}`}
               >
-                <i className="fa-solid fa-utensils me-2"></i>Menu
+                <i className="fa-solid fa-utensils me-2"></i>Mesas
               </Link>
             </li>
             <li>
@@ -75,45 +74,10 @@ function Mesero() {
         </aside>
         {/*Columna derecha */}
         <div className="main">
-          <header className="app-header d-flex align-items-center shadow">
-            {/*Si quieres algo a la izquierda, iría aquí 
-                 Bloque de acciones al lado derecho*/}
-            <div className="header-inner d-flex align-items-center gap-2 ms-auto">
-              {/*Notificaciones*/}
-              <div className="action">
-                <button className="btn-icon" aria-label="Notificaciones">
-                  <i className="fa-solid fa-bell"></i>
-                  <span className="badge-dot"></span>
-                </button>
-              </div>
-              <div className="vr mx-auto"></div>
-              {/*Avatar*/}
-              <div className="action">
-                <img
-                  src={mesero}
-                  alt="Mesero"
-                  className="rounded-circle usuario2"
-                />
-              </div>
-              <div className="vr mx-auto"></div>
-              {/*Salir */}
-              <div className="action">
-                <form>
-                  <button
-                    type="submit"
-                    className="btn-icon"
-                    aria-label="Cerrar sesión"
-                  >
-                    <i className="fa-solid fa-right-from-bracket"></i>
-                  </button>
-                </form>
-              </div>
-            </div>
-          </header>
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>
-                <Route path="menu" element={<Menu />} />
+                <Route path="Mesas" element={<Mesas />} />
                 <Route path="Pedidos_Fisicos" element={<Pedidos_Fisicos />} />
                 <Route path="/" element={<Pedidos_Fisicos />} />
               </Routes>

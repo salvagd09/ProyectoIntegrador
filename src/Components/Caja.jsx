@@ -12,22 +12,7 @@ function Cajero() {
   return (
     <>
       <div className="layout">
-        {/*Sidebar a la izquierda 
-             Toggle (solo mobile) */}
-        <label htmlFor="nav-toggle" style={{ display: "none" }}>
-          A
-        </label>
-        <input type="checkbox" id="nav-toggle" className="d-none" />
-        {/*Barra superior en mobile con botón hamburguesa*/}
-        <header className="d-md-none position-sticky top-0 z-3 text-white">
-          <label
-            htmlFor="nav-toggle"
-            className="btn btn-link text-dark m-2 p-0"
-          >
-            <i className="bi bi-list" style={{ fontSize: "1.75rem" }}></i>
-          </label>
-        </header>
-        {/*Tu sidebar (SIN JS)*/}
+        {/*El sidebar (SIN JS)*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a

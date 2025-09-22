@@ -1,24 +1,13 @@
 :root {
-  /* Colores base */
-  --color-primario: #ff4d6d; /* Rosa fuerte / vibrante */
-  --color-secundario: #6c63ff; /* Azul-violeta eléctrico */
-  --color-acento: #ffb347; /* Naranja brillante */
-  --color-exito: #28c76f; /* Verde neón */
-  --color-peligro: #ff3e3e; /* Rojo intenso */
-
   /* Fondo y texto generales */
   --color-fondo: #f7f9fc; /* Gris muy claro / casi blanco */
   --color-texto: #1a1a1a; /* Negro suave */
   --color-texto-inverso: #ffffff; /* Blanco */
 
   /* Sidebar más vivo */
-  --sidebar-bg: #6a994e;
+  --sidebar-bg: rgb(85, 192, 235);
   --sidebar-border: #1c1c1e; /* Límite más sutil */
-  --sidebar-muted: #e36414; /* Gris azulado */
-
-  /* Hovers genéricos */
-  --hover-primario: #e60050; /* Rosa más oscuro al hover */
-  --hover-sidebar: #3b417a; /* Hover brillante en el menú */
+  --sidebar-muted: rgb(41, 41, 206); /* Gris azulado */
 }
 .text-white {
   font-weight: bold;
@@ -51,7 +40,6 @@ body {
 }
 /* ===== Sidebar ===== */
 #sidebar {
-  width: 260px;
   background: var(--sidebar-bg);
   color: var(--sidebar-text);
   flex-shrink: 0;
@@ -77,7 +65,7 @@ body {
   padding: 10px 12px;
   border-radius: 12px;
   margin-bottom: 6px;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.06s ease;
+  transition: all 0.2s ease, color 0.2s ease, transform 0.06s ease;
 }
 #sidebar .nav-link i {
   font-size: 1.1rem;
@@ -129,22 +117,7 @@ body {
   padding: 1rem;
 }
 
-/* ===== Mobile (< md): sidebar oculto + botón hamburguesa ===== */
 @media (max-width: 767.98px) {
-  /* Sidebar como panel deslizable */
-  #sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 260px; /* ajusta a tu gusto */
-    height: 100vh;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
-    z-index: 1045; /* por encima del contenido */
-    box-shadow: 0 0 24px rgba(0, 0, 0, 0.35);
-  }
-
-  /* Cuando el checkbox está marcado, mostramos el sidebar */
   #nav-toggle:checked ~ #sidebar {
     transform: translateX(0);
   }

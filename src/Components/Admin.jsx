@@ -3,8 +3,11 @@ import "./tarjetas.css";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import "./VentanaC.css";
 import Menu from "./Modulos/Menu";
+import Insumos from "./Modulos/Insumos";
+import Pagos from "./Modulos/Pagos";
 import Pedidos_Aplicativo from "./Modulos/Pedidos_Aplicativo";
 import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
+import MetricasYConfiguracion from "./Modulos/MetricasYConfiguracion";
 import Usuario from "./Modulos/Usuario";
 import comida from "../assets/comida.png";
 function Admin() {
@@ -15,22 +18,7 @@ function Admin() {
   return (
     <>
       <div className="layout">
-        {/*Sidebar a la izquierda 
-     Toggle (solo mobile) */}
-        <label htmlFor="nav-toggle" style={{ display: "none" }}>
-          A
-        </label>
-        <input type="checkbox" id="nav-toggle" className="d-none" />
-        {/*Barra superior en mobile con botón hamburguesa*/}
-        <header className="d-md-none position-sticky top-0 z-3 text-white">
-          <label
-            htmlFor="nav-toggle"
-            className="btn btn-link text-dark m-2 p-0"
-          >
-            <i className="bi bi-list" style={{ fontSize: "1.75rem" }}></i>
-          </label>
-        </header>
-        {/*Tu sidebar (SIN JS)*/}
+        {/*El sidebar (SIN JS)*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
@@ -59,9 +47,9 @@ function Admin() {
           <ul className="nav nav-pills flex-column mb-0">
             <li>
               <Link
-                to="/admin/MétricasYConfiguracion"
+                to="/admin/MetricasYConfiguracion"
                 className={`nav-link ${estaActivo(
-                  "/admin/MétricasYConfiguracion"
+                  "/admin/MetricasYConfiguracion"
                 )}`}
               >
                 <i className="bi bi-bar-chart me-2"></i>Métricas y configuración
@@ -90,7 +78,7 @@ function Admin() {
                   "/admin/Pedidos_Aplicativo"
                 )}`}
               >
-                <i className="bi bi-window me-2"></i>Pedidos Virtuales
+                <i className="bi bi-window me-2"></i>Pedidos por Aplicativo
               </Link>
             </li>
             <li>
@@ -159,17 +147,20 @@ function Admin() {
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>
-                <Route path="Dashboard" element={<Dashboard />} />
-                <Route path="menu" element={<Menu />} />
+                <Route
+                  path="MetricasYConfiguracion"
+                  element={<MetricasYConfiguracion />}
+                />
+                <Route path="Menu" element={<Menu />} />
                 <Route path="Pedidos_Fisicos" element={<Pedidos_Fisicos />} />
                 <Route
                   path="pedidos_Aplicativo"
                   element={<Pedidos_Aplicativo />}
                 />
-                <Route path="Ventas" element={<Ventas />} />
-                <Route path="GestorC" element={<GestorC />} />
+                <Route path="Insumos" element={<Insumos />} />
+                <Route path="Pagos" element={<Pagos />} />
                 <Route path="Usuario" element={<Usuario />} />
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<MetricasYConfiguracion />} />
                 {/* Ruta por defecto */}
               </Routes>
             </div>

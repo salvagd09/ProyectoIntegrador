@@ -13,10 +13,10 @@ function App() {
       localStorage.setItem("userRole", "admin");
       localStorage.setItem("isAuthenticated", "true");
       navigate("/admin");
-    } else if (nombreUsuario === "cajero" && contrasena === "cajero123") {
-      localStorage.setItem("userRole", "cajero");
+    } else if (nombreUsuario === "caja" && contrasena === "caja123") {
+      localStorage.setItem("userRole", "caja");
       localStorage.setItem("isAuthenticated", "true");
-      navigate("/cajero");
+      navigate("/caja");
     } else {
       alert("Credenciales inválidas");
     }
@@ -72,14 +72,14 @@ function App() {
               onClick={toggleMostrarContrasena}
             ></i>
           </div>
-          <div>
-            <Link to="/mesero" className="px-4 text-dark">
+          <div class="d-flex gap-4 align-items-center">
+            <Link to="/mesero" className="px-4 fs-5  text-dark">
               Soy mesero
             </Link>
             <button type="submit" className="btn btn-success fs-4  mt-3 ">
               Ingresar
             </button>
-            <Link to="/cocina" className="px-4 text-dark">
+            <Link to="/cocina" className="px-4 fs-5 text-dark">
               Soy del área de cocina
             </Link>
           </div>

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+#Aquí se incluyen los router que contendrán los endpoints
 app = FastAPI(title="Sistema de Pedidos")
 app.add_middleware(
     CORSMiddleware,

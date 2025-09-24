@@ -1,7 +1,12 @@
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP, ForeignKey,Enum
 from sqlalchemy.sql import func
 from .database import Base
-
+import enum
+#Los enum de las tablas
+class EstadoMesaEnum(str, enum.Enum):
+    Libre = "Libre"
+    Ocupada = "Ocupada"
+#Se coloca las tablas de la BD a usar.
 class Empleado(Base):
     __tablename__ = "empleados"
 
@@ -15,3 +20,9 @@ class Empleado(Base):
     rol_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     esta_activo = Column(Boolean, default=True)
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
+class Mesas(Base):
+   __tablename__ = "mesas"
+   id = Column(Integer, primary_key=True, index=True)
+   numero=Column(String(10),unique=True,nullable=False)
+   capacidad=Column(Integer,nullable=False)
+   estado=Column(Enum(EstadoMesaEnum,name="estado_mesa"),nullable=False,server_default="Libre")

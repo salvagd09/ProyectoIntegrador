@@ -1,18 +1,36 @@
 import { useState, useEffect } from "react";
-function Mesas({ rol }) {
+function Mesas() {
+  const rol = localStorage.getItem("userRole");
   const [numeroMesa, setNumeroMesa] = useState("");
   const [cantidadMesa, setCantidadMesa] = useState("");
   const [mesas, setMesas] = useState([]);
   useEffect(() => {
-    fetch("http://localhost:5432/mesas")
+    fetch("http://127.0.0.1:8000/mesas/")
       .then((res) => res.json())
       .then((data) => setMesas(data))
       .catch((err) => console.error(err));
   }, []);
+  function ocupar(mesaId) {
+    {
+      fetch(`http://127.0.0.1:8000/mesas/${mesaId}/estado`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      })
+        .then((res) => res.json())
+        .then((mesaActualizada) => {
+          setMesas((prevMesas) =>
+            prevMesas.map((m) =>
+              m.id === mesaActualizada.id ? mesaActualizada : m
+            )
+          );
+        })
+        .catch((err) => console.error(err));
+    }
+  }
   function agregarMesa() {
     if (!numeroMesa || !cantidadMesa) return;
-    const nuevaMesa = { numero: numeroMesa, cantidad: cantidadMesa };
-    fetch("http://localhost:5432/mesas", {
+    const nuevaMesa = { numero: numeroMesa, capacidad: cantidadMesa };
+    fetch("http://127.0.0.1:8000/mesas/agregarM", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(nuevaMesa),
@@ -26,24 +44,22 @@ function Mesas({ rol }) {
       .catch((err) => console.error(err));
   }
   const mesasVisibles =
-    rol === "admin" ? mesas : mesas.filter((m) => m.ocupada === true);
+    rol == 4 ? mesas : mesas.filter((m) => m.estado === "Ocupada");
   return (
     <>
       <div>
         <h1>Área donde se encuentran las mesas</h1>
-        <div>
-          {rol === "admin" && (
-            <>
-              <button
-                type="button"
-                class="btn btn-primary"
-                data-bs-toggle="modal"
-                data-bs-target="#exampleModal"
-                data-bs-whatever="@mdo"
-              >
-                Agregar mesas
-              </button>
-            </>
+        <div className="container">
+          {rol == 4 && (
+            <button
+              type="button"
+              className="btn btn-primary my-3"
+              data-bs-toggle="modal"
+              data-bs-target="#exampleModal"
+              data-bs-whatever="@mdo"
+            >
+              Agregar mesas
+            </button>
           )}
           <div
             className="modal fade"
@@ -72,7 +88,7 @@ function Mesas({ rol }) {
                         htmlFor="recipient-name"
                         className="col-form-label"
                       >
-                        Número de la mesa
+                        El nombre de la mesa
                       </label>
                       <input
                         type="text"
@@ -110,16 +126,23 @@ function Mesas({ rol }) {
               mesasVisibles.map((mesa) => (
                 <div key={mesa.id} className="card mb-2">
                   <div className="card-body">
-                    <h5 className="card-title">Mesa N° {mesa.numero}</h5>
+                    <h5 className="card-title">Mesa {mesa.numero}</h5>
                   </div>
                   <ul className="list-group list-group-flush">
                     <li className="list-group-item">
-                      Capacidad: {mesa.cantidad} personas
+                      Capacidad: {mesa.capacidad} personas
                     </li>
-                    <li>
-                      Estado de la mesa
-                      {mesa.ocupada ? "Libre" : "Ocupada"}
-                    </li>
+                    <button
+                      type="button"
+                      className={`btn ${
+                        mesa.estado === "Libre" ? "btn-danger" : "btn-dark"
+                      }`}
+                      onClick={() => ocupar(mesa.id)}
+                    >
+                      {mesa.estado === "Libre"
+                        ? "Marcar como ocupado"
+                        : "Marcar como desocupado"}
+                    </button>
                   </ul>
                 </div>
               ))

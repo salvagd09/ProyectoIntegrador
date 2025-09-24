@@ -28,7 +28,7 @@ function App() {
       console.log(data);
       localStorage.setItem("userRole", data.rol_id);
       localStorage.setItem("isAuthenticated", "true");
-      if (data.rol_id === 1) navigate("/admin");
+      if (data.rol_id === 4) navigate("/admin");
       else if (data.rol_id === 3) navigate("/caja");
     } catch (err) {
       alert(err.message);

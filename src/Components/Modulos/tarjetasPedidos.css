@@ -1,0 +1,122 @@
+/* ======== CONTENEDORES PRINCIPALES ======== */
+.pedidos-container {
+  padding: 20px;
+  background: #f4f4f4;
+  min-height: 100vh;
+  font-family: sans-serif;
+}
+
+.pedidos-topbar {
+  background: #ff7a00;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+/* ======== COLUMNAS ======== */
+.pedidos-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 20px;
+}
+
+.estado-column {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+.estado-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.badge-count {
+  background: #ff7a00;
+  color: white;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 0.8em;
+}
+
+.estado-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ======== CARDS ======== */
+.pedido-card {
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid #eee;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+}
+
+.pedido-card:hover {
+  transform: translateY(-3px);
+}
+
+/* Parte superior */
+.pedido-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pedido-mesa {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.pedido-cliente {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.pedido-id {
+  color: #999;
+  font-size: 0.85em;
+}
+
+/* Items */
+.pedido-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pedido-items li {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 0.9em;
+}
+
+.precio {
+  color: #555;
+}
+
+/* Footer */
+.pedido-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: #333;
+}
+
+/* Sin pedidos */
+.no-pedidos {
+  text-align: center;
+  color: #aaa;
+  font-size: 0.9em;
+  padding: 15px 5px;
+}

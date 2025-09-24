@@ -1,10 +1,10 @@
-function MetricasYConfiguración() {
+function MetricasYConfiguracion() {
   return (
     <>
       <div>
-        <h1>Métricas y configuración</h1>
+        <h1>Metricas y Configuración</h1>
       </div>
     </>
   );
 }
-export default MetricasYConfiguración;
+export default MetricasYConfiguracion;

@@ -6,19 +6,53 @@ function App() {
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [contrasena, setNombreContrasena] = useState("");
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [PIN, setPIN] = useState("");
   const navigate = useNavigate();
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (nombreUsuario === "admin" && contrasena === "admin123") {
-      localStorage.setItem("userRole", "admin");
+    try {
+      const res = await fetch("http://127.0.0.1:8000/auth/login-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: nombreUsuario,
+          password: contrasena,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Credenciales inválidas");
+      }
+
+      const data = await res.json();
+      console.log(data);
+      localStorage.setItem("userRole", data.rol_id);
       localStorage.setItem("isAuthenticated", "true");
-      navigate("/admin");
-    } else if (nombreUsuario === "caja" && contrasena === "caja123") {
-      localStorage.setItem("userRole", "caja");
+      if (data.rol_id === 1) navigate("/admin");
+      else if (data.rol_id === 3) navigate("/caja");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+  const handleSubmitPin = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("http://127.0.0.1:8000/auth/login-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin_code: PIN }),
+      });
+
+      if (!res.ok) {
+        throw new Error("PIN inválido");
+      }
+
+      const data = await res.json();
+      localStorage.setItem("userRole", data.rol);
       localStorage.setItem("isAuthenticated", "true");
-      navigate("/caja");
-    } else {
-      alert("Credenciales inválidas");
+      navigate("/mesero");
+    } catch (err) {
+      alert(err.message);
     }
   };
   const toggleMostrarContrasena = () => {
@@ -72,18 +106,62 @@ function App() {
               onClick={toggleMostrarContrasena}
             ></i>
           </div>
-          <div class="d-flex gap-4 align-items-center">
-            <Link to="/mesero" className="px-4 fs-5  text-dark">
+          <div className="d-flex gap-4 align-items-center">
+            <button
+              type="button"
+              className="btn btn-outline-dark fs-4 mt-3"
+              data-bs-toggle="modal"
+              data-bs-target="#exampleModal"
+              data-bs-whatever="@mdo"
+            >
               Soy mesero
-            </Link>
+            </button>
             <button type="submit" className="btn btn-success fs-4  mt-3 ">
               Ingresar
             </button>
-            <Link to="/cocina" className="px-4 fs-5 text-dark">
+            <Link to="/cocina" className="btn btn-outline-dark fs-4 mt-3">
               Soy del área de cocina
             </Link>
           </div>
         </form>
+        <div
+          className="modal fade"
+          id="exampleModal"
+          tabIndex="-1"
+          aria-labelledby="exampleModalLabel"
+          aria-hidden="true"
+        >
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h1 className="modal-title fs-5" id="exampleModalLabel">
+                  PIN del mesero
+                </h1>
+              </div>
+              <div className="modal-body">
+                <form onSubmit={handleSubmitPin}>
+                  <div className="mb-3 mx-2">
+                    <label htmlFor="PIN">Ingresa tu PIN</label>
+                    <input
+                      type="password"
+                      value={PIN}
+                      onChange={(e) => setPIN(e.target.value)}
+                    />
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      data-bs-dismiss="modal"
+                    >
+                      Ingresar
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );

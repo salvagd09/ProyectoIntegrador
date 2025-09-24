@@ -9,6 +9,7 @@ import Pedidos_Aplicativo from "./Modulos/Pedidos_Aplicativo";
 import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
 import MetricasYConfiguracion from "./Modulos/MetricasYConfiguracion";
 import Usuario from "./Modulos/Usuario";
+import Mesas from "./Modulos/Mesas";
 import comida from "../assets/comida.png";
 function Admin() {
   const ubicacion = useLocation();
@@ -61,6 +62,14 @@ function Admin() {
                 className={`nav-link ${estaActivo("/admin/Menu")}`}
               >
                 <i className="fa-solid fa-utensils me-2"></i>Menu
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/admin/Mesas"
+                className={`nav-link ${estaActivo("/admin/Mesas")}`}
+              >
+                <i className="fa-solid fa-utensils me-2"></i>Mesas
               </Link>
             </li>
             <li>
@@ -152,6 +161,7 @@ function Admin() {
                   element={<MetricasYConfiguracion />}
                 />
                 <Route path="Menu" element={<Menu />} />
+                <Route path="Mesas" element={<Mesas />} />
                 <Route path="Pedidos_Fisicos" element={<Pedidos_Fisicos />} />
                 <Route
                   path="pedidos_Aplicativo"

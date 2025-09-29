@@ -30,12 +30,12 @@ def agregar_mesas(data:schemas.AMesas,db: Session=Depends(get_db)):
     db.add(nueva_mesa)
     db.commit()
     db.refresh(nueva_mesa)
-    return[{"mensaje":"La mesa fue agregada","mesa":{
+    return{
         "id": nueva_mesa.id,
         "numero": nueva_mesa.numero,
         "capacidad": nueva_mesa.capacidad,
         "estado": nueva_mesa.estado
-    }}]
+    }
 @router.put("/{mesa_id}/estado")
 def cambiar_estado_mesa(mesa_id: int, db: Session = Depends(get_db)):
     mesa = db.query(models.Mesas).filter(models.Mesas.id == mesa_id).first()

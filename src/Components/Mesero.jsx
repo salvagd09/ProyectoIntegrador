@@ -12,7 +12,7 @@ function Mesero() {
   return (
     <>
       <div className="layout">
-        {/*Barra del menú*/}
+        {/*El sidebar (SIN JS)*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
@@ -56,7 +56,7 @@ function Mesero() {
             </li>
           </ul>
         </aside>
-        {/*Página principal */}
+        {/*Columna derecha */}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
             {/*Encabezado del lado principal*/}

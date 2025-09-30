@@ -1,4 +1,3 @@
-// PedidosVista.jsx
 import React, { useState } from "react";
 import "./tarjetasPedidos.css";
 

@@ -11,7 +11,7 @@ function Cajero() {
   return (
     <>
       <div className="layout">
-        {/*Barra del menú*/}
+        {/*El sidebar (SIN JS)*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
@@ -48,11 +48,20 @@ function Cajero() {
             </li>
           </ul>
         </aside>
-        {/*El espacio principal */}
+        {/*Columna derecha */}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
-            {/*Encabezado del lado principal*/}
+            {/*Si quieres algo a la izquierda, iría aquí 
+                 Bloque de acciones al lado derecho*/}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
+              {/*Notificaciones*/}
+              <div className="action">
+                <button className="btn-icon" aria-label="Notificaciones">
+                  <i className="fa-solid fa-bell"></i>
+                  <span className="badge-dot"></span>
+                </button>
+              </div>
+              <div className="vr mx-auto"></div>
               {/*Avatar*/}
               <div className="action">
                 <img

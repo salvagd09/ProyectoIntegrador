@@ -1,5 +1,4 @@
 import mesero from "../assets/mesero.png";
-import "./tarjetas.css";
 import "./VentanaC.css";
 import comida from "../assets/comida.png";
 import Mesas from "./Modulos/Mesas";
@@ -13,7 +12,7 @@ function Mesero() {
   return (
     <>
       <div className="layout">
-        {/*El sidebar (SIN JS)*/}
+        {/*Barra del menú*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
@@ -57,8 +56,34 @@ function Mesero() {
             </li>
           </ul>
         </aside>
-        {/*Columna derecha */}
+        {/*Página principal */}
         <div className="main">
+          <header className="app-header d-flex align-items-center shadow">
+            {/*Encabezado del lado principal*/}
+            <div className="header-inner d-flex align-items-center gap-2 ms-auto">
+              {/*Avatar*/}
+              <div className="action">
+                <img
+                  src={mesero}
+                  alt="Usuario"
+                  className="rounded-circle usuario2"
+                />
+              </div>
+              <div className="vr mx-auto"></div>
+              {/*Salir */}
+              <div className="action">
+                <form>
+                  <button
+                    type="submit"
+                    className="btn-icon"
+                    aria-label="Cerrar sesión"
+                  >
+                    <i className="fa-solid fa-right-from-bracket"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </header>
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>

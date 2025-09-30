@@ -33,18 +33,5 @@ body {
   width: 60%;
 }
 .card {
-  width: 60%;
-  background: #e36414;
-}
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #4fe917;
-  }
+  background: #a7c957;
 }

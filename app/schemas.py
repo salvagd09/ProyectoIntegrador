@@ -9,3 +9,12 @@ class AMesas(BaseModel):
     numero:str
     capacidad: int
     estado: Optional[str]="Libre"
+class AInsumo(BaseModel):
+    nombre:str
+    cantidad:Optional[float]=0.0
+    minimo:Optional[float]=0.0
+    precio:Optional[float]=0.0
+    categoria: str
+    unidad: str
+    perecible:Optional[bool]=False
+    

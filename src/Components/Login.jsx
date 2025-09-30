@@ -48,7 +48,7 @@ function App() {
       }
 
       const data = await res.json();
-      localStorage.setItem("userRole", data.rol);
+      localStorage.setItem("userRole", data.rol_id);
       localStorage.setItem("isAuthenticated", "true");
       navigate("/mesero");
     } catch (err) {
@@ -73,7 +73,7 @@ function App() {
         </h1>
         <form
           onSubmit={handleSubmit}
-          className="card p-4 shadow mx-auto align-items-center"
+          className="card p-4 shadow mx-auto align-items-center w-50"
         >
           <h2 className="mb-3 display-4 text-center">Iniciar Sesión</h2>
           <label htmlFor="nombreUsuario" className="form-label fs-4">

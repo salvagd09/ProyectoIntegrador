@@ -10,13 +10,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 from fastapi import FastAPI
-from .routers import auth, mesas, menu
+from .routers import auth, mesas, menu,inventario
 
 # Incluir routers
 app.include_router(menu.router)
 app.include_router(auth.router)
 app.include_router(mesas.router)
-
+app.include_router(inventario.router)
 @app.get("/")
 def root():
     return {"msg": "Bienvenido a GestaFood"}

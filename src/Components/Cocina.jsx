@@ -1,6 +1,5 @@
 import comida from "../assets/comida.png";
 import cocinero from "../assets/cocinero.png";
-import "./tarjetas.css";
 import "./VentanaC.css";
 import Pedidos_Cocinero from "./Modulos/Pedidos_Cocinero";
 import Insumos from "./Modulos/Insumos";
@@ -57,8 +56,34 @@ function Cocinero() {
             </li>
           </ul>
         </aside>
-        {/*Columna derecha */}
+        {/*Página principal */}
         <div className="main">
+          <header className="app-header d-flex align-items-center shadow">
+            {/*Encabezado del lado principal*/}
+            <div className="header-inner d-flex align-items-center gap-2 ms-auto">
+              {/*Avatar*/}
+              <div className="action">
+                <img
+                  src={cocinero}
+                  alt="Usuario"
+                  className="rounded-circle usuario2"
+                />
+              </div>
+              <div className="vr mx-auto"></div>
+              {/*Salir */}
+              <div className="action">
+                <form>
+                  <button
+                    type="submit"
+                    className="btn-icon"
+                    aria-label="Cerrar sesión"
+                  >
+                    <i className="fa-solid fa-right-from-bracket"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </header>
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>

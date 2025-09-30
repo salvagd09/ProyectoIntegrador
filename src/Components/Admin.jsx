@@ -1,12 +1,11 @@
 import usuario from "../assets/usuario.png";
-import "./tarjetas.css";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import "./VentanaC.css";
 import Menu from "./Modulos/Menu";
 import Insumos from "./Modulos/Insumos";
 import Pagos from "./Modulos/Pagos";
 import Pedidos_Aplicativo from "./Modulos/Pedidos_Aplicativo";
-import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
+import Pedidos_Fisicos from "./Modulos/PedidosVista";
 import MetricasYConfiguracion from "./Modulos/MetricasYConfiguracion";
 import Usuario from "./Modulos/Usuario";
 import Mesas from "./Modulos/Mesas";
@@ -19,7 +18,7 @@ function Admin() {
   return (
     <>
       <div className="layout">
-        {/*El sidebar (SIN JS)*/}
+        {/*Barra de menú*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
@@ -116,11 +115,10 @@ function Admin() {
             </li>
           </ul>
         </aside>
-        {/*Columna derecha */}
+        {/*Parte principal*/}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
-            {/*Si quieres algo a la izquierda, iría aquí 
-         Bloque de acciones al lado derecho*/}
+            {/*Bloque superior*/}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
               {/*Notificaciones*/}
               <div className="action">

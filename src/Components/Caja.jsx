@@ -1,5 +1,4 @@
 import comida from "../assets/comida.png";
-import "./tarjetas.css";
 import "./VentanaC.css";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import cajero from "../assets/cajero.png";
@@ -12,7 +11,7 @@ function Cajero() {
   return (
     <>
       <div className="layout">
-        {/*El sidebar (SIN JS)*/}
+        {/*Barra del menú*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
@@ -49,20 +48,11 @@ function Cajero() {
             </li>
           </ul>
         </aside>
-        {/*Columna derecha */}
+        {/*El espacio principal */}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
-            {/*Si quieres algo a la izquierda, iría aquí 
-                 Bloque de acciones al lado derecho*/}
+            {/*Encabezado del lado principal*/}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
-              {/*Notificaciones*/}
-              <div className="action">
-                <button className="btn-icon" aria-label="Notificaciones">
-                  <i className="fa-solid fa-bell"></i>
-                  <span className="badge-dot"></span>
-                </button>
-              </div>
-              <div className="vr mx-auto"></div>
               {/*Avatar*/}
               <div className="action">
                 <img

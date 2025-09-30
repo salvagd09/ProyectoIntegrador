@@ -48,7 +48,9 @@ function Mesas() {
   return (
     <>
       <div>
-        <h1>Área donde se encuentran las mesas</h1>
+        <h1>
+          Área donde se encuentran las mesas {rol == 1 && <h1>ocupadas</h1>}
+        </h1>
         <div className="container">
           {rol == 4 && (
             <button
@@ -119,31 +121,49 @@ function Mesas() {
               </div>
             </div>
           </div>
-          <div className="container" id="contenedor">
+          <div
+            className=" d-flex flex-wrap flex-row gap-2  w-100 justify-content-md-between  justify-content-sm-center "
+            id="contenedor"
+          >
             {mesasVisibles.length === 0 ? (
-              <p>No hay mesas registradas aún.</p>
+              <p>No hay mesas validas para este rol</p>
             ) : (
               mesasVisibles.map((mesa) => (
-                <div key={mesa.id} className="card mb-2">
+                <div
+                  key={mesa.id}
+                  className="card  px-1 pb-1 col-lg-3 col-md-4 col-sm-6 "
+                >
+                  <h5 className="card-title text-white fs-3">
+                    Mesa {mesa.numero}
+                  </h5>
                   <div className="card-body">
-                    <h5 className="card-title">Mesa {mesa.numero}</h5>
+                    <ul className="list-group list-group-flush">
+                      <li className="list-group-item my-2">
+                        Capacidad: {mesa.capacidad} personas
+                      </li>
+                      <li className="list-group-item">
+                        Estado de la mesa:{" "}
+                        <span
+                          className={`${
+                            mesa.estado === "Libre"
+                              ? "text-dark"
+                              : "text-danger"
+                          } fw-bolder`}
+                        >
+                          {mesa.estado}
+                        </span>
+                      </li>
+                      {rol == 1 && (
+                        <button
+                          type="button"
+                          className="btn-dark my-2 w-50 mx-auto btn"
+                          onClick={() => ocupar(mesa.id)}
+                        >
+                          Marcar como desocupado
+                        </button>
+                      )}
+                    </ul>
                   </div>
-                  <ul className="list-group list-group-flush">
-                    <li className="list-group-item">
-                      Capacidad: {mesa.capacidad} personas
-                    </li>
-                    <button
-                      type="button"
-                      className={`btn ${
-                        mesa.estado === "Libre" ? "btn-danger" : "btn-dark"
-                      }`}
-                      onClick={() => ocupar(mesa.id)}
-                    >
-                      {mesa.estado === "Libre"
-                        ? "Marcar como ocupado"
-                        : "Marcar como desocupado"}
-                    </button>
-                  </ul>
                 </div>
               ))
             )}

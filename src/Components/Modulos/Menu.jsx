@@ -1,6 +1,4 @@
 import { useState } from "react";
-import "../Modulos/CSS/Menu.css";
-
 function Menu() {
   // Estado para controlar qué platillos están activos o desactivados
   const [platillos, setPlatillos] = useState([

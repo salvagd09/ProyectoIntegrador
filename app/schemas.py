@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional,List
 class LoginPassword(BaseModel):
     username: str
     password: str
@@ -17,4 +17,18 @@ class AInsumo(BaseModel):
     categoria: str
     unidad: str
     perecible:Optional[bool]=False
-    
+class IngredienteBase(BaseModel):
+    id: int
+    nombre: str
+    class Config:
+        orm_mode = True
+class ProductoBase(BaseModel):
+    id: int
+    nombre: str
+    descripcion: Optional[str]
+    precio: float
+    imagen_url: Optional[str]
+    class Config:
+        orm_mode = True
+class ProductoConIngredientes(ProductoBase):
+    ingredientes: List[IngredienteBase] = []

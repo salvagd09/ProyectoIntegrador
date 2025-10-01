@@ -1,0 +1,150 @@
+body {
+    background-color: #fff5ee;
+    color: #333;
+}
+/* Encabezado */
+.menu-header {
+    background: #fff;
+    padding: 2rem 1.5rem 1.5rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.menu-header h1 {
+    font-weight: 700;
+    color: #010742;
+}
+
+.menu-header p {
+    color: #616161;
+    margin-bottom: 0;
+}
+
+/* Tarjetas desactivadas */
+.card-desactivada {
+    background-color: #f8f9fa;
+    opacity: 0.7;
+    border-color: #dee2e6;
+}
+
+.card-desactivada .card-title,
+.card-desactivada .card-text,
+.card-desactivada .text-primary {
+    color: #6c757d !important;
+}
+
+/* Categorías */
+.categoria-titulo {
+    font-weight: 700;
+    color: #1976d2;
+    margin-bottom: 1rem;
+}
+
+/* Tarjetas de Platillos */
+.card {
+    background: #ffffff !important;
+    border: 1.5px solid #1976d2;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.card-desactivada {
+    background-color: #f8f9fa;
+    opacity: 0.7;
+    border-color: #dee2e6;
+}
+
+.card-body .card-text {
+    text-align: left;
+    color: #444 !important;
+}
+
+/* Botones */
+.card-btn-row {
+    display: flex;
+    width: 100%;
+    gap: 0;
+    justify-content: space-between;
+}
+
+.card-btn-row .btn-toggle {
+    flex: 1 1 50%;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-radius: 10px;
+    background-color: #1976d2;
+}
+
+.card-btn-row .btn-edit,
+.card-btn-row .btn-delete {
+    flex: 1 1 25%;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-radius: 10px;
+    color: #000000;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body label {
+    color: #333;
+    font-weight: 500;
+}
+
+.list-unstyled li {
+    margin-bottom: 0.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
+}

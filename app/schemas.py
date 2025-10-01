@@ -21,7 +21,7 @@ class IngredienteBase(BaseModel):
     id: int
     nombre: str
     class Config:
-        orm_mode = True
+        from_attributes = True
 class ProductoBase(BaseModel):
     id: int
     nombre: str
@@ -29,6 +29,6 @@ class ProductoBase(BaseModel):
     precio: float
     imagen_url: Optional[str]
     class Config:
-        orm_mode = True
+        from_attributes = True
 class ProductoConIngredientes(ProductoBase):
     ingredientes: List[IngredienteBase] = []

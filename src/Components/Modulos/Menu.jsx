@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./CSS/Menu.css";
 function Menu() {
   // Estado para controlar qué platillos están activos o desactivados
   const [platillos, setPlatillos] = useState([
@@ -203,11 +204,11 @@ function Menu() {
             {platillosPorCategoria[categoria].map((platillo) => (
               <div key={platillo.id} className="col-md-4 mb-4">
                 <div
-                  className={`card h-100 ${
+                  className={`card h-100 bg-white ${
                     !platillo.disponible ? "card-desactivada" : ""
                   }`}
                 >
-                  <div className="card-body">
+                  <div className="card-body ">
                     <div className="d-flex justify-content-between align-items-start mb-2">
                       <h5 className="card-title">{platillo.nombre}</h5>
                       <span
@@ -246,7 +247,7 @@ function Menu() {
 
                     <div className="card-btn-row d-flex justify-content-between">
                       <button
-                        className={`btn ${
+                        className={`btn mx-2 ${
                           platillo.disponible ? "btn-warning" : "btn-success"
                         } btn-sm btn-toggle`}
                         onClick={() => toggleDisponibilidad(platillo.id)}
@@ -254,13 +255,13 @@ function Menu() {
                         {platillo.disponible ? "Desactivar" : "Activar"}
                       </button>
                       <button
-                        className="btn btn-outline-primary btn-sm btn-edit"
+                        className="btn btn-outline-primary btn-sm btn-edit mx-1"
                         onClick={() => abrirModalEditar(platillo)}
                       >
                         <i className="fa-solid fa-pen"></i>
                       </button>
                       <button
-                        className="btn btn-outline-danger btn-sm btn-delete"
+                        className="btn btn-outline-danger btn-sm btn-delete mx-1"
                         onClick={() => eliminarPlatillo(platillo.id)}
                       >
                         <i className="fa-solid fa-trash"></i>
@@ -298,7 +299,7 @@ function Menu() {
                   </label>
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control mx-auto"
                     id="nombre"
                     defaultValue={
                       modalType === "editar" ? platilloEditando.nombre : ""
@@ -310,7 +311,7 @@ function Menu() {
                     Descripción
                   </label>
                   <textarea
-                    className="form-control"
+                    className="form-control w-100"
                     id="descripcion"
                     rows="3"
                     defaultValue={
@@ -324,7 +325,7 @@ function Menu() {
                   </label>
                   <input
                     type="number"
-                    className="form-control"
+                    className="form-control mx-auto"
                     id="precio"
                     step="0.01"
                     defaultValue={
@@ -336,7 +337,7 @@ function Menu() {
                   <label htmlFor="categoria" className="form-label">
                     Categoría
                   </label>
-                  <select className="form-select" id="categoria">
+                  <select className="form-select mx-auto" id="categoria">
                     <option value="">Selecciona una categoría</option>
                     <option value="Ceviches">Ceviches</option>
                     <option value="Tiraditos">Tiraditos</option>
@@ -354,6 +355,7 @@ function Menu() {
                   type="button"
                   className="btn btn-primary w-100"
                   onClick={cerrarModal}
+                  onChange={guardarPlatillo}
                 >
                   {modalType === "agregar"
                     ? "Agregar Platillo"

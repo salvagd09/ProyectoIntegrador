@@ -141,11 +141,12 @@ function App() {
               <div className="modal-body">
                 <form onSubmit={handleSubmitPin}>
                   <div className="mb-3 mx-2">
-                    <label htmlFor="PIN">Ingresa tu PIN</label>
+                    <label htmlFor="PIN">Ingresa tu PIN:</label>
                     <input
                       type="password"
                       value={PIN}
                       onChange={(e) => setPIN(e.target.value)}
+                      className="mx-2"
                     />
                   </div>
                   <div className="modal-footer">

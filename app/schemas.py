@@ -32,3 +32,12 @@ class ProductoBase(BaseModel):
         from_attributes = True
 class ProductoConIngredientes(ProductoBase):
     ingredientes: List[IngredienteBase] = []
+class AgregarEmpleado(BaseModel):
+    nombres:str
+    apellidos:str
+    rol:int
+    telefono:str
+    correo:str
+    nombreUs:Optional[str]
+    contrasenaUs:Optional[str]
+    PIN:Optional[str]

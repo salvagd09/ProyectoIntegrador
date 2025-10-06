@@ -73,7 +73,7 @@ function Mesas() {
             <div className="modal-dialog">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h1 className="modal-title fs-5" id="exampleModalLabel">
+                  <h1 className="modal-title fs-4" id="exampleModalLabel">
                     Ingrese los datos de la mesa
                   </h1>
                   <button
@@ -88,21 +88,22 @@ function Mesas() {
                     <div className="mb-3">
                       <label
                         htmlFor="recipient-name"
-                        className="col-form-label"
+                        className="form-label fs-5"
                       >
                         El nombre de la mesa
                       </label>
                       <input
                         type="text"
-                        className="form-control"
+                        className="form-control mx-auto"
                         value={numeroMesa}
                         onChange={(e) => setNumeroMesa(e.target.value)}
                       />
-                      <label htmlFor="mesas">
+                      <label htmlFor="mesas" className="form-label fs-5">
                         Cantidad de personas para la mesa:
                       </label>
                       <input
                         type="number"
+                        className="form-control mx-auto"
                         value={cantidadMesa}
                         onChange={(e) => setCantidadMesa(e.target.value)}
                       />

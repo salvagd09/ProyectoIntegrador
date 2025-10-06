@@ -44,18 +44,10 @@ body {
 
 /* Tarjetas de Platillos */
 .card {
-  background: #ffffff !important;
   border: 1.5px solid #1976d2;
   border-radius: 10px;
   padding: 10px;
 }
-
-.card-desactivada {
-  background-color: #f8f9fa;
-  opacity: 0.7;
-  border-color: #dee2e6;
-}
-
 .card-body .card-text {
   text-align: left;
   color: #444 !important;

@@ -1,4 +1,4 @@
-import { Table, Selection } from "react-bootstrap";
+import { Table } from "react-bootstrap";
 import { useState, useEffect } from "react";
 function Usuario() {
   const [nombreUsuario, setNombreUsuario] = useState("");

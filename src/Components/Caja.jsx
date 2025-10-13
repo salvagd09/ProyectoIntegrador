@@ -1,12 +1,22 @@
 import comida from "../assets/comida.png";
 import "./VentanaC.css";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import cajero from "../assets/cajero.png";
 import Pagos from "./Modulos/Pagos";
 function Cajero() {
+  const navigate = useNavigate();
   const ubicacion = useLocation();
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
+  };
+  const retroceder = () => {
+    navigate("/Login");
   };
   return (
     <>
@@ -76,6 +86,7 @@ function Cajero() {
                 <form>
                   <button
                     type="submit"
+                    onClick={retroceder}
                     className="btn-icon"
                     aria-label="Cerrar sesión"
                   >

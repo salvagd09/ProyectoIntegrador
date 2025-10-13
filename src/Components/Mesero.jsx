@@ -3,11 +3,21 @@ import "./VentanaC.css";
 import comida from "../assets/comida.png";
 import Mesas from "./Modulos/Mesas";
 import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 function Mesero() {
   const ubicacion = useLocation();
+  const navigate = useNavigate();
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
+  };
+  const retroceder = () => {
+    navigate("/Login");
   };
   return (
     <>
@@ -75,6 +85,7 @@ function Mesero() {
                 <form>
                   <button
                     type="submit"
+                    onClick={retroceder}
                     className="btn-icon"
                     aria-label="Cerrar sesión"
                   >

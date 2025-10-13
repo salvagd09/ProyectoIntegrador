@@ -1,6 +1,7 @@
 import { Table } from "react-bootstrap";
 import { useState, useEffect } from "react";
 function Usuario() {
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [rolUsuario, setRolUsuario] = useState("");
   const [apellidosUsuario, setApellidosUsuario] = useState("");
@@ -10,7 +11,31 @@ function Usuario() {
   const [contrasena, setContrasena] = useState("");
   const [telefono, setTelefono] = useState("");
   const [pin, setPIN] = useState("");
-
+  const [nombreUsuarioE, setNombreUsuarioE] = useState("");
+  const [rolUsuarioE, setRolUsuarioE] = useState("");
+  const [apellidosUsuarioE, setApellidosUsuarioE] = useState("");
+  const [usernameE, setUsernameE] = useState("");
+  const [correoUsuarioE, setCorreoUsuarioE] = useState("");
+  const [contrasenaE, setContrasenaE] = useState("");
+  const [telefonoE, setTelefonoE] = useState("");
+  const [pinE, setPINE] = useState("");
+  const rolMap = {
+    Mozo: 1,
+    Cocina: 2,
+    Caja: 3,
+    Admin: 4,
+  };
+  const handleEditarUsuario = (usuario) => {
+    setUsuarioSeleccionado(usuario);
+    setNombreUsuarioE(usuario.nombre);
+    setApellidosUsuarioE(usuario.apellido);
+    setRolUsuarioE(rolMap[usuario.rol]);
+    setUsernameE(usuario.username || "");
+    setContrasenaE(usuario.contrasena || "");
+    setPINE(usuario.pin || "");
+    setCorreoUsuarioE(usuario.correo_electronico || "");
+    setTelefonoE(usuario.telefono || "");
+  };
   function agregarUsuario() {}
   useEffect(() => {
     fetch("http://127.0.0.1:8000/empleados/")
@@ -50,7 +75,7 @@ function Usuario() {
           <tbody>
             {usuariosVisibles.map((usuario) => {
               return (
-                <tr>
+                <tr key={usuario.id}>
                   <td>{usuario.id}</td>
                   <td>{usuario.nombre}</td>
                   <td>{usuario.apellido}</td>
@@ -66,6 +91,7 @@ function Usuario() {
                         data-bs-toggle="modal"
                         data-bs-target="#exampleModal2"
                         data-bs-whatever="@mdo"
+                        onClick={() => handleEditarUsuario(usuario)}
                       >
                         Editar usuario
                       </button>
@@ -139,7 +165,7 @@ function Usuario() {
                       <option value="3">Caja</option>
                       <option value="4">Admin</option>
                     </select>
-                    {(rolUsuario === "1" || rolUsuario === "3") && (
+                    {(rolUsuario === 1 || rolUsuario === 3) && (
                       <>
                         <label
                           htmlFor="recipient-name"
@@ -237,8 +263,8 @@ function Usuario() {
                     <input
                       type="text"
                       className="form-control mx-auto"
-                      value={nombreUsuario}
-                      onChange={(e) => setNombreUsuario(e.target.value)}
+                      value={nombreUsuarioE}
+                      onChange={(e) => setNombreUsuarioE(e.target.value)}
                     />
                     <label htmlFor="recipient-name" className="form-label fs-5">
                       Apellidos del usuario:
@@ -246,14 +272,14 @@ function Usuario() {
                     <input
                       type="text"
                       className="form-control mx-auto"
-                      value={apellidosUsuario}
-                      onChange={(e) => setApellidosUsuario(e.target.value)}
+                      value={apellidosUsuarioE}
+                      onChange={(e) => setApellidosUsuarioE(e.target.value)}
                     />
                     <label>Seleciona el tipo de empleado:</label>
                     <select
                       className="form-control mx-auto"
-                      value={rolUsuario}
-                      onChange={(e) => setRolUsuario(Number(e.target.value))}
+                      value={rolUsuarioE}
+                      onChange={(e) => setRolUsuarioE(Number(e.target.value))}
                     >
                       <option value="">---Selecciona---</option>
                       <option value="1">Mozo</option>
@@ -261,7 +287,7 @@ function Usuario() {
                       <option value="3">Caja</option>
                       <option value="4">Admin</option>
                     </select>
-                    {(rolUsuario === "1" || rolUsuario === "3") && (
+                    {(rolUsuarioE === 1 || rolUsuarioE === 3) && (
                       <>
                         <label
                           htmlFor="recipient-name"
@@ -272,8 +298,8 @@ function Usuario() {
                         <input
                           type="text"
                           className="form-control mx-auto"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
+                          value={usernameE}
+                          onChange={(e) => setUsernameE(e.target.value)}
                         />
                         <label
                           htmlFor="recipient-name"
@@ -284,19 +310,19 @@ function Usuario() {
                         <input
                           type="text"
                           className="form-control mx-auto"
-                          value={contrasena}
-                          onChange={(e) => setContrasena(e.target.value)}
+                          value={contrasenaE}
+                          onChange={(e) => setContrasenaE(e.target.value)}
                         />{" "}
                       </>
                     )}
-                    {rolUsuario === "4" && (
+                    {rolUsuario === 4 && (
                       <>
                         <label>Número de PIN:</label>
                         <input
                           type="text"
                           className="form-control mx-auto"
-                          value={pin}
-                          onChange={(e) => setPIN(e.target.value)}
+                          value={pinE}
+                          onChange={(e) => setPINE(e.target.value)}
                         />
                       </>
                     )}
@@ -304,15 +330,15 @@ function Usuario() {
                     <input
                       type="email"
                       className="form-control mx-auto"
-                      value={correoUsuario}
-                      onChange={(e) => setCorreoUsuario(e.target.value)}
+                      value={correoUsuarioE}
+                      onChange={(e) => setCorreoUsuarioE(e.target.value)}
                     />
                     <label>Ingresa el telefono del usuario:</label>
                     <input
                       type="text"
                       className="form-control mx-auto"
-                      value={telefono}
-                      onChange={(e) => setTelefono(e.target.value)}
+                      value={telefonoE}
+                      onChange={(e) => setTelefonoE(e.target.value)}
                     />
                   </div>
                 </form>
@@ -337,11 +363,20 @@ function Usuario() {
           aria-labelledby="exampleModalLabel"
           aria-hidden="true"
         >
-          <label>¿Estás seguro de que deseas eliminar este Usuario?</label>
-          <button type="submit" class="btn btn-danger">
-            Sí
-          </button>
-          <button class="btn btn-success">No</button>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-title">Confirmación de eliminación</div>
+              <div className="modal-body">
+                <label>
+                  ¿Estás seguro de que deseas eliminar este Usuario?
+                </label>
+                <button type="submit" className="btn btn-danger mx-1">
+                  Sí
+                </button>
+                <button className="btn btn-success mx-1">No</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>

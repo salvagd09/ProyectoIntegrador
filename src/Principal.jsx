@@ -8,7 +8,7 @@ function Main() {
   return (
     <Routes>
       {/* Ruta pública - Login */}
-      <Route path="/" element={<Login />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/admin/*" element={<Admin />} />
       <Route path="/mesero/*" element={<Mesero />} />
       <Route path="/caja/*" element={<Caja />} />

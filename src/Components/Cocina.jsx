@@ -3,11 +3,21 @@ import cocinero from "../assets/cocinero.png";
 import "./VentanaC.css";
 import Pedidos_Cocinero from "./Modulos/Pedidos_Cocinero";
 import Insumos from "./Modulos/Insumos";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 function Cocinero() {
   const ubicacion = useLocation();
+  const navigate = useNavigate();
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
+  };
+  const retroceder = () => {
+    navigate("/Login");
   };
   return (
     <>
@@ -76,6 +86,7 @@ function Cocinero() {
                   <button
                     type="submit"
                     className="btn-icon"
+                    onClick={retroceder}
                     aria-label="Cerrar sesión"
                   >
                     <i className="fa-solid fa-right-from-bracket"></i>

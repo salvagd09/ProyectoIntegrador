@@ -39,13 +39,15 @@ def AgregarEmpleado(data:schemas.AgregarEmpleado,db: Session=Depends(get_db)):
     db.add(nuevo_empleado)
     db.commit()
     db.refresh(nuevo_empleado)
+    rol_nombre = db.query(models.Roles.nombre).filter(models.Roles.id == data.rol).scalar()
     return{
         "id": nuevo_empleado.id,
-        "nombre":nuevo_empleado.nombre,
+        "nombre": nuevo_empleado.nombre,
         "apellido": nuevo_empleado.apellido,
-        "rol":nuevo_empleado.rol_id,
-        "telefono":nuevo_empleado.telefono,
-        "correo":nuevo_empleado.email
+        "rol": rol_nombre, 
+        "nombreUs": nuevo_empleado.username,
+        "telefono": nuevo_empleado.telefono,
+        "correo_electronico": nuevo_empleado.email
     }
 @router.put("/editar/{id}")
 def EditarEmpleado(id:int,data:schemas.EditarEmpleado,db:Session=Depends(get_db)):
@@ -64,10 +66,26 @@ def EditarEmpleado(id:int,data:schemas.EditarEmpleado,db:Session=Depends(get_db)
     }
     for campo,valor in data.dict(exclude_unset=True).items():
           if campo in campos_mapeo:
+            if campo in ["nombreUs", "contrasenaUs", "PIN"] and (valor is None or valor == ""):
+                continue
             setattr(empleado, campos_mapeo[campo], valor)
     db.commit()
     db.refresh(empleado)
-    return empleado
+    rol_nombre = (
+        db.query(models.Roles.nombre)
+        .filter(models.Roles.id == empleado.rol_id)
+        .scalar()
+    )
+    # 🔁 Devolver el mismo formato que el GET
+    return {
+        "id": empleado.id,
+        "nombre": empleado.nombre,
+        "apellido": empleado.apellido,
+        "rol": rol_nombre,
+        "nombreUs": empleado.username,
+        "telefono": empleado.telefono,
+        "correo_electronico": empleado.email,
+    }
 @router.delete("/eliminar/{id}")
 def eliminar_empleado(id: int, db: Session = Depends(get_db)):
     empleado = db.query(models.Empleado).filter(models.Empleado.id == id).first()

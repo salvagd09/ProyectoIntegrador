@@ -4,16 +4,18 @@ import "./VentanaC.css";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import cajero from "../assets/cajero.png";
 import Pagos from "./Modulos/Pagos";
+
 function Cajero() {
   const ubicacion = useLocation();
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
   };
+
   return (
     <>
       <div className="layout">
         {/*Barra de menú*/}
-        <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
+        <aside id="sidebar" className="d-flex flex-column p-3 text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
               href="index.html"
@@ -49,12 +51,12 @@ function Cajero() {
             </li>
           </ul>
         </aside>
+
         {/*Espacio principal*/}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
             {/*Barra superior*/}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
-              </div>
               <div className="vr mx-auto"></div>
               {/*Avatar*/}
               <div className="action">
@@ -79,6 +81,7 @@ function Cajero() {
               </div>
             </div>
           </header>
+
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>
@@ -91,4 +94,5 @@ function Cajero() {
     </>
   );
 }
+
 export default Cajero;

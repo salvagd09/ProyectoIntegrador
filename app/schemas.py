@@ -38,6 +38,15 @@ class AgregarEmpleado(BaseModel):
     rol:int
     telefono:str
     correo:str
-    nombreUs:Optional[str]
-    contrasenaUs:Optional[str]
-    PIN:Optional[str]
+    nombreUs:Optional[str]=None
+    contrasenaUs:Optional[str]=None
+    PIN:Optional[str]=None
+class EditarEmpleado(BaseModel):
+    nombres:Optional[str]=None
+    apellidos:Optional[str]=None
+    rol:Optional[int] = None
+    telefono:Optional[str]=None
+    correo:Optional[str]=None
+    nombreUs:Optional[str]=None
+    contrasenaUs:Optional[str]=None
+    PIN:Optional[str]=None

@@ -24,17 +24,17 @@ def MostrarEmpleados(db:Session=Depends(get_db)):
             "correo_electronico":empleado.email
         })
     return mostrar_empleados
-@router.get("/agregar")
+@router.post("/agregar")
 def AgregarEmpleado(data:schemas.AgregarEmpleado,db: Session=Depends(get_db)):
     nuevo_empleado=models.Empleado(
-        nombres=data.nombres,
-        apellidos=data.apellidos,
+        nombre=data.nombres,
+        apellido=data.apellidos,
         rol_id=data.rol,
-        nombreUs=data.nombreUs,
+        username=data.nombreUs,
         contrasena_hash=data.contrasenaUs,
         pin_code_hash=data.PIN,
         telefono=data.telefono,
-        correo=data.correo
+        email=data.correo
     )
     db.add(nuevo_empleado)
     db.commit()
@@ -45,5 +45,34 @@ def AgregarEmpleado(data:schemas.AgregarEmpleado,db: Session=Depends(get_db)):
         "apellido": nuevo_empleado.apellido,
         "rol":nuevo_empleado.rol_id,
         "telefono":nuevo_empleado.telefono,
-        "correo":nuevo_empleado.correo
+        "correo":nuevo_empleado.email
     }
+@router.put("/editar/{id}")
+def EditarEmpleado(id:int,data:schemas.EditarEmpleado,db:Session=Depends(get_db)):
+    empleado=db.query(models.Empleado).filter(models.Empleado.id==id).first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    campos_mapeo = {
+        "nombres": "nombre",
+        "apellidos": "apellido",
+        "correo": "email",
+        "rol": "rol_id",
+        "telefono": "telefono",
+        "nombreUs": "username",
+        "contrasenaUs": "contrasena_hash",
+        "PIN": "pin_code_hash",
+    }
+    for campo,valor in data.dict(exclude_unset=True).items():
+          if campo in campos_mapeo:
+            setattr(empleado, campos_mapeo[campo], valor)
+    db.commit()
+    db.refresh(empleado)
+    return empleado
+@router.delete("/eliminar/{id}")
+def eliminar_empleado(id: int, db: Session = Depends(get_db)):
+    empleado = db.query(models.Empleado).filter(models.Empleado.id == id).first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    db.delete(empleado)
+    db.commit()
+    return {"mensaje": "Empleado eliminado correctamente"}

@@ -36,13 +36,86 @@ function Usuario() {
     setCorreoUsuarioE(usuario.correo_electronico || "");
     setTelefonoE(usuario.telefono || "");
   };
-  function agregarUsuario() {}
   useEffect(() => {
     fetch("http://127.0.0.1:8000/empleados/")
       .then((res) => res.json())
       .then((data) => setUsuarios(data))
       .catch((err) => console.log(err));
-  });
+  }, []);
+  async function AgregarUsuario() {
+    const nuevoUsuario = {
+      nombres: nombreUsuario,
+      apellidos: apellidosUsuario,
+      rol: Number(rolUsuario),
+      telefono: telefono,
+      correo: correoUsuario,
+      nombreUs: username || null,
+      contrasenaUs: contrasena || null,
+      PIN: pin || null,
+    };
+    try {
+      const respuesta = await fetch("http://127.0.0.1:8000/empleados/agregar", {
+        method: "POST",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify(nuevoUsuario),
+      });
+      if (!respuesta.ok) throw new Error("Error al agregar usuario");
+      const usuarioCreado = await respuesta.json();
+      setUsuarios([...usuarios, usuarioCreado]);
+      alert("El usuario fue creado correctamente");
+    } catch (error) {
+      console.error("Error en la conexión", error);
+    }
+  }
+  async function EditarUsuario() {
+    if (!usuarioSeleccionado) return;
+    const datosActualizados = {
+      nombres: nombreUsuarioE,
+      apellidos: apellidosUsuarioE,
+      rol: parseInt(rolUsuarioE),
+      telefono: telefonoE,
+      correo: correoUsuarioE,
+      nombreUs: usernameE,
+      contrasenaUs: contrasenaE,
+      PIN: pinE,
+    };
+    try {
+      const respuesta = await fetch(
+        `http://127.0.0.1:8000/empleados/editar/${usuarioSeleccionado.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-type": "application/json" },
+          body: JSON.stringify(datosActualizados),
+        }
+      );
+      if (!respuesta.ok) return alert("No se pudo editar el usuario.");
+      const usuarioEditado = await respuesta.json();
+      setUsuarios((prevUsuarios) =>
+        prevUsuarios.map((u) =>
+          u.id === usuarioEditado.id ? usuarioEditado : u
+        )
+      );
+      alert("Usuario editado correctamente");
+    } catch (error) {
+      console.error("Hubo un error en la conexión:", error);
+    }
+  }
+  async function EliminarUsuario(id) {
+    try {
+      const eliminacion = await fetch(
+        `http://127.0.0.1:8000/empleados/eliminar/${usuarioSeleccionado.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (!eliminacion.ok) return alert("Error al eliminar el usuario");
+      const mensajeEliminacion = await eliminacion.json();
+      alert(mensajeEliminacion.mensaje);
+      setUsuarios(usuarios.filter((usuario) => usuario.id !== id));
+    } catch (error) {
+      console.error("Hubo un error en la conexión", error);
+    }
+  }
   const usuariosVisibles = usuarios;
   return (
     <>
@@ -101,6 +174,7 @@ function Usuario() {
                         data-bs-toggle="modal"
                         data-bs-target="#exampleModal3"
                         data-bs-whatever="@mdo"
+                        onClick={() => setUsuarioSeleccionado(usuario)}
                       >
                         Eliminar usuario
                       </button>
@@ -165,7 +239,7 @@ function Usuario() {
                       <option value="3">Caja</option>
                       <option value="4">Admin</option>
                     </select>
-                    {(rolUsuario === 1 || rolUsuario === 3) && (
+                    {(rolUsuario === 4 || rolUsuario === 3) && (
                       <>
                         <label
                           htmlFor="recipient-name"
@@ -193,11 +267,12 @@ function Usuario() {
                         />{" "}
                       </>
                     )}
-                    {rolUsuario === "4" && (
+                    {rolUsuario === 1 && (
                       <>
                         <label>Número de PIN:</label>
                         <input
                           type="text"
+                          maxLength="4"
                           className="form-control mx-auto"
                           value={pin}
                           onChange={(e) => setPIN(e.target.value)}
@@ -214,6 +289,7 @@ function Usuario() {
                     <label>Ingresa el telefono del usuario:</label>
                     <input
                       type="text"
+                      maxLength="9"
                       className="form-control mx-auto"
                       value={telefono}
                       onChange={(e) => setTelefono(e.target.value)}
@@ -225,7 +301,7 @@ function Usuario() {
                 <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={agregarUsuario}
+                  onClick={AgregarUsuario}
                 >
                   Agregar usuario
                 </button>
@@ -287,7 +363,7 @@ function Usuario() {
                       <option value="3">Caja</option>
                       <option value="4">Admin</option>
                     </select>
-                    {(rolUsuarioE === 1 || rolUsuarioE === 3) && (
+                    {(rolUsuarioE === 4 || rolUsuarioE === 3) && (
                       <>
                         <label
                           htmlFor="recipient-name"
@@ -315,11 +391,12 @@ function Usuario() {
                         />{" "}
                       </>
                     )}
-                    {rolUsuario === 4 && (
+                    {rolUsuarioE === 1 && (
                       <>
                         <label>Número de PIN:</label>
                         <input
                           type="text"
+                          maxLength="4"
                           className="form-control mx-auto"
                           value={pinE}
                           onChange={(e) => setPINE(e.target.value)}
@@ -336,6 +413,7 @@ function Usuario() {
                     <label>Ingresa el telefono del usuario:</label>
                     <input
                       type="text"
+                      maxLength="9"
                       className="form-control mx-auto"
                       value={telefonoE}
                       onChange={(e) => setTelefonoE(e.target.value)}
@@ -347,7 +425,7 @@ function Usuario() {
                 <button
                   type="button"
                   className="btn btn-warning"
-                  onClick={agregarUsuario}
+                  onClick={EditarUsuario}
                 >
                   EditarUsuario
                 </button>
@@ -370,10 +448,19 @@ function Usuario() {
                 <label>
                   ¿Estás seguro de que deseas eliminar este Usuario?
                 </label>
-                <button type="submit" className="btn btn-danger mx-1">
+                <button
+                  type="submit"
+                  className="btn btn-danger mx-1"
+                  onClick={() => EliminarUsuario(usuarioSeleccionado?.id)}
+                >
                   Sí
                 </button>
-                <button className="btn btn-success mx-1">No</button>
+                <button
+                  className="btn btn-success mx-1"
+                  data-bs-dismiss="modal"
+                >
+                  No
+                </button>
               </div>
             </div>
           </div>

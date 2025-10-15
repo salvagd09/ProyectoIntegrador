@@ -29,7 +29,7 @@ def login_pin(data: schemas.LoginPin, db: Session = Depends(get_db)):
     mozos = db.query(models.Empleado).filter(models.Empleado.rol_id == 1).all()
     for emp in mozos:
         if data.pin_code== emp.pin_code_hash:
-            return {"rol_id": "mozo", "id": emp.id}
+            return {"rol_id": emp.rol_id, "id": emp.id}
     raise HTTPException(status_code=401, detail="PIN inválido")
 
 

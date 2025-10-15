@@ -1,19 +1,28 @@
 import mesero from "../assets/mesero.png";
-import "./tarjetas.css";
 import "./VentanaC.css";
 import comida from "../assets/comida.png";
 import Mesas from "./Modulos/Mesas";
 import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 function Mesero() {
   const ubicacion = useLocation();
+  const navigate = useNavigate();
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
+  };
+  const retroceder = () => {
+    navigate("/Login");
   };
   return (
     <>
       <div className="layout">
-          {/*Barra de menú*/}
+        {/*El sidebar (SIN JS)*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
@@ -57,8 +66,35 @@ function Mesero() {
             </li>
           </ul>
         </aside>
-        {/*Apartado principal*/}
+        {/*Columna derecha */}
         <div className="main">
+          <header className="app-header d-flex align-items-center shadow">
+            {/*Encabezado del lado principal*/}
+            <div className="header-inner d-flex align-items-center gap-2 ms-auto">
+              {/*Avatar*/}
+              <div className="action">
+                <img
+                  src={mesero}
+                  alt="Usuario"
+                  className="rounded-circle usuario2"
+                />
+              </div>
+              <div className="vr mx-auto"></div>
+              {/*Salir */}
+              <div className="action">
+                <form>
+                  <button
+                    type="submit"
+                    onClick={retroceder}
+                    className="btn-icon"
+                    aria-label="Cerrar sesión"
+                  >
+                    <i className="fa-solid fa-right-from-bracket"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </header>
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>

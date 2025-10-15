@@ -1,21 +1,38 @@
 import comida from "../assets/comida.png";
-import "./tarjetas.css";
 import "./VentanaC.css";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import cajero from "../assets/cajero.png";
 import Pagos from "./Modulos/Pagos";
 
 function Cajero() {
+  const navigate = useNavigate();
   const ubicacion = useLocation();
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
   };
+<<<<<<< HEAD
 
   return (
     <>
       <div className="layout">
         {/*Barra de menú*/}
         <aside id="sidebar" className="d-flex flex-column p-3 text-dark">
+=======
+  const retroceder = () => {
+    navigate("/Login");
+  };
+  return (
+    <>
+      <div className="layout">
+        {/*El sidebar (SIN JS)*/}
+        <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
+>>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
           <div className="d-flex align-items-center justify-content-center">
             <a
               href="index.html"
@@ -51,12 +68,27 @@ function Cajero() {
             </li>
           </ul>
         </aside>
+<<<<<<< HEAD
 
         {/*Espacio principal*/}
+=======
+        {/*Columna derecha */}
+>>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
-            {/*Barra superior*/}
+            {/*Si quieres algo a la izquierda, iría aquí 
+                 Bloque de acciones al lado derecho*/}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
+<<<<<<< HEAD
+=======
+              {/*Notificaciones*/}
+              <div className="action">
+                <button className="btn-icon" aria-label="Notificaciones">
+                  <i className="fa-solid fa-bell"></i>
+                  <span className="badge-dot"></span>
+                </button>
+              </div>
+>>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
               <div className="vr mx-auto"></div>
               {/*Avatar*/}
               <div className="action">
@@ -72,6 +104,7 @@ function Cajero() {
                 <form>
                   <button
                     type="submit"
+                    onClick={retroceder}
                     className="btn-icon"
                     aria-label="Cerrar sesión"
                   >

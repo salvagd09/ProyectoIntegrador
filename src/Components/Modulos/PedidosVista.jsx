@@ -1,4 +1,3 @@
-// PedidosVista.jsx
 import React, { useState } from "react";
 import "./tarjetasPedidos.css";
 
@@ -11,8 +10,8 @@ const pedidosEjemplo = [
     hora: "20:00",
     items: [
       { nombre: "CEVICHE MIXTO", precio: 16.5 },
-      { nombre: "LECHE DE TIGRE", precio: 9.0 }
-    ]
+      { nombre: "LECHE DE TIGRE", precio: 9.0 },
+    ],
   },
   {
     id: 5,
@@ -22,8 +21,8 @@ const pedidosEjemplo = [
     hora: "19:30",
     items: [
       { nombre: "PARIHUELA", precio: 24.5 },
-      { nombre: "LANGOSTINOS", precio: 12.5 }
-    ]
+      { nombre: "LANGOSTINOS", precio: 12.5 },
+    ],
   },
   {
     id: 3,
@@ -31,7 +30,7 @@ const pedidosEjemplo = [
     cliente: "Carlos",
     estado: "Pendiente",
     hora: "19:45",
-    items: [{ nombre: "CHILCANO", precio: 20.0 }]
+    items: [{ nombre: "CHILCANO", precio: 20.0 }],
   },
   {
     id: 12,
@@ -41,9 +40,9 @@ const pedidosEjemplo = [
     hora: "19:15",
     items: [
       { nombre: "JALEA MIXTA", precio: 36.0 },
-      { nombre: "VINO TINTO", precio: 15.0 }
-    ]
-  }
+      { nombre: "VINO TINTO", precio: 15.0 },
+    ],
+  },
 ];
 
 const calcularTotal = (items) =>

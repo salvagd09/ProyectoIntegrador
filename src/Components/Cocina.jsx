@@ -1,14 +1,23 @@
 import comida from "../assets/comida.png";
 import cocinero from "../assets/cocinero.png";
-import "./tarjetas.css";
 import "./VentanaC.css";
 import Pedidos_Cocinero from "./Modulos/Pedidos_Cocinero";
 import Insumos from "./Modulos/Insumos";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 function Cocinero() {
   const ubicacion = useLocation();
+  const navigate = useNavigate();
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
+  };
+  const retroceder = () => {
+    navigate("/Login");
   };
   return (
     <>
@@ -57,8 +66,35 @@ function Cocinero() {
             </li>
           </ul>
         </aside>
-        {/*Espacio principañl */}
+        {/*Columna derecha */}
         <div className="main">
+          <header className="app-header d-flex align-items-center shadow">
+            {/*Encabezado del lado principal*/}
+            <div className="header-inner d-flex align-items-center gap-2 ms-auto">
+              {/*Avatar*/}
+              <div className="action">
+                <img
+                  src={cocinero}
+                  alt="Usuario"
+                  className="rounded-circle usuario2"
+                />
+              </div>
+              <div className="vr mx-auto"></div>
+              {/*Salir */}
+              <div className="action">
+                <form>
+                  <button
+                    type="submit"
+                    className="btn-icon"
+                    onClick={retroceder}
+                    aria-label="Cerrar sesión"
+                  >
+                    <i className="fa-solid fa-right-from-bracket"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </header>
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>

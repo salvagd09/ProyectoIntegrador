@@ -9,12 +9,21 @@ import {
 } from "react-router-dom";
 import cajero from "../assets/cajero.png";
 import Pagos from "./Modulos/Pagos";
+
 function Cajero() {
   const navigate = useNavigate();
   const ubicacion = useLocation();
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
   };
+<<<<<<< HEAD
+
+  return (
+    <>
+      <div className="layout">
+        {/*Barra de menú*/}
+        <aside id="sidebar" className="d-flex flex-column p-3 text-dark">
+=======
   const retroceder = () => {
     navigate("/Login");
   };
@@ -23,6 +32,7 @@ function Cajero() {
       <div className="layout">
         {/*El sidebar (SIN JS)*/}
         <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
+>>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
           <div className="d-flex align-items-center justify-content-center">
             <a
               href="index.html"
@@ -58,12 +68,19 @@ function Cajero() {
             </li>
           </ul>
         </aside>
+<<<<<<< HEAD
+
+        {/*Espacio principal*/}
+=======
         {/*Columna derecha */}
+>>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
             {/*Si quieres algo a la izquierda, iría aquí 
                  Bloque de acciones al lado derecho*/}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
+<<<<<<< HEAD
+=======
               {/*Notificaciones*/}
               <div className="action">
                 <button className="btn-icon" aria-label="Notificaciones">
@@ -71,6 +88,7 @@ function Cajero() {
                   <span className="badge-dot"></span>
                 </button>
               </div>
+>>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
               <div className="vr mx-auto"></div>
               {/*Avatar*/}
               <div className="action">
@@ -96,6 +114,7 @@ function Cajero() {
               </div>
             </div>
           </header>
+
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>
@@ -108,4 +127,5 @@ function Cajero() {
     </>
   );
 }
+
 export default Cajero;

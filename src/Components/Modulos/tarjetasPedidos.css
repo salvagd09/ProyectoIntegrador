@@ -17,6 +17,21 @@
   align-items: center;
 }
 
+.btn-crear {
+  background: #fff;
+  color: #333;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btn-crear:hover {
+  background: #f0f0f0;
+}
+
 /* ======== GRID DE CARDS ======== */
 .pedidos-list {
   display: grid;
@@ -93,4 +108,133 @@
   color: #aaa;
   font-size: 0.9em;
   padding: 15px 5px;
+}
+
+/* ======== MODAL CREAR PEDIDO ======== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 400px;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  position: relative;
+  animation: modalFadeIn 0.3s ease;
+}
+
+.modal-content h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 1.4em;
+}
+
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-content label {
+  font-size: 0.9em;
+  color: #444;
+}
+
+.modal-content input,
+.modal-content select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.9em;
+  transition: border-color 0.2s;
+}
+
+.modal-content input:focus,
+.modal-content select:focus {
+  border-color: #a7c957;
+  outline: none;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.btn-cancelar,
+.btn-crear,
+.btn-guardar {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cancelar {
+  background: #ccc;
+  color: #333;
+  margin-right: 10px;
+}
+
+.btn-cancelar:hover {
+  background: #b5b5b5;
+}
+
+.btn-crear,
+.btn-guardar {
+  background: #a7c957;
+  color: white;
+}
+
+.btn-crear:hover,
+.btn-guardar:hover {
+  background: #91b650;
+}
+
+/* Encabezado del modal */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.btn-cerrar-modal {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  color: #666;
+}
+
+.btn-cerrar-modal:hover {
+  color: #a7c957;
+}
+
+/* Animación suave */
+@keyframes modalFadeIn {
+  from {
+    transform: translateY(-15px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

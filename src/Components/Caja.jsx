@@ -13,26 +13,20 @@ import Pagos from "./Modulos/Pagos";
 function Cajero() {
   const navigate = useNavigate();
   const ubicacion = useLocation();
+
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
   };
-<<<<<<< HEAD
+
+  const retroceder = () => {
+    navigate("/Login");
+  };
 
   return (
     <>
       <div className="layout">
-        {/*Barra de menú*/}
+        {/* Barra de menú */}
         <aside id="sidebar" className="d-flex flex-column p-3 text-dark">
-=======
-  const retroceder = () => {
-    navigate("/Login");
-  };
-  return (
-    <>
-      <div className="layout">
-        {/*El sidebar (SIN JS)*/}
-        <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
->>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
           <div className="d-flex align-items-center justify-content-center">
             <a
               href="index.html"
@@ -47,7 +41,8 @@ function Cajero() {
               <h3 className="m-0">GestaFood</h3>
             </a>
           </div>
-          {/*Perfil de usuario */}
+
+          {/* Perfil de usuario */}
           <div className="text-center mb-0">
             <img
               src={cajero}
@@ -57,6 +52,7 @@ function Cajero() {
             <h6 className="m-0 text-white">Salvador Goicochea</h6>
             <h6 className="text-white">Área de caja</h6>
           </div>
+
           <ul className="nav nav-pills flex-column mb-0">
             <li>
               <Link
@@ -68,29 +64,24 @@ function Cajero() {
             </li>
           </ul>
         </aside>
-<<<<<<< HEAD
 
-        {/*Espacio principal*/}
-=======
-        {/*Columna derecha */}
->>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
+        {/* Columna derecha */}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
-            {/*Si quieres algo a la izquierda, iría aquí 
-                 Bloque de acciones al lado derecho*/}
+            {/* Si quieres algo a la izquierda, iría aquí */}
+            {/* Bloque de acciones al lado derecho */}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
-<<<<<<< HEAD
-=======
-              {/*Notificaciones*/}
+              {/* Notificaciones */}
               <div className="action">
                 <button className="btn-icon" aria-label="Notificaciones">
                   <i className="fa-solid fa-bell"></i>
                   <span className="badge-dot"></span>
                 </button>
               </div>
->>>>>>> 6390e9d489cbc81deaab72e2fdff705e2d33c828
+
               <div className="vr mx-auto"></div>
-              {/*Avatar*/}
+
+              {/* Avatar */}
               <div className="action">
                 <img
                   src={cajero}
@@ -98,8 +89,10 @@ function Cajero() {
                   className="rounded-circle usuario2"
                 />
               </div>
+
               <div className="vr mx-auto"></div>
-              {/*Salir */}
+
+              {/* Salir */}
               <div className="action">
                 <form>
                   <button

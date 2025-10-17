@@ -65,7 +65,7 @@ function Cajero() {
           </ul>
         </aside>
 
-        {/* Columna derecha */}
+        {/* Columna derecha / Espacio principal */}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
             {/* Si quieres algo a la izquierda, iría aquí */}

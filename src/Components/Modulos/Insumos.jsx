@@ -19,7 +19,8 @@ function Insumos() {
     return path.includes("/cocina/") ? "cocina" : "admin";
   };
   const [rol] = useState(obtenerRol());
-  const [insumos, setInsumos] = useState([
+  const [insumos, setInsumos] = useState([])
+  {/*const [insumos, setInsumos] = useState([
     {
       id: 1,
       nombre: "Pescado",
@@ -100,26 +101,19 @@ function Insumos() {
       minimo: 2,
       perecible: true,
     },
-  ]);
+  ]);*/}
 
   const [showModal, setShowModal] = useState(false);
   const [insumoEditando, setInsumoEditando] = useState(null);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
   const [RegistrarMerma, setRegistrarMerma] = useState(null);
-  // Cargar datos del localStorage al iniciar
+  // Cargar datos de la base de datos
   useEffect(() => {
-    const datosGuardados = localStorage.getItem("insumosCevicheria");
-    if (datosGuardados) {
-      setInsumos(JSON.parse(datosGuardados));
-    }
-  }, []);
-
-  // Guardar en localStorage cuando cambien los insumos
-  useEffect(() => {
-    localStorage.setItem("insumosCevicheria", JSON.stringify(insumos));
-  }, [insumos]);
-
+    fetch("http://127.0.0.1:8000/inventario/")
+    .then((res)=>res.json())
+    .then((data) => setInsumos(data))
+    .catch((err) => console.error(err))});
   // Funcionalidades CRUD - Solo admin
   const agregarInsumo = (nuevoInsumo) => {
     const insumoConId = { ...nuevoInsumo, id: Date.now() };
@@ -325,7 +319,7 @@ function Insumos() {
               </tr>
             </thead>
             <tbody>
-              {insumosFiltrados.map((insumo) => {
+              {insumos.map((insumo) => {
                 const estaBajoStock = insumo.cantidad <= insumo.minimo;
                 return (
                   <tr
@@ -369,7 +363,7 @@ function Insumos() {
                     </td>
                     <td>
                       <strong>
-                        {insumo.perecible == true
+                        {insumo.perecible
                           ? "No perecible"
                           : "Perecible"}
                       </strong>

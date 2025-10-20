@@ -17,11 +17,11 @@ def Mostrar_inventario(db:Session=Depends(get_db)):
         mostrar_ingredientes.append({
             "id": ingrediente.id,
             "nombre":ingrediente.nombre,
-            "cantidad":ingrediente.cantidad,
-            "min":ingrediente.stock,
+            "cantidad":ingrediente.cantidad_actual,
+            "minimo":ingrediente.stock_minimo,
             "categoria":ingrediente.descripcion,
             "precio":ingrediente.precio,
-            "unidad_medida":ingrediente.unidad_medida,
-            "perecible":ingrediente.es_Perecible
+            "unidad_medida":ingrediente.unidad_de_medida,
+            "perecible":ingrediente.es_perecible
         })
     return mostrar_ingredientes

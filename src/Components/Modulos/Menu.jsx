@@ -3,12 +3,12 @@ import "./CSS/Menu.css";
 function Menu() {
   // Estado para controlar qué platillos están activos o desactivados
 const[platillos,setPlatillos]=useState([])
-useEffect(() => {
+  useEffect(() => {
     fetch("http://127.0.0.1:8000/menu/")
       .then((res) => res.json())
       .then((data) => setPlatillos(data))
-      .catch((err) => console.error(err));
-}, []);
+      .catch((err) => console.error(err))
+  }, [])
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(""); // Para agregar o editar
   const [platilloEditando, setPlatilloEditando] = useState(null);

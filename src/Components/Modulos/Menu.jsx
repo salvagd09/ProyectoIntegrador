@@ -1,90 +1,51 @@
-import { useState } from "react";
+import { useState,useEffect} from "react";
 import "./CSS/Menu.css";
 function Menu() {
   // Estado para controlar qué platillos están activos o desactivados
-  const [platillos, setPlatillos] = useState([
-    {
-      id: 1,
-      nombre: "Ceviche de Pota",
-      descripcion: "Ceviche fresco de pota con limón, cebolla y ají limo",
-      precio: 25.0,
-      categoria: "Ceviches",
-      disponible: true,
-      ingredientes: ["Pota", "Limón", "Camote", "Ají limo"],
-    },
-    {
-      id: 2,
-      nombre: "Tiradito de Corvina",
-      descripcion: "Finas láminas de corvina en salsa de ají amarillo",
-      precio: 32.0,
-      categoria: "Tiraditos",
-      disponible: true,
-      ingredientes: ["Corvina", "Ají amarillo", "Limón"],
-    },
-    {
-      id: 3,
-      nombre: "Chicharrón de Pescado",
-      descripcion: "Pescado frito crocante acompañado de yuca y salsa criolla",
-      precio: 28.0,
-      categoria: "Chicharrones",
-      disponible: false,
-      ingredientes: ["Pescado", "Yuca", "Cebolla", "Tomate", "Limón"],
-    },
-    {
-      id: 4,
-      nombre: "Sudado de Pescado",
-      descripcion: "Pescado cocido al vapor con cebolla, tomate y especias",
-      precio: 30.0,
-      categoria: "Sudados",
-      disponible: true,
-      ingredientes: ["Pescado", "Cebolla", "Tomate", "Ají panca", "Cilantro"],
-    },
-    {
-      id: 5,
-      nombre: "Chicha Morada",
-      descripcion: "Bebida tradicional peruana a base de maíz morado",
-      precio: 8.0,
-      categoria: "Bebidas sin alcohol",
-      disponible: true,
-      ingredientes: [
-        "Maíz morado",
-        "Piña",
-        "Manzana",
-        "Canela",
-        "Clavo de olor",
-      ],
-    },
-    {
-      id: 6,
-      nombre: "Pisco Sour",
-      descripcion: "Coctel emblemático del Perú a base de pisco y limón",
-      precio: 18.0,
-      categoria: "Bebidas con alcohol",
-      disponible: true,
-      ingredientes: [
-        "Pisco",
-        "Limón",
-        "Clara de huevo",
-        "Azúcar",
-        "Hielo",
-        "Amargo de angostura",
-      ],
-    },
-  ]);
-
+const[platillos,setPlatillos]=useState([])
+useEffect(() => {
+    fetch("http://127.0.0.1:8000/menu/")
+      .then((res) => res.json())
+      .then((data) => setPlatillos(data))
+      .catch((err) => console.error(err));
+}, []);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(""); // Para agregar o editar
   const [platilloEditando, setPlatilloEditando] = useState(null);
-
+  const [platilloActual,setPlatilloActual]=useState(true)
+  // Actualizar un ingrediente específico
+  const actualizarIngrediente = (index, campo, valor) => {
+    const nuevaReceta = form.receta.map((item, i) =>
+      i === index ? { ...item, [campo]: valor } : item
+    );
+    setForm({ ...form, receta: nuevaReceta });
+  };
   // Alternar la disponibilidad de los platillos
-  const toggleDisponibilidad = (id) => {
+  const toggleDisponibilidad = async(id,productoActual) => {
+    try{
+      const response=await fetch(`http://127.0.0.1:8000/menu/deshabilitar/${id}`,{
+        method:'PUT',
+        headers:{
+          'Content-Type':'application/json'
+        },
+       body: JSON.stringify({
+        producto_activo: !platilloActual.producto_activo  // ⭐ Enviar el nuevo estado
+      })
+      })
+    const data = await response.json();
     setPlatillos(
       platillos.map((platillo) =>
         platillo.id === id
-          ? { ...platillo, disponible: !platillo.disponible }
+          ? { ...platillo, producto_activo: !productoActual}
           : platillo
       )
-    );
+    )
+    alert(data.mensaje)
+    ;}
+    catch(error){
+      console.log("Error interno:",error)
+      alert("Error al actualizar el estado del platillo.")
+    }
   };
 
   const [form, setForm] = useState({
@@ -92,8 +53,14 @@ function Menu() {
     descripcion: "",
     precio: "",
     categoria: "",
+    receta: [],
   });
-
+  const agregarIngrediente = () => {
+    setForm({
+      ...form,
+      receta: [...form.receta, { ingrediente_id: "", cantidad: "" }],
+    });
+  };
   // Abrir el modal agregar
   const abrirModalAgregar = () => {
     setModalType("agregar");
@@ -102,6 +69,7 @@ function Menu() {
       descripcion: "",
       precio: "",
       categoria: "",
+      receta: [] 
     });
     setShowModal(true);
   };
@@ -124,14 +92,6 @@ function Menu() {
     setShowModal(false);
     setPlatilloEditando(null);
   };
-
-  // Eliminar un platillo
-  const eliminarPlatillo = (id) => {
-    if (window.confirm("¿Está seguro que desea eliminar este platillo?")) {
-      setPlatillos(platillos.filter((platillo) => platillo.id !== id));
-    }
-  };
-
   // Manejar cambios en el formulario
   const handleChange = (e) => {
     setForm({ ...form, [e.target.id]: e.target.value });
@@ -205,7 +165,7 @@ function Menu() {
               <div key={platillo.id} className="col-md-4 mb-4">
                 <div
                   className={`card h-100 bg-white ${
-                    !platillo.disponible ? "card-desactivada" : ""
+                    !platillo.producto_activo? "card-desactivada" : ""
                   }`}
                 >
                   <div className="card-body ">
@@ -213,10 +173,10 @@ function Menu() {
                       <h5 className="card-title">{platillo.nombre}</h5>
                       <span
                         className={`badge ${
-                          platillo.disponible ? "bg-success" : "bg-secondary"
+                          platillo.producto_activo ? "bg-success" : "bg-secondary"
                         }`}
                       >
-                        {platillo.disponible ? "Disponible" : "No disponible"}
+                        {platillo.producto_activo ? "Disponible" : "No disponible"}
                       </span>
                     </div>
 
@@ -232,7 +192,7 @@ function Menu() {
                         {platillo.ingredientes.map((ingrediente, index) => (
                           <li key={index} className="d-inline-block me-2">
                             <span className="badge bg-light text-dark">
-                              {ingrediente}
+                              {ingrediente.nombre}
                             </span>
                           </li>
                         ))}
@@ -241,30 +201,24 @@ function Menu() {
 
                     <div className="mb-3">
                       <h5 className="text-primary">
-                        S/ {platillo.precio.toFixed(2)}
+                        Precio:S/ {platillo.precio.toFixed(2)}
                       </h5>
                     </div>
 
                     <div className="card-btn-row d-flex justify-content-between">
                       <button
                         className={`btn mx-2 ${
-                          platillo.disponible ? "btn-warning" : "btn-success"
+                          platillo.producto_activo ? "btn-warning" : "btn-success"
                         } btn-sm btn-toggle`}
-                        onClick={() => toggleDisponibilidad(platillo.id)}
+                        onClick={() => toggleDisponibilidad(platillo.id,platillo.producto_activo)}
                       >
-                        {platillo.disponible ? "Desactivar" : "Activar"}
+                        {platillo.producto_activo ? "Desactivar" : "Activar"}
                       </button>
                       <button
                         className="btn btn-outline-primary btn-sm btn-edit mx-1"
                         onClick={() => abrirModalEditar(platillo)}
                       >
                         <i className="fa-solid fa-pen"></i>
-                      </button>
-                      <button
-                        className="btn btn-outline-danger btn-sm btn-delete mx-1"
-                        onClick={() => eliminarPlatillo(platillo.id)}
-                      >
-                        <i className="fa-solid fa-trash"></i>
                       </button>
                     </div>
                   </div>
@@ -350,6 +304,82 @@ function Menu() {
                       Bebidas con alcohol
                     </option>
                   </select>
+                </div>
+                {/* Sección de Ingredientes - Agregar antes del botón de guardar */}
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <label className="form-label fw-bold">
+                      Ingredientes
+                    </label>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-success"
+                      onClick={agregarIngrediente}
+                    >
+                      + Agregar Ingrediente
+                    </button>
+                  </div>
+
+                  {form.receta.length === 0 ? (
+                    <p className="text-muted small">
+                      No hay ingredientes agregados
+                    </p>
+                  ) : (
+                    <div className="border rounded p-2">
+                      {form.receta.map((item, index) => (
+                        <div
+                          key={index}
+                          className="row mb-2 align-items-center"
+                        >
+                          <div className="col-6">
+                            <select
+                              className="form-select form-select-sm"
+                              value={item.ingrediente_id}
+                              onChange={(e) =>
+                                actualizarIngrediente(
+                                  index,
+                                  "ingrediente_id",
+                                  parseInt(e.target.value)
+                                )
+                              }
+                            >
+                              <option value="">Selecciona ingrediente</option>
+                              {/* Aquí cargarás los ingredientes desde tu BD */}
+                              <option value="1">Pota</option>
+                              <option value="2">Limón</option>
+                              <option value="3">Corvina</option>
+                              {/* ...más ingredientes */}
+                            </select>
+                          </div>
+                          <div className="col-4">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              placeholder="Cantidad"
+                              step="0.01"
+                              value={item.cantidad}
+                              onChange={(e) =>
+                                actualizarIngrediente(
+                                  index,
+                                  "cantidad",
+                                  parseFloat(e.target.value)
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="col-2">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-danger"
+                              onClick={() => eliminarIngrediente(index)}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"

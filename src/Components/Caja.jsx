@@ -9,20 +9,24 @@ import {
 } from "react-router-dom";
 import cajero from "../assets/cajero.png";
 import Pagos from "./Modulos/Pagos";
+
 function Cajero() {
   const navigate = useNavigate();
   const ubicacion = useLocation();
+
   const estaActivo = (ruta) => {
     return ubicacion.pathname === ruta ? "active" : "";
   };
+
   const retroceder = () => {
     navigate("/Login");
   };
+
   return (
     <>
       <div className="layout">
-        {/*El sidebar (SIN JS)*/}
-        <aside id="sidebar" className="d-flex flex-column p-3  text-dark">
+        {/* Barra de menú */}
+        <aside id="sidebar" className="d-flex flex-column p-3 text-dark">
           <div className="d-flex align-items-center justify-content-center">
             <a
               href="index.html"
@@ -37,7 +41,8 @@ function Cajero() {
               <h3 className="m-0">GestaFood</h3>
             </a>
           </div>
-          {/*Perfil de usuario */}
+
+          {/* Perfil de usuario */}
           <div className="text-center mb-0">
             <img
               src={cajero}
@@ -47,6 +52,7 @@ function Cajero() {
             <h6 className="m-0 text-white">Salvador Goicochea</h6>
             <h6 className="text-white">Área de caja</h6>
           </div>
+
           <ul className="nav nav-pills flex-column mb-0">
             <li>
               <Link
@@ -58,21 +64,24 @@ function Cajero() {
             </li>
           </ul>
         </aside>
-        {/*Columna derecha */}
+
+        {/* Columna derecha / Espacio principal */}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
-            {/*Si quieres algo a la izquierda, iría aquí 
-                 Bloque de acciones al lado derecho*/}
+            {/* Si quieres algo a la izquierda, iría aquí */}
+            {/* Bloque de acciones al lado derecho */}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
-              {/*Notificaciones*/}
+              {/* Notificaciones */}
               <div className="action">
                 <button className="btn-icon" aria-label="Notificaciones">
                   <i className="fa-solid fa-bell"></i>
                   <span className="badge-dot"></span>
                 </button>
               </div>
+
               <div className="vr mx-auto"></div>
-              {/*Avatar*/}
+
+              {/* Avatar */}
               <div className="action">
                 <img
                   src={cajero}
@@ -80,8 +89,10 @@ function Cajero() {
                   className="rounded-circle usuario2"
                 />
               </div>
+
               <div className="vr mx-auto"></div>
-              {/*Salir */}
+
+              {/* Salir */}
               <div className="action">
                 <form>
                   <button
@@ -96,6 +107,7 @@ function Cajero() {
               </div>
             </div>
           </header>
+
           <main className="app-content">
             <div id="page-content-wrapper" className="p-4 flex-grow-1">
               <Routes>
@@ -108,4 +120,5 @@ function Cajero() {
     </>
   );
 }
+
 export default Cajero;

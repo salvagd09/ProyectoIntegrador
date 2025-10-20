@@ -17,21 +17,24 @@ class AInsumo(BaseModel):
     categoria: str
     unidad: str
     perecible:Optional[bool]=False
-class IngredienteBase(BaseModel):
-    id: int
-    nombre: str
+class IngredienteSimple(BaseModel):
+    nombre: str  
     class Config:
         from_attributes = True
-class ProductoBase(BaseModel):
+class ProductoConIngredientes(BaseModel):
     id: int
     nombre: str
     descripcion: Optional[str]
     precio: float
-    imagen_url: Optional[str]
+    producto_activo:bool
+    categoria: str  
+    ingredientes: List[IngredienteSimple] = []  
     class Config:
         from_attributes = True
-class ProductoConIngredientes(ProductoBase):
-    ingredientes: List[IngredienteBase] = []
+class HabilitarPlatillo(BaseModel):
+    producto_activo:bool
+    class Config:
+        from_attributes = True 
 class AgregarEmpleado(BaseModel):
     nombres:str
     apellidos:str

@@ -66,7 +66,7 @@ def EditarEmpleado(id:int,data:schemas.EditarEmpleado,db:Session=Depends(get_db)
     }
     for campo,valor in data.dict(exclude_unset=True).items():
           if campo in campos_mapeo:
-            if campo in ["nombreUs", "contrasenaUs", "PIN"] and (valor is None or valor == ""):
+            if campo in ["nombreUs", "contrasenaUs", "PIN","rol"] and (valor is None or valor == ""):
                 continue
             setattr(empleado, campos_mapeo[campo], valor)
     db.commit()

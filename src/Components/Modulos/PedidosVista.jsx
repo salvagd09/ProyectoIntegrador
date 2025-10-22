@@ -18,7 +18,7 @@ export default function Pedidos_Fisicos() {
       id: 5,
       mesa: "Mesa 5",
       cliente: "Juan Pérez",
-      estado: "En preparación",
+      estado: "Pendiente",
       hora: "19:30",
       items: [
         { nombre: "Pizza Margherita", precio: 24.5 },
@@ -29,7 +29,7 @@ export default function Pedidos_Fisicos() {
       id: 3,
       mesa: "Mesa 3",
       cliente: "Carlos López",
-      estado: "Listo",
+      estado: "Pendiente",
       hora: "19:45",
       items: [{ nombre: "Salmón Grillado", precio: 32.0 }],
     },
@@ -37,7 +37,7 @@ export default function Pedidos_Fisicos() {
       id: 12,
       mesa: "Mesa 12",
       cliente: "María García",
-      estado: "Servido",
+      estado: "Pendiente",
       hora: "19:15",
       items: [
         { nombre: "Pasta Carbonara", precio: 36.0 },
@@ -47,7 +47,6 @@ export default function Pedidos_Fisicos() {
   ]);
 
   const [showModal, setShowModal] = useState(false);
-
   const [nuevoPedido, setNuevoPedido] = useState({
     mesa: "",
     cliente: "",
@@ -55,6 +54,17 @@ export default function Pedidos_Fisicos() {
     bebida: "",
     total: "",
   });
+
+  // Cambiar estado a "En preparación"
+  const cambiarEstado = (id) => {
+    setPedidos((prev) =>
+      prev.map((p) =>
+        p.id === id && p.estado === "Pendiente"
+          ? { ...p, estado: "En preparación" }
+          : p
+      )
+    );
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -95,16 +105,20 @@ export default function Pedidos_Fisicos() {
 
   return (
     <div className="pedidos-container">
-      {/* ENCABEZADO */}
       <div className="pedidos-topbar">
         <h2>Gestión de Pedidos 🐟</h2>
+        <button className="btn-crear" onClick={() => setShowModal(true)}>
+          + Crear Pedido
+        </button>
       </div>
 
-      {/* LISTADO DE TARJETAS */}
       <div className="pedidos-list">
         {pedidos.length > 0 ? (
           pedidos.map((p) => (
-            <div key={p.id} className="pedido-card">
+            <div
+              key={p.id}
+              className={`pedido-card ${p.estado === "En preparación" ? "en-preparacion" : ""}`}
+            >
               <div className="pedido-top">
                 <div>
                   <div className="pedido-mesa">{p.mesa}</div>
@@ -127,6 +141,14 @@ export default function Pedidos_Fisicos() {
                   {p.estado} — {p.hora}
                 </small>
                 <strong>S/ {calcularTotal(p.items)}</strong>
+
+                <button
+                  className={`btn-estado ${p.estado === "Pendiente" ? "pendiente" : "preparacion"}`}
+                  onClick={() => cambiarEstado(p.id)}
+                  disabled={p.estado !== "Pendiente"}
+                >
+                  {p.estado}
+                </button>
               </div>
             </div>
           ))
@@ -135,7 +157,6 @@ export default function Pedidos_Fisicos() {
         )}
       </div>
 
-      {/* MODAL */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">

@@ -25,21 +25,22 @@
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-crear:hover {
   background: #f0f0f0;
+  transform: scale(1.05);
 }
 
-/* ======== GRID DE CARDS ======== */
+/* ======== GRID DE TARJETAS ======== */
 .pedidos-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
 }
 
-/* ======== CARDS ======== */
+/* ======== TARJETAS ======== */
 .pedido-card {
   background: #fafafa;
   border-radius: 10px;
@@ -53,15 +54,14 @@
   transform: translateY(-3px);
 }
 
-/* ======= NUEVO: Estilo destacado para "En preparación" ======= */
+/* Estilo para "En preparación" */
 .pedido-card.en-preparacion {
-  border: 2px solid #f4a261; /* borde más marcado */
-  background-color: #fff3e0; /* fondo diferente */
-  box-shadow: 0 4px 12px rgba(244, 162, 97, 0.4); /* sombra más visible */
+  border: 2px solid #f4a261;
+  background-color: #fff3e0;
+  box-shadow: 0 4px 12px rgba(244, 162, 97, 0.4);
 }
-/* ============================================================ */
 
-/* Parte superior */
+/* Parte superior de la tarjeta */
 .pedido-top {
   display: flex;
   justify-content: space-between;
@@ -83,7 +83,7 @@
   font-size: 0.85em;
 }
 
-/* Items */
+/* Lista de items */
 .pedido-items {
   list-style: none;
   margin: 0;
@@ -101,17 +101,17 @@
   color: #555;
 }
 
-/* Footer */
+/* Footer de la tarjeta */
 .pedido-footer {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   margin-top: 10px;
   font-size: 0.9em;
   color: #333;
-  flex-direction: column; /* para que el botón quede debajo del total */
 }
 
-/* Sin pedidos */
+/* Mensaje cuando no hay pedidos */
 .no-pedidos {
   text-align: center;
   color: #aaa;
@@ -119,51 +119,66 @@
   padding: 15px 5px;
 }
 
-/* ======== MODAL CREAR PEDIDO ======== */
+/* ======== MODAL ======== */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999;
+  animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
   background: #fff;
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
   padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   position: relative;
   animation: modalFadeIn 0.3s ease;
 }
 
-.modal-content h2 {
-  text-align: center;
-  color: #333;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 15px;
-  font-size: 1.4em;
 }
 
-.modal-content form {
+.modal-header h3 {
+  color: #333;
+  font-size: 1.3em;
+}
+
+.btn-cerrar-modal {
+  background: none;
+  border: none;
+  font-size: 1.3em;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.btn-cerrar-modal:hover {
+  color: #a7c957;
+}
+
+.modal-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
-.modal-content label {
+.modal-form label {
   font-size: 0.9em;
   color: #444;
+  margin-top: 10px;
 }
 
-.modal-content input,
-.modal-content select {
+.modal-form input {
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -171,8 +186,7 @@
   transition: border-color 0.2s;
 }
 
-.modal-content input:focus,
-.modal-content select:focus {
+.modal-form input:focus {
   border-color: #a7c957;
   outline: none;
 }
@@ -180,63 +194,68 @@
 .modal-buttons {
   display: flex;
   justify-content: space-between;
-  margin-top: 15px;
+  margin-top: 20px;
 }
 
-.btn-cancelar,
-.btn-crear,
 .btn-guardar {
-  flex: 1;
-  padding: 10px;
+  background: #a7c957;
+  color: white;
   border: none;
   border-radius: 8px;
+  padding: 10px;
   font-weight: bold;
   cursor: pointer;
   transition: background 0.2s;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.btn-guardar:hover {
+  background: #91b650;
 }
 
 .btn-cancelar {
   background: #ccc;
   color: #333;
-  margin-right: 10px;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex: 1;
 }
 
 .btn-cancelar:hover {
   background: #b5b5b5;
 }
 
-.btn-crear,
-.btn-guardar {
-  background: #a7c957;
+/* ======== BOTÓN ESTADO ======== */
+.btn-estado {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s ease;
+  width: 100%;
+}
+
+.btn-estado.pendiente {
+  background-color: #f9c74f;
+}
+
+.btn-estado.preparacion {
+  background-color: #f9844a;
   color: white;
 }
 
-.btn-crear:hover,
-.btn-guardar:hover {
-  background: #91b650;
+.btn-estado:hover {
+  opacity: 0.85;
 }
 
-/* Encabezado del modal */
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.btn-cerrar-modal {
-  background: none;
-  border: none;
-  font-size: 1.2em;
-  cursor: pointer;
-  color: #666;
-}
-
-.btn-cerrar-modal:hover {
-  color: #a7c957;
-}
-
-/* Animación suave */
+/* ======== ANIMACIONES ======== */
 @keyframes modalFadeIn {
   from {
     transform: translateY(-15px);
@@ -248,20 +267,11 @@
   }
 }
 
-/* ======= Botón actualizar estado ======= */
-.btn-actualizar {
-  background-color: #f4b400;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  margin-top: 8px;
-  transition: background 0.2s;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
-
-.btn-actualizar:hover {
-  background-color: #e09c00;
-}
-/* ================================================= */

@@ -1,5 +1,8 @@
+# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+# Import relativo de tus routers (ya que están dentro de 'app/routers')
 from .routers import auth, mesas, menu, inventario, empleados
 
 app = FastAPI(title="Sistema de Pedidos")

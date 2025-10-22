@@ -46,12 +46,20 @@
   padding: 15px;
   border: 1px solid #eee;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.3s, border 0.3s;
 }
 
 .pedido-card:hover {
   transform: translateY(-3px);
 }
+
+/* ======= NUEVO: Estilo destacado para "En preparación" ======= */
+.pedido-card.en-preparacion {
+  border: 2px solid #f4a261; /* borde más marcado */
+  background-color: #fff3e0; /* fondo diferente */
+  box-shadow: 0 4px 12px rgba(244, 162, 97, 0.4); /* sombra más visible */
+}
+/* ============================================================ */
 
 /* Parte superior */
 .pedido-top {
@@ -100,6 +108,7 @@
   margin-top: 10px;
   font-size: 0.9em;
   color: #333;
+  flex-direction: column; /* para que el botón quede debajo del total */
 }
 
 /* Sin pedidos */
@@ -238,3 +247,21 @@
     opacity: 1;
   }
 }
+
+/* ======= Botón actualizar estado ======= */
+.btn-actualizar {
+  background-color: #f4b400;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+
+.btn-actualizar:hover {
+  background-color: #e09c00;
+}
+/* ================================================= */

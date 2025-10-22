@@ -3,7 +3,7 @@
   padding: 20px;
   background: #f4f4f4;
   min-height: 100vh;
-  font-family: sans-serif;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .pedidos-topbar {
@@ -15,6 +15,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.btn-crear {
+  background: #fff;
+  color: #333;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.btn-crear:hover {
+  background: #f0f0f0;
+  transform: scale(1.05);
 }
 
 /* ======== GRID DE TARJETAS ======== */
@@ -46,6 +62,12 @@
 }
 
 /* Estilo para pedidos "LISTO" */
+.pedido-card.estado-listo {
+  border: 2px solid #4caf50;
+  background-color: #e8f5e9;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
 .pedido-card .estado-ok {
   display: block;
   margin-top: 10px;
@@ -56,12 +78,6 @@
   text-align: center;
   border-radius: 10px;
   transition: all 0.3s ease;
-}
-
-.pedido-card.estado-listo {
-  border: 2px solid #4caf50;
-  background-color: #e8f5e9;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
 }
 
 /* Parte superior de la tarjeta */
@@ -143,7 +159,131 @@
   opacity: 0.85;
 }
 
+/* ======== MODAL ======== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 450px;
+  padding: 25px 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  position: relative;
+  animation: modalFadeIn 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  color: #333;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.btn-cerrar-modal {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.btn-cerrar-modal:hover {
+  color: #f9844a;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-form label {
+  font-size: 0.9em;
+  color: #555;
+  margin-top: 12px;
+}
+
+.modal-form input {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 0.95em;
+  margin-top: 5px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-form input:focus {
+  border-color: #a7c957;
+  box-shadow: 0 0 6px rgba(167, 201, 87, 0.4);
+  outline: none;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.btn-guardar,
+.btn-cancelar {
+  flex: 1;
+  padding: 12px;
+  font-weight: bold;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s ease;
+  border: none;
+}
+
+.btn-guardar {
+  background-color: #a7c957;
+  color: white;
+  margin-right: 10px;
+}
+
+.btn-guardar:hover {
+  background-color: #91b650;
+}
+
+.btn-cancelar {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.btn-cancelar:hover {
+  background-color: #bdbdbd;
+}
+
 /* ======== ANIMACIONES ======== */
+@keyframes modalFadeIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

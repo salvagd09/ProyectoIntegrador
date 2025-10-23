@@ -53,3 +53,12 @@ class EditarEmpleado(BaseModel):
     nombreUs:Optional[str]=None
     contrasenaUs:Optional[str]=None
     PIN:Optional[str]=None
+class MovimientoInsumo(BaseModel):
+    insumo_id: int
+    tipo_movimiento: str
+    cantidad: float
+    motivo: str
+    empleado_id: Optional[int] = 1
+
+    class Config:
+        from_attributes = True

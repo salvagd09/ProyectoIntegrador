@@ -64,21 +64,10 @@ function Cajero() {
             </li>
           </ul>
         </aside>
-
-        {/* Columna derecha / Espacio principal */}
         <div className="main">
           <header className="app-header d-flex align-items-center shadow">
-            {/* Si quieres algo a la izquierda, iría aquí */}
-            {/* Bloque de acciones al lado derecho */}
             <div className="header-inner d-flex align-items-center gap-2 ms-auto">
-              {/* Notificaciones */}
-              <div className="action">
-                <button className="btn-icon" aria-label="Notificaciones">
-                  <i className="fa-solid fa-bell"></i>
-                  <span className="badge-dot"></span>
-                </button>
-              </div>
-
+           
               <div className="vr mx-auto"></div>
 
               {/* Avatar */}
@@ -91,7 +80,6 @@ function Cajero() {
               </div>
 
               <div className="vr mx-auto"></div>
-
               {/* Salir */}
               <div className="action">
                 <form>

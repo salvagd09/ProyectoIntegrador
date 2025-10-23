@@ -201,7 +201,11 @@
   background: #a7c957;
   color: white;
 }
-
+.btn-estado{
+  border-radius:8px;
+  background-color:#a7c957;
+  border:none;
+}
 .btn-crear:hover,
 .btn-guardar:hover {
   background: #91b650;

@@ -13,7 +13,7 @@ import Menu from "./Modulos/Menu";
 import Insumos from "./Modulos/Insumos";
 import Pagos from "./Modulos/Pagos";
 import Pedidos_Aplicativo from "./Modulos/Pedidos_Aplicativo";
-import Pedidos_Fisicos from "./Modulos/PedidosVista";
+import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
 import Usuario from "./Modulos/Usuario";
 import Mesas from "./Modulos/Mesas";
 import comida from "../assets/comida.png";

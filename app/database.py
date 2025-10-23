@@ -1,12 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
-# 🔹 Cambia estos datos según tu configuración
-DATABASE_URL = "postgresql://postgres:Alexander@localhost:5432/cevicheria_db"
-
+from .config import DB_URL 
 # Crear motor de conexión
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DB_URL)
 
 # Crear sesión
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

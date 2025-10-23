@@ -62,3 +62,20 @@ class MovimientoInsumo(BaseModel):
 
     class Config:
         from_attributes = True
+class ItemPedido(BaseModel):
+    nombre: str
+    cantidad: int
+    precio_unitario: float
+    class Config:
+        from_attributes = True
+
+class MostrarPedido(BaseModel):
+    id: int
+    mesa: str
+    estado: str
+    hora: str
+    monto_total: float
+    items: List[ItemPedido]
+    
+    class Config:
+        from_attributes = True

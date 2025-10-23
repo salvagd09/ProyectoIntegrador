@@ -1,7 +1,7 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import auth, mesas, menu, inventario, empleados,PedidosF
+from .routers import auth, mesas, menu, inventario, empleados,pedidosF
 
 app = FastAPI(title="Sistema de Pedidos")
 
@@ -20,7 +20,7 @@ app.include_router(auth.router)
 app.include_router(mesas.router)
 app.include_router(inventario.router)
 app.include_router(empleados.router)
-app.include_router(PedidosF.router)
+app.include_router(pedidosF.router)
 
 # --- Ruta raíz ---
 @app.get("/")

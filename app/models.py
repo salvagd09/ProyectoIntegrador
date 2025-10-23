@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer,Text, String, Boolean, TIMESTAMP, ForeignKey,Enum, Float,Date, text
+from sqlalchemy import Column, Integer,Text, String, Boolean, TIMESTAMP, ForeignKey,Enum, Float,Date
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -7,39 +7,27 @@ import enum
 class EstadoMesaEnum(str, enum.Enum):
     Libre = "Libre"
     Ocupada = "Ocupada"
-class EstadoPedido(str,enum.Enum):
-    Pendiente='Pendiente', 		
-    EnPreparacion='En preparacion',	
-    Listo='Listo', 			
-    Servido='Servido',        	
-    Entregado='Entregado',      	
-    Completado='Completado', 		
-    Cancelado='Cancelado'
 class TipoPedido(str,enum.Enum):
-    Mesa='Mesa',
-    Delivery='Delivery',
-    Reocjo_Local='Recojo_local'
-class EstadoDPedido(str,enum.Enum):
-    Pendiente='Pendiente',
-    EnPreparacion='En preparacion',
-    Listo='Listo'
+    Mesa='Mesa'
+    Delivery='Delivery'
+    Reocojo_local='Recojo_local'
 class PlataformasDelivery(str,enum.Enum):
-    Rappi='Rappi', 
-    UberEats='Uber Eats', 
+    Rappi='Rappi' 
+    UberEats='Uber Eats' 
     PedidosYa='PedidosYa'
 class MetodosPago(str,enum.Enum):
-    Efectivo='Efectivo',
-    Yape='Yape',
-    Plin='Plin',
+    Efectivo='Efectivo'
+    Yape='Yape'
+    Plin='Plin'
     Tarjeta='Tarjeta'
 class EstadoPago(str,enum.Enum):
-    Pendiente='Pendiente',
-    Pagado='Pagado',
-    Fallido='Fallido',
+    Pendiente='Pendiente'
+    Pagado='Pagado'
+    Fallido='Fallido'
     Reembolsado='Reembolsado'
 class TipoMovimiento(str,enum.Enum):
-    Consumo='Consumo',
-    Merma='Merma', 
+    Consumo='Consumo'
+    Merma='Merma' 
     Ajuste='Ajuste'
 #Se coloca las tablas de la BD a usar.
 class Empleado(Base):
@@ -107,11 +95,25 @@ class Pedidos(Base):
     __tablename__="pedidos"
     id=Column(Integer,primary_key=True,index=True)
     empleado_id=Column(Integer,ForeignKey("empleados.id"))
-    estado=Column(Enum(EstadoPedido,name="estado_pedido"),nullable=False,server_default="Pendiente")
+    estado = Column(
+        Enum(
+            'Pendiente', 
+            'En preparacion',  # 👈 Valores directos como strings
+            'Listo', 
+            'Servido',
+            'Entregado',
+            'Completado',
+            'Cancelado',
+            name='estado_pedido',
+            create_type=False  # 👈 No crear el tipo, ya existe en BD
+        ),
+        nullable=False,
+        server_default='Pendiente'
+    )
     monto_total=Column(Float,default=0)
     mesa_id=Column(Integer,ForeignKey("mesas.id"))
     tipo_pedido=Column(Enum(TipoPedido,name="tipo_pedido"),nullable=False,server_default="Mesa")
-    fecha=Column(TIMESTAMP,server_default=func.now())
+    fecha_creacion=Column(TIMESTAMP,server_default=func.now())
     empleados=relationship("Empleado",back_populates="pedidosE")
     mesas=relationship("Mesas",back_populates="pedidosM")
     Dpedido=relationship("Detalles_Pedido",back_populates="pedidos")
@@ -126,7 +128,18 @@ class Detalles_Pedido(Base):
     cantidad=Column(Integer,nullable=False)
     precio_unitario=Column(Float,nullable=False)
     notas=Column(Text)
-    estado=Column(Enum(EstadoDPedido,name="estado_item_pedido"),server_default="Pendiente")
+    estado = Column(
+        Enum(
+            'Pendiente', 
+            'En preparacion',  # 👈 Valores directos como strings
+            'Listo', 
+            'Servido',
+            name='estado_item_pedido',
+            create_type=False  # 👈 No crear el tipo, ya existe en BD
+        ),
+        nullable=False,
+        server_default='Pendiente'
+    )
     pedidos=relationship("Pedidos",back_populates="Dpedido")
     platillos=relationship("Platillo",back_populates="DPedidoP")
 class Pedidos_Delivery(Base):

@@ -4,6 +4,8 @@ import Admin from "./Components/Admin";
 import Caja from "./Components/Caja";
 import Cocina from "./Components/Cocina";
 import Mesero from "./Components/Mesero";
+import Pedidos_Fisicos from "./Components/Modulos/Pedidos_Fisicos";
+
 function Main() {
   return (
     <Routes>
@@ -14,6 +16,7 @@ function Main() {
       <Route path="/mesero/*" element={<Mesero />} />
       <Route path="/caja/*" element={<Caja />} />
       <Route path="/cocina/*" element={<Cocina />} />
+      <Route path="/pedidos" element={<Pedidos_Fisicos />} />
       <Route path="*" element={<div>Página no encontrada</div>} />
     </Routes>
   );

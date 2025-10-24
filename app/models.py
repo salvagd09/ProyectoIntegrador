@@ -98,14 +98,14 @@ class Pedidos(Base):
     estado = Column(
         Enum(
             'Pendiente', 
-            'En preparacion',  # 👈 Valores directos como strings
+            'En preparacion', 
             'Listo', 
             'Servido',
             'Entregado',
             'Completado',
             'Cancelado',
             name='estado_pedido',
-            create_type=False  # 👈 No crear el tipo, ya existe en BD
+            create_type=False  
         ),
         nullable=False,
         server_default='Pendiente'
@@ -120,7 +120,7 @@ class Pedidos(Base):
         "Detalles_Pedido",
         back_populates="pedidos",
         cascade="all, delete-orphan",
-        passive_deletes=True  # 👈 IMPORTANTE: Deja que la BD maneje el CASCADE
+        passive_deletes=True  
     )
     PedidosD=relationship("Pedidos_Delivery",back_populates="delivery")
     pedidosR=relationship("PedidosRecojoLocal",back_populates="pedidosRJ")
@@ -136,11 +136,11 @@ class Detalles_Pedido(Base):
     estado = Column(
         Enum(
             'Pendiente', 
-            'En preparacion',  # 👈 Valores directos como strings
+            'En preparacion',  
             'Listo', 
             'Servido',
             name='estado_item_pedido',
-            create_type=False  # 👈 No crear el tipo, ya existe en BD
+            create_type=False 
         ),
         nullable=False,
         server_default='Pendiente'

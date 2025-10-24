@@ -116,7 +116,12 @@ class Pedidos(Base):
     fecha_creacion=Column(TIMESTAMP,server_default=func.now())
     empleados=relationship("Empleado",back_populates="pedidosE")
     mesas=relationship("Mesas",back_populates="pedidosM")
-    Dpedido=relationship("Detalles_Pedido",back_populates="pedidos")
+    Dpedido = relationship(
+        "Detalles_Pedido",
+        back_populates="pedidos",
+        cascade="all, delete-orphan",
+        passive_deletes=True  # 👈 IMPORTANTE: Deja que la BD maneje el CASCADE
+    )
     PedidosD=relationship("Pedidos_Delivery",back_populates="delivery")
     pedidosR=relationship("PedidosRecojoLocal",back_populates="pedidosRJ")
     pagos=relationship("Pagos",back_populates="pedidosP")
@@ -148,7 +153,7 @@ class Pedidos_Delivery(Base):
     nombre_cliente=Column(String(200),nullable=False)
     direccion_cliente=Column(Text,nullable=False)
     telefono_cliente=Column(String(20),nullable=False)
-    plataformas_delivery=Column(Enum(PlataformasDelivery,name="plataformas_delivery"),nullable=False)
+    plataforma=Column(Enum(PlataformasDelivery,name="plataformas_delivery"),nullable=False)
     codigo_pedido_externo=Column(String(100))
     delivery=relationship("Pedidos",back_populates="PedidosD")
 class PedidosRecojoLocal(Base):

@@ -38,22 +38,18 @@ def Mostrar_Pedidos(db: Session = Depends(get_db)):
     mostrar_pedidos = []
     
     for pedido in pedidos:
-        # Obtener mesa
         mesa_numero = f"Mesa {pedido.mesas.numero}" if pedido.mesas else "Sin mesa"
-        
-        # Formatear hora
         hora = pedido.fecha_creacion.strftime("%H:%M")
         
-        # Construir items desde la relación Dpedido
-        items = []
-        for detalle in pedido.Dpedido:
-            items.append({
+        items = [
+            {
                 "nombre": detalle.platillos.nombre,
                 "cantidad": detalle.cantidad,
                 "precio_unitario": float(detalle.precio_unitario)
-            })
+            }
+            for detalle in pedido.Dpedido
+        ]
         
-        # Agregar al resultado
         mostrar_pedidos.append({
             "id": pedido.id,
             "mesa": mesa_numero,
@@ -62,4 +58,14 @@ def Mostrar_Pedidos(db: Session = Depends(get_db)):
             "monto_total": float(pedido.monto_total),
             "items": items
         })
+    
     return mostrar_pedidos
+@router.delete("/eliminarPM/{id}")
+def eliminar_Pedidos(id: int, db: Session = Depends(get_db)):
+    # Buscar el pedido
+    pedido = db.query(models.Pedidos).filter(models.Pedidos.id == id).first()
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    db.delete(pedido)
+    db.commit()
+    return {"mensaje": "Pedido eliminado correctamente"}

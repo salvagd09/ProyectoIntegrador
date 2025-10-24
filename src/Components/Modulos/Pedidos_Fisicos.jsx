@@ -159,11 +159,22 @@ export default function Pedidos_Fisicos() {
   };
 
   // ✅ NUEVA FUNCIÓN: Eliminar pedido
-  const EliminarPedido = (id) => {
-    setPedidos(pedidos.filter(p => p.id !== id));
-    setShowModalB(false);
-    setPedidoSeleccionado(null);
-    alert("Pedido eliminado exitosamente");
+ async function EliminarPedido(id){
+   try {
+      const eliminacion = await fetch(
+        `http://127.0.0.1:8000/pedidosF/eliminarPM/${pedidoSeleccionado.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      if (!eliminacion.ok) return alert("Error al eliminar el pedido");
+      const mensajeEliminacion = await eliminacion.json();
+      alert(mensajeEliminacion.mensaje);
+      setPedidos(pedidos.filter((pedido) => pedido.id !== id));
+      setShowModalB(false);
+    } catch (error) {
+      console.error("Hubo un error en la conexión", error);
+    }
   };
 
   // ✅ NUEVA FUNCIÓN: Modificar pedido (básica)

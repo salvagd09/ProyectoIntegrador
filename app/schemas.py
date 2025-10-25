@@ -59,23 +59,57 @@ class MovimientoInsumo(BaseModel):
     cantidad: float
     motivo: str
     empleado_id: Optional[int] = 1
-
     class Config:
         from_attributes = True
 class ItemPedido(BaseModel):
+    producto_id: int
     nombre: str
     cantidad: int
     precio_unitario: float
     class Config:
         from_attributes = True
-
 class MostrarPedido(BaseModel):
     id: int
     mesa: str
     estado: str
     hora: str
+    tipo_pedido:str
     monto_total: float
     items: List[ItemPedido]
-    
     class Config:
         from_attributes = True
+#Para crear items(elementos de los pedidos)
+class ItemPedidoCrear(BaseModel):
+    producto_id: int  
+    cantidad: int
+    precio_unitario: float
+# Para crear pedidos
+class AgregarPedido(BaseModel):
+    mesa_id: int
+    empleado_id: Optional[int] = 6
+    estado: Optional[str] = 'Pendiente'  #  Valor por defecto
+    tipo_pedido: Optional[str] = 'Mesa'
+    monto_total: float
+    items: List[ItemPedidoCrear]  # ✅ Usa el schema correcto
+    class Config:
+        from_attributes = True
+# Para items YA CREADOS (con pedido_id)
+class ItemAgregado(BaseModel):
+    pedido_id: int
+    producto_id: int
+    nombre: str
+    cantidad: int
+    precio_unitario: float
+    class Config:
+        from_attributes = True
+class ItemPedidoEditar(BaseModel):
+    producto_id: int
+    cantidad: int
+    precio_unitario: float
+    notas: str = ""
+class PedidoEditarSolicitud(BaseModel):
+    items: List[ItemPedidoEditar]
+    monto_total: float
+    class Config:
+        from_attributes = True
+

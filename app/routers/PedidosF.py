@@ -1,6 +1,7 @@
 from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import datetime
 from .. import models, database,schemas
 router=APIRouter(prefix="/pedidosF",tags=["pedidosF"])
 def get_db():
@@ -9,6 +10,7 @@ def get_db():
         yield db
     finally:
         db.close()
+#Para disminuir la cantidad de insumos en base a los platillos que se realizaron en el pedido
 def descontar_insumos_pedido(pedido_id: int, db: Session):
     try:
         # 1. Obtener detalles del pedido
@@ -61,9 +63,10 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+#Para colocar platillos disponibles en el select
 @router.get("/platillos", response_model=None)
 def listar_productos(db: Session = Depends(get_db)):
-    productos=db.query(models.Platillo).all()
+    productos=db.query(models.Platillo).filter(models.Platillo.producto_activo==True)
     mostrar_menu=[]
     for producto in productos:
         mostrar_menu.append({
@@ -72,9 +75,10 @@ def listar_productos(db: Session = Depends(get_db)):
             "precio":producto.precio
         })
     return mostrar_menu
+#Para colocar mesas disponibles en el select
 @router.get("/mesas")
 def Mostrar_mesas(db:Session=Depends(get_db)):
-    mesas=db.query(models.Mesas).order_by(models.Mesas.id.asc()).all()
+    mesas=db.query(models.Mesas).filter(models.Mesas.estado=="Libre").order_by(models.Mesas.id.asc())
     mostrar_mesas = []
     for mesa in mesas:
         mostrar_mesas.append({
@@ -85,17 +89,16 @@ def Mostrar_mesas(db:Session=Depends(get_db)):
 @router.get("/pedidosM", response_model=List[schemas.MostrarPedido])
 def Mostrar_Pedidos(db: Session = Depends(get_db)):
     pedidos = db.query(models.Pedidos).all()
-    
     mostrar_pedidos = []
-    
     for pedido in pedidos:
-        mesa_numero = f"Mesa {pedido.mesas.numero}" if pedido.mesas else "Sin mesa"
+        mesa_numero = f"Mesa {pedido.mesas.numero}" if pedido.mesas else "Para delivery"
         hora = pedido.fecha_creacion.strftime("%H:%M")
         
         items = [
             {
+                "producto_id": int(detalle.producto_id),
                 "nombre": detalle.platillos.nombre,
-                "cantidad": detalle.cantidad,
+                "cantidad": int(detalle.cantidad),
                 "precio_unitario": float(detalle.precio_unitario)
             }
             for detalle in pedido.Dpedido
@@ -105,11 +108,11 @@ def Mostrar_Pedidos(db: Session = Depends(get_db)):
             "id": pedido.id,
             "mesa": mesa_numero,
             "estado": pedido.estado,
+            "tipo_pedido":pedido.tipo_pedido,
             "hora": hora,
             "monto_total": float(pedido.monto_total),
             "items": items
         })
-    
     return mostrar_pedidos
 @router.put("/eliminarPM/{id}")
 def cancelar_Pedidos(id: int, db: Session = Depends(get_db)):
@@ -134,7 +137,7 @@ def eliminar_detalles_pedidos(id:int,db:Session=Depends(get_db)):
             detail=f"No se encontraron detalles para el pedido con ID {id}."
         )
     return
-##Cambiar estado de una mesa a otra
+##Cambiar estado de una mesa a otra y restar cantidad de insumos
 @router.put("/{id}/estado")
 def cambiar_Estado(id: int, db: Session = Depends(get_db)):
     try:
@@ -161,7 +164,8 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
         
         # Actualizar el pedido
         pedido.estado = nuevo_estado
-        
+        if (estado_anterior=='Pendiente' and nuevo_estado=='En preparacion'):
+            descontar_insumos_pedido(id,db)
         # Actualizar todos los detalles en una sola query (MÁS EFICIENTE)
         detalles_actualizados = db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == id
@@ -185,4 +189,134 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error: {str(e)}"
+        )
+@router.post("/agregarPedido",response_model=schemas.MostrarPedido)
+def agregar_Pedido(data:schemas.AgregarPedido,db:Session=Depends(get_db)):
+    try:
+        mesa = db.query(models.Mesas).filter(
+            models.Mesas.id ==data.mesa_id
+        ).first()
+        if not mesa:
+            raise HTTPException(status_code=404, detail="Mesa no encontrada")
+        nuevo_pedido=models.Pedidos(mesa_id=data.mesa_id,empleado_id=data.empleado_id,estado=data.estado,tipo_pedido=data.tipo_pedido,monto_total=data.monto_total,fecha_creacion=datetime.now())
+        db.add(nuevo_pedido)
+        db.flush() #Para obtener el id y así registrar tambien los platillos pedidos.
+        for item in data.items:
+            detalle = models.Detalles_Pedido(
+                pedido_id=nuevo_pedido.id,
+                producto_id=item.producto_id, 
+                cantidad=item.cantidad,
+                precio_unitario=item.precio_unitario
+            )
+            db.add(detalle)
+        db.commit()
+        db.refresh(nuevo_pedido)
+        detalles = db.query(models.Detalles_Pedido).filter(
+            models.Detalles_Pedido.pedido_id == nuevo_pedido.id
+        ).all()
+        # 4. Retornar el pedido creado
+        return {
+            "id": nuevo_pedido.id,
+            "mesa": f"Mesa {mesa.numero}",
+            "estado": nuevo_pedido.estado,
+            "hora": nuevo_pedido.fecha_creacion.strftime("%H:%M"),
+            "tipo_pedido": nuevo_pedido.tipo_pedido,
+            "monto_total": float(nuevo_pedido.monto_total),
+            "items": [
+                {
+                    "pedido_id": d.pedido_id,
+                    "producto_id": d.producto_id,
+                    "nombre": d.platillos.nombre,
+                    "cantidad": d.cantidad,
+                    "precio_unitario": float(d.precio_unitario)
+                }
+                for d in detalles
+            ]}
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+@router.put("/editar/{id}")
+def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Session = Depends(get_db)):
+    try:
+        pedido = db.query(models.Pedidos).filter(models.Pedidos.id == id).first()
+        if not pedido:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Pedido #{id} no encontrado"
+            )
+        if not pedido_data.items or len(pedido_data.items) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El pedido debe tener como minimo un platillo"
+            )
+        # Validar productos y cantidades
+        for item in pedido_data.items:
+            producto = db.query(models.Platillo).filter(
+                models.Platillo.id == item.producto_id
+            ).first()
+            if not producto:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No se encontro este producto"
+                )
+            if item.cantidad < 1:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"La cantidad debe ser mayor a 0"
+                )
+        # ✅ ELIMINAR items antiguos con synchronize_session=False
+        db.query(models.Detalles_Pedido).filter(
+            models.Detalles_Pedido.pedido_id == id
+        ).delete(synchronize_session=False)
+        # ✅ FORZAR la ejecución del DELETE antes de continuar
+        db.flush()
+        # Agregar los nuevos items
+        for detalle in pedido_data.items:
+            nuevo_detalle = models.Detalles_Pedido(
+                pedido_id=id,
+                producto_id=detalle.producto_id,
+                cantidad=detalle.cantidad,
+                precio_unitario=detalle.precio_unitario,
+                notas=detalle.notas,
+                estado="Pendiente"                                 
+            )
+            db.add(nuevo_detalle)
+        
+        # Actualizar monto total
+        pedido.monto_total = pedido_data.monto_total
+        
+        db.commit()
+        db.refresh(pedido)
+        
+        detalles_actualizados = db.query(models.Detalles_Pedido).filter(
+            models.Detalles_Pedido.pedido_id == id
+        ).all()
+        
+        return {
+            "mensaje": "Pedido actualizado correctamente",
+            "pedido_id": id,
+            "monto_total": pedido.monto_total,
+            "total_items": len(detalles_actualizados),
+            "items": [
+                {
+                    "id": d.id,
+                    "producto_id": d.producto_id,
+                    "cantidad": d.cantidad,
+                    "precio_unitario": d.precio_unitario,
+                    "subtotal": d.cantidad * d.precio_unitario
+                }
+                for d in detalles_actualizados
+            ]
+        }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al editar el pedido: {str(e)}"
         )

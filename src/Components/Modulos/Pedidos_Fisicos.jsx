@@ -1,85 +1,34 @@
 import React, { useState, useEffect } from "react";
 import "./tarjetasPedidos.css";
-
 export default function Pedidos_Fisicos() {
   const [pedidos, setPedidos] = useState([]);
-  const [itemTemp, setItemTemp] = useState({
-    platillo_id: "",
-    cantidad: 1
-  });
   const rol = localStorage.getItem("userRole");
   const [showModalB, setShowModalB] = useState(false);
+  {/*Estados para el modal de edicion */}
   const [showModalE, setShowModalE] = useState(false);
+  const [pedidoAEditar, setPedidoAEditar] = useState(null);
+  const [itemsEditados, setItemsEditados] = useState([]);
+  const [itemTempEditar, setItemTempEditar] = useState({
+    platillo_id: "",
+    cantidad: 1,
+  });
+  {/*Estados para el modal de agregacion */}
   const [showModal, setShowModal] = useState(false);
   const [platillos, setPlatillos] = useState([]);
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
-  const [mesas,setMesas]=useState([])
+    const [itemTemp, setItemTemp] = useState({
+    platillo_id: "",
+    cantidad: 1,
+  });
+  const [mesas, setMesas] = useState([]);
   const [nuevoPedido, setNuevoPedido] = useState({
-    id: "",
-    numero: "",
-    cliente: "",
-    items: [], 
+    mesa_id: null,
+    estado: "Pendiente",
+    tipo_pedido: "Mesa",
+    items: [],
   });
   const [pedidosCerrados, setPedidosCerrados] = useState([]); // ← IDs de pedidos cerrados
-
-  // Función para cerrar una tarjeta
-  const cerrarTarjeta = (pedidoId) => {
-    setPedidosCerrados([...pedidosCerrados, pedidoId]);
-  };
-  const handleItemTempChange = (e) => {
-    const { name, value } = e.target;
-    setItemTemp({ ...itemTemp, [name]: value });
-  };
-
-  const agregarPlatillo = () => {
-    if (!itemTemp.platillo_id || itemTemp.cantidad <= 0) {
-      alert("Selecciona un platillo y una cantidad válida");
-      return;
-    }
-
-    const platilloSeleccionado = platillos.find(
-      p => p.id === parseInt(itemTemp.platillo_id)
-    );
-
-    if (!platilloSeleccionado) {
-      alert("Platillo no encontrado");
-      return;
-    }
-
-    const yaExiste = nuevoPedido.items.find(
-      item => item.platillo_id === itemTemp.platillo_id
-    );
-
-    if (yaExiste) {
-      alert("Este platillo ya fue agregado. Edita la cantidad si es necesario.");
-      return;
-    }
-
-    const nuevoItem = {
-      platillo_id: itemTemp.platillo_id,
-      nombre: platilloSeleccionado.nombre,
-      cantidad: parseInt(itemTemp.cantidad),
-      precio: platilloSeleccionado.precio
-    };
-
-    setNuevoPedido({
-      ...nuevoPedido,
-      items: [...nuevoPedido.items, nuevoItem]
-    });
-
-    setItemTemp({ platillo_id: "", cantidad: 1 });
-  };
-  const actualizarCantidad = (index, nuevaCantidad) => {
-    if (nuevaCantidad <= 0) return;
-    const nuevosItems = [...nuevoPedido.items];
-    nuevosItems[index].cantidad = parseInt(nuevaCantidad);
-    setNuevoPedido({ ...nuevoPedido, items: nuevosItems });
-  };
-  const eliminarPlatillo = (index) => {
-    const nuevosItems = nuevoPedido.items.filter((_, i) => i !== index);
-    setNuevoPedido({ ...nuevoPedido, items: nuevosItems });
-  };
-  useEffect(() => {
+useEffect(() => {
     fetch("http://127.0.0.1:8000/pedidosF/platillos")
       .then((res) => res.json())
       .then((data) => setPlatillos(data))
@@ -91,67 +40,261 @@ export default function Pedidos_Fisicos() {
       .then((data) => setMesas(data))
       .catch((err) => console.error(err));
   }, []);
-  useEffect(()=> {
+  useEffect(() => {
     fetch("http://127.0.0.1:8000/pedidosF/pedidosM")
       .then((res) => res.json())
       .then((data) => setPedidos(data))
       .catch((err) => console.error(err));
-  }, [])
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setNuevoPedido({ ...nuevoPedido, [name]: value });
+  }, []);
+  // Función para cerrar una tarjeta
+  const cerrarTarjeta = (pedidoId) => {
+    setPedidosCerrados([...pedidosCerrados, pedidoId]);
   };
-
-
-  // ✅ CORREGIDO: Función handleSubmit actualizada
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!nuevoPedido.id || !nuevoPedido.mesa || !nuevoPedido.cliente) {
-      alert("Por favor, completa todos los campos obligatorios.");
+  // Para agregar pedidos
+  const guardarPedido = async () => {
+    if (!nuevoPedido.mesa_id) {
+      alert("Selecciona una mesa");
       return;
     }
 
     if (nuevoPedido.items.length === 0) {
-      alert("Debes agregar al menos un platillo");
+      alert("Agrega al menos un platillo");
       return;
     }
 
-    const horaActual = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    const nuevo = {
-      id: parseInt(nuevoPedido.id),
-      mesa: `Mesa ${nuevoPedido.mesa}`,
-      cliente: nuevoPedido.cliente,
-      estado: "Pendiente",
-      hora: horaActual,
-      items: nuevoPedido.items
+    // Transformar datos solo al enviar
+    const pedidoParaEnviar = {
+      mesa_id: nuevoPedido.mesa_id,
+      empleado_id: 6,
+      estado: nuevoPedido.estado,
+      tipo_pedido: nuevoPedido.tipo_pedido,
+      monto_total: parseFloat(calcularTotal()),
+      items: nuevoPedido.items.map((item) => ({
+        producto_id: item.producto_id,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+      })),
     };
 
-    setPedidos([...pedidos, nuevo]);
-    setShowModal(false);
-    
-    // Resetear formulario
-    setNuevoPedido({ id: "", mesa: "", cliente: "", items: [] });
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/pedidosF/agregarPedido",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pedidoParaEnviar),
+        }
+      );
+
+      if (response.ok) {
+        alert("Pedido creado exitosamente");
+        // Resetear formulario
+        setNuevoPedido({
+          mesa_id: null,
+          estado: "Pendiente",
+          tipo_pedido: "Mesa",
+          items: [],
+        });
+      } else {
+        alert("Error al crear pedido");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Error de conexión");
+    }
+  };
+  {/*Funciones para el modal de agregar */}
+  const handleItemTempChange = (e) => {
+    const { name, value } = e.target;
+    setItemTemp({ ...itemTemp, [name]: value });
+  };
+  const agregarPlatillo = () => {
+    if (!itemTemp.platillo_id || itemTemp.cantidad <= 0) {
+      alert("Selecciona un platillo y una cantidad válida");
+      return;
+    }
+
+    const platilloSeleccionado = platillos.find(
+      (p) => p.id === parseInt(itemTemp.platillo_id)
+    );
+
+    if (!platilloSeleccionado) {
+      alert("Platillo no encontrado");
+      return;
+    }
+
+    const yaExiste = nuevoPedido.items.find(
+      (item) => item.platillo_id === parseInt(itemTemp.platillo_id)
+    );
+
+    if (yaExiste) {
+      alert(
+        "Este platillo ya fue agregado. Edita la cantidad si es necesario."
+      );
+      return;
+    }
+
+    const nuevoItem = {
+      pedido_id: platilloSeleccionado.id,
+      producto_id: parseInt(itemTemp.platillo_id),
+      nombre: platilloSeleccionado.nombre,
+      cantidad: parseInt(itemTemp.cantidad),
+      precio_unitario: platilloSeleccionado.precio,
+    };
+
+    setNuevoPedido({
+      ...nuevoPedido,
+      items: [...nuevoPedido.items, nuevoItem],
+    });
+
     setItemTemp({ platillo_id: "", cantidad: 1 });
   };
+
+  const actualizarCantidad = (index, nuevaCantidad) => {
+    if (nuevaCantidad <= 0) return;
+    const nuevosItems = [...nuevoPedido.items];
+    nuevosItems[index].cantidad = parseInt(nuevaCantidad);
+    setNuevoPedido({ ...nuevoPedido, items: nuevosItems });
+  };
+  const eliminarPlatillo = (index) => {
+    const nuevosItems = nuevoPedido.items.filter((_, i) => i !== index);
+    setNuevoPedido({ ...nuevoPedido, items: nuevosItems });
+  };
+  {/*Funciones para el modal de editar */}
+  const abrirModalEditar = (pedido) => {
+    // Aqui se guarda referencia al pedido original
+    console.log("Pedido a editar:", pedido); 
+    setPedidoAEditar(pedido);
+    // Aqui se copian los items
+    setItemsEditados([...pedido.items]);
+    // Aqui se resetean los campos temporales
+    setItemTempEditar({ platillo_id: "", cantidad: 1 });
+    // Aqui se abre el modal
+    setShowModalE(true);
+  };
+  const calcularTotalEditar = () => {
+    return itemsEditados
+      .reduce((total, item) => total + item.precio_unitario * item.cantidad, 0)
+      .toFixed(2);
+  };
+  const handleItemTempChangeEditar = (e) => {
+    const { name, value } = e.target;
+    setItemTempEditar({ ...itemTempEditar, [name]: value });
+  };
+  const agregarPlatilloEditar = () => {
+  if (!itemTempEditar.platillo_id) return;
+  
+  const platillo = platillos.find(p => p.id === parseInt(itemTempEditar.platillo_id));
+  const nuevoItem = {
+    producto_id: platillo.id,
+    nombre: platillo.nombre,
+    precio_unitario: platillo.precio,
+    cantidad: parseInt(itemTempEditar.cantidad),
+    es_nuevo: true,
+  };
+  setItemsEditados([...itemsEditados, nuevoItem]);
+  setItemTempEditar({ platillo_id: "", cantidad: 1 });
+};
+//Se actualizan la cantidad de platos a editar
+const actualizarCantidadEditar = (index, nuevaCantidad) => {
+  const cantidad = parseInt(nuevaCantidad);
+  if (cantidad < 1) return;
+  
+  const nuevosItems = [...itemsEditados];
+  nuevosItems[index].cantidad = cantidad;
+  setItemsEditados(nuevosItems);
+};
+// Eliminar platillos en edicion
+const eliminarPlatilloEditar = (index) => {
+  setItemsEditados(itemsEditados.filter((_, i) => i !== index));
+};
+const cargarPedidos = async () => {
+  // ...
+  const data = await response.json();
+  console.log("Pedido completo del backend:", data); // 🔍 Esto
+};
+const guardarCambiosPedido = async () => {
+  if (itemsEditados.length === 0) {
+    alert("El pedido debe tener al menos un platillo");
+    return;
+  }
+  
+  try {
+    // Agrupar items del mismo producto
+    const itemsAgrupados = itemsEditados.reduce((acc, item) => {
+      const productoId = parseInt(item.producto_id || item.platillo_id);
+      const itemExistente = acc.find(i => i.producto_id === productoId);
+      
+      if (itemExistente) {
+        // Si ya existe, sumar la cantidad
+        itemExistente.cantidad += parseInt(item.cantidad);
+      } else {
+        // Si no existe, agregarlo
+        acc.push({
+          producto_id: productoId,
+          cantidad: parseInt(item.cantidad),
+          precio_unitario: parseFloat(item.precio_unitario),
+          notas: item.notas || ""
+        });
+      }
+      
+      return acc;
+    }, []);
+
+    const pedidoActualizado = {
+      items: itemsAgrupados,
+      monto_total: parseFloat(calcularTotalEditar()),
+    };
+
+    console.log("Datos a enviar:", pedidoActualizado);
+
+    const response = await fetch(
+      `http://127.0.0.1:8000/pedidosF/editar/${pedidoAEditar.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pedidoActualizado),
+      }
+    );
+
+    if (response.ok) {
+      alert("Pedido actualizado correctamente");
+      setShowModalE(false);
+      setPedidoAEditar(null);
+      setItemsEditados([]);
+      cargarPedidos();
+    } else {
+      const error = await response.json();
+      console.error("Error del servidor:", error);
+      alert(`Error: ${error.detail || JSON.stringify(error)}`);
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Error al actualizar el pedido");
+  }
+};
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setNuevoPedido({ ...nuevoPedido, [name]: value });
+  };
+  const calcularTotal = () => {
+    return nuevoPedido.items
+      .reduce((total, item) => total + item.precio_unitario * item.cantidad, 0)
+      .toFixed(2);
+  };
   //  NUEVA FUNCIÓN: Eliminar pedido
- async function EliminarPedido(id){
-   try {
+  async function EliminarPedido(id) {
+    try {
       const eliminacion = await fetch(
-        `http://127.0.0.1:8000/pedidosF/eliminarPM/${pedidoSeleccionado.id}`,
+        `http://127.0.0.1:8000/pedidosF/eliminarPM/${id}`,
         {
           method: "PUT",
-          headers:{'Content-type':'application/json'}
+          headers: { "Content-type": "application/json" },
         }
-      );    
-      await fetch(
-      `http://127.0.0.1:8000/pedidosF/eliminarDetalles/${id}`,
-      {method:"DELETE"}
-      )
+      );
+      await fetch(`http://127.0.0.1:8000/pedidosF/eliminarDetalles/${id}`, {
+        method: "DELETE",
+      });
       if (!eliminacion.ok) return alert("Error al eliminar el pedido");
       const mensajeEliminacion = await eliminacion.json();
       alert(mensajeEliminacion.mensaje);
@@ -160,52 +303,52 @@ export default function Pedidos_Fisicos() {
     } catch (error) {
       console.error("Hubo un error en la conexión", error);
     }
-  };
+  }
+  //Para cambiar el nombre de los botones que cambian el estado de pedido
   const obtenerTextoBoton = (estadoP) => {
-  const textos = {
-    "Pendiente": "Marcar como en preparación",
-    "En preparacion": "Marcar como listo",
-    "Listo": "Marcar como Servido"
+    const textos = {
+      Pendiente: "Marcar como en preparación",
+      "En preparacion": "Marcar como listo",
+      Listo: "Marcar como Servido",
+    };
+    return textos[estadoP] || "Cambiar estado";
   };
-  return textos[estadoP] || "Cambiar estado";
-};
-const cambiarEstadoNombre = async (id, estadoActual) => {
-  if (estadoActual === "Servido") {
-    alert("Este pedido ya está servido");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://127.0.0.1:8000/pedidosF/${id}/estado`, 
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-     const data = await response.json();
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || "Error al cambiar el estado");
+    //Para cambiar el estado de cada tarjeta
+  const cambiarEstadoNombre = async (id, estadoActual) => {
+    if (estadoActual === "Servido") {
+      alert("Este pedido ya está servido");
+      return;
     }
-    // Actualizar la vista de las tarjetas
-    setPedidos((prevPedidos) =>
-      prevPedidos.map((pedido) =>
-        pedido.id === id 
-          ? { ...pedido, estado: data.estado_nuevo } 
-          : pedido
-      )
-    );
 
-    alert(`✅ ${data.mensaje}\nNuevo estado: ${data.estado_nuevo}`);
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/pedidosF/${id}/estado`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Error al cambiar el estado");
+      }
+      const data = await response.json();
+      // Actualizar la vista de las tarjetas
+      setPedidos((prevPedidos) =>
+        prevPedidos.map((pedido) =>
+          pedido.id === id ? { ...pedido, estado: data.estado_nuevo } : pedido
+        )
+      );
 
-  } catch (error) {
-    console.error("Error al cambiar estado:", error);
-    alert(`❌ Error: ${error.message}`);
-  }
-}
- const pedidosVisibles = pedidos.filter(p => !pedidosCerrados.includes(p.id));;
+      alert(`✅ ${data.mensaje}\nNuevo estado: ${data.estado_nuevo}`);
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+      alert(`❌ Error: ${error.message}`);
+    }
+  };
+  const pedidosVisibles = pedidos.filter(
+    (p) => !pedidosCerrados.includes(p.id) && p.tipo_pedido === "Mesa"
+  );
 
   return (
     <div className="pedidos-container">
@@ -219,47 +362,51 @@ const cambiarEstadoNombre = async (id, estadoActual) => {
       </div>
 
       <div className="pedidos-grid-columnas">
-  {/* Columna: Pendiente */}
-  <div className="columna">
-    <h3 className="columna-titulo">⏳ Pendiente</h3>
-    {pedidosVisibles.filter(p => p.estado === "Pendiente").map((p) => (
-      <div key={p.id} className={"pedido-card"}>
-            <div className="pedido-top">
-              <div>
-                <div className="pedido-mesa">{p.mesa}</div>
-                <div className="pedido-cliente">{p.cliente}</div>
-              </div>
-              <div className="pedido-id">#{p.id}</div>
-            </div>
-            <ul className="pedido-items">
-              {p.items.map((it,idx) => (
-                <li key={idx}>
-                  <span>{it.nombre} x{it.cantidad}</span>
-                  <span className="precio">S/ {(it.precio_unitario * it.cantidad).toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
+        {/* Columna: Pendiente */}
+        <div className="columna">
+          <h3 className="columna-titulo">⏳ Pendiente</h3>
+          {pedidosVisibles
+            .filter((p) => p.estado === "Pendiente")
+            .map((p) => (
+              <div key={p.id} className={"pedido-card"}>
+                <div className="pedido-top">
+                  <div>
+                    <div className="pedido-mesa">{p.mesa}</div>
+                  </div>
+                  <div className="pedido-id">#{p.id}</div>
+                </div>
+                <ul className="pedido-items">
+                  {p.items.map((it, idx) => (
+                    <li key={idx}>
+                      <span>
+                        {it.nombre} x{it.cantidad}
+                      </span>
+                      <span className="precio">
+                        S/ {(it.precio_unitario * it.cantidad).toFixed(2)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
 
-            <div className="pedido-footer">
-              <small>
-                Estado: <strong>{p.estado}</strong> — {p.hora}
-              </small>
-              <strong>S/ {p.monto_total}</strong>
-            </div>
+                <div className="pedido-footer">
+                  <small>
+                    Estado: <strong>{p.estado}</strong> — {p.hora}
+                  </small>
+                  <strong>S/ {p.monto_total}</strong>
+                </div>
 
-            {p.estado==="Listo" && rol == 1 && (
-              <button
-                className={"btn-estado m-2"}
-                onClick={() => cambiarEstadoNombre(p.id, p.estado)}
-              >
-                {obtenerTextoBoton(p.estado)} 
-              </button>
-            )}
-                <button 
+                {p.estado === "Listo" && rol == 1 && (
+                  <button
+                    className={"btn-estado m-2"}
+                    onClick={() => cambiarEstadoNombre(p.id, p.estado)}
+                  >
+                    {obtenerTextoBoton(p.estado)}
+                  </button>
+                )}
+                <button
                   className="btn btn-warning m-1"
                   onClick={() => {
-                    setShowModalE(true);
-                    setPedidoSeleccionado(p);
+                    abrirModalEditar(p);
                   }}
                 >
                   Modificar pedido
@@ -268,127 +415,147 @@ const cambiarEstadoNombre = async (id, estadoActual) => {
                   className="btn btn-danger m-1"
                   onClick={() => {
                     setShowModalB(true);
-                    setPedidoSeleccionado(p); {/* 👈 CORREGIDO */}
+                    setPedidoSeleccionado(p);
                   }}
                 >
                   Cancelar pedido
                 </button>
-          </div>
-    ))}
-  </div>
-
-  {/* Columna: En preparación */}
-  <div className="columna">
-    <h3 className="columna-titulo">👨‍🍳 En Preparación</h3>
-    {pedidosVisibles.filter(p => p.estado === "En preparacion").map((p) => (
-      <div key={p.id} className={"pedido-card"}>
-            <div className="pedido-top">
-              <div>
-                <div className="pedido-mesa">{p.mesa}</div>
-                <div className="pedido-cliente">{p.cliente}</div>
               </div>
-              <div className="pedido-id">#{p.id}</div>
-            </div>
-            <ul className="pedido-items">
-              {p.items.map((it,idx) => (
-                <li key={idx}>
-                  <span>{it.nombre} x{it.cantidad}</span>
-                  <span className="precio">S/ {(it.precio_unitario * it.cantidad).toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
+            ))}
+        </div>
 
-            <div className="pedido-footer">
-              <small>
-                Estado: <strong>{p.estado}</strong> — {p.hora}
-              </small>
-              <strong>S/ {p.monto_total}</strong>
-            </div> 
-          </div>
-    ))}
-  </div>
+        {/* Columna: En preparación */}
+        <div className="columna">
+          <h3 className="columna-titulo">👨‍🍳 En Preparación</h3>
+          {pedidosVisibles
+            .filter((p) => p.estado === "En preparacion")
+            .map((p) => (
+              <div key={p.id} className={"pedido-card"}>
+                <div className="pedido-top">
+                  <div>
+                    <div className="pedido-mesa">{p.mesa}</div>
+                    <div className="pedido-cliente">{p.cliente}</div>
+                  </div>
+                  <div className="pedido-id">#{p.id}</div>
+                </div>
+                <ul className="pedido-items">
+                  {p.items.map((it, idx) => (
+                    <li key={idx}>
+                      <span>
+                        {it.nombre} x{it.cantidad}
+                      </span>
+                      <span className="precio">
+                        S/ {(it.precio_unitario * it.cantidad).toFixed(2)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
 
-  {/* Columna: Listo */}
-  <div className="columna">
-    <h3 className="columna-titulo">✅ Listo</h3>
-    {pedidosVisibles.filter(p => p.estado === "Listo").map((p) => (
-      <div key={p.id} className={"pedido-card"}>
-            <div className="pedido-top">
-              <div>
-                <div className="pedido-mesa">{p.mesa}</div>
-                <div className="pedido-cliente">{p.cliente}</div>
+                <div className="pedido-footer">
+                  <small>
+                    Estado: <strong>{p.estado}</strong> — {p.hora}
+                  </small>
+                  <strong>S/ {p.monto_total}</strong>
+                </div>
               </div>
-              <div className="pedido-id">#{p.id}</div>
-            </div>
-            <ul className="pedido-items">
-              {p.items.map((it,idx) => (
-                <li key={idx}>
-                  <span>{it.nombre} x{it.cantidad}</span>
-                  <span className="precio">S/ {(it.precio_unitario * it.cantidad).toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
+            ))}
+        </div>
 
-            <div className="pedido-footer">
-              <small>
-                Estado: <strong>{p.estado}</strong> — {p.hora}
-              </small>
-              <strong>S/ {p.monto_total}</strong>
-            </div>
-              <button
-                className={"btn-estado m-2"}
-                onClick={() => cambiarEstadoNombre(p.id, p.estado)}
-              >
-                {obtenerTextoBoton(p.estado)} 
-              </button>
-          </div>
-    ))}
-  </div>
+        {/* Columna: Listo */}
+        <div className="columna">
+          <h3 className="columna-titulo">✅ Listo</h3>
+          {pedidosVisibles
+            .filter((p) => p.estado === "Listo")
+            .map((p) => (
+              <div key={p.id} className={"pedido-card"}>
+                <div className="pedido-top">
+                  <div>
+                    <div className="pedido-mesa">{p.mesa}</div>
+                    <div className="pedido-cliente">{p.cliente}</div>
+                  </div>
+                  <div className="pedido-id">#{p.id}</div>
+                </div>
+                <ul className="pedido-items">
+                  {p.items.map((it, idx) => (
+                    <li key={idx}>
+                      <span>
+                        {it.nombre} x{it.cantidad}
+                      </span>
+                      <span className="precio">
+                        S/ {(it.precio_unitario * it.cantidad).toFixed(2)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
 
-  {/* Columna: Servido */}
-  <div className="columna">
-    <h3 className="columna-titulo">🍽️ Servido</h3>
-    {pedidosVisibles.filter(p => p.estado === "Servido").map((p) => (
-      <div key={p.id} className={"pedido-card"}>
-            <div className="pedido-top">
-               {p.estado==='Servido' &&(<button
-                className="btn-cerrar-modal"
-                onClick={() => cerrarTarjeta(p.id)}
-              >
-                ✖
-              </button>)}
-              <div>
-                <div className="pedido-mesa">{p.mesa}</div>
-                <div className="pedido-cliente">{p.cliente}</div>
+                <div className="pedido-footer">
+                  <small>
+                    Estado: <strong>{p.estado}</strong> — {p.hora}
+                  </small>
+                  <strong>S/ {p.monto_total}</strong>
+                </div>
+                <button
+                  className={"btn-estado m-2"}
+                  onClick={() => cambiarEstadoNombre(p.id, p.estado)}
+                >
+                  {obtenerTextoBoton(p.estado)}
+                </button>
               </div>
-              <div className="pedido-id">#{p.id}</div>
-            </div>
-            <ul className="pedido-items">
-              {p.items.map((it,idx) => (
-                <li key={idx}>
-                  <span>{it.nombre} x{it.cantidad}</span>
-                  <span className="precio">S/ {(it.precio_unitario * it.cantidad).toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
+            ))}
+        </div>
 
-            <div className="pedido-footer">
-              <small>
-                Estado: <strong>{p.estado}</strong> — {p.hora}
-              </small>
-              <strong>S/ {p.monto_total}</strong>
-            </div>
-          </div>
-    ))}
-  </div>
-</div>
+        {/* Columna: Servido */}
+        <div className="columna">
+          <h3 className="columna-titulo">🍽️ Servido</h3>
+          {pedidosVisibles
+            .filter((p) => p.estado === "Servido")
+            .map((p) => (
+              <div key={p.id} className={"pedido-card"}>
+                <div className="pedido-top">
+                  {p.estado === "Servido" && (
+                    <button
+                      className="btn-cerrar-modal"
+                      onClick={() => cerrarTarjeta(p.id)}
+                    >
+                      ✖
+                    </button>
+                  )}
+                  <div>
+                    <div className="pedido-mesa">{p.mesa}</div>
+                    <div className="pedido-cliente">{p.cliente}</div>
+                  </div>
+                  <div className="pedido-id">#{p.id}</div>
+                </div>
+                <ul className="pedido-items">
+                  {p.items.map((it, idx) => (
+                    <li key={idx}>
+                      <span>
+                        {it.nombre} x{it.cantidad}
+                      </span>
+                      <span className="precio">
+                        S/ {(it.precio_unitario * it.cantidad).toFixed(2)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="pedido-footer">
+                  <small>
+                    Estado: <strong>{p.estado}</strong> — {p.hora}
+                  </small>
+                  <strong>S/ {p.monto_total}</strong>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
 
       {/* MODAL CREAR PEDIDO */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>Nuevo Pedido 🦐</h3>
+              <h3>Nuevo Pedido</h3>
               <button
                 className="btn-cerrar-modal"
                 onClick={() => setShowModal(false)}
@@ -396,40 +563,36 @@ const cambiarEstadoNombre = async (id, estadoActual) => {
                 ✖
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="modal-form">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                guardarPedido();
+              }}
+              className="modal-form"
+            >
               <div className="col-md-12">
                 <label>Selecciona una mesa:</label>
-                  <select
-                    name="platillo_id"
-                    className="form-control w-100"
-                    value={nuevoPedido.mesa}
-                    onChange={handleChange}
-                  >
-                    <option value="" >--Selecciona una mesa</option>
-                    {mesas.map((mesa) => (
-                      <option key={mesa.id} value={mesa.id}>
-                        {mesa.numero}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-              <label>Nombre del Cliente:</label>
-              <input
-                type="text"
-                name="cliente"
-                value={nuevoPedido.cliente}
-                onChange={handleChange}
-                required
-              />
-
+                <select
+                  name="mesa_id"
+                  className="form-control w-100"
+                  value={nuevoPedido.mesa_id || ""}
+                  onChange={handleChange}
+                >
+                  <option value="">--Selecciona una mesa</option>
+                  {mesas.map((mesa) => (
+                    <option key={mesa.id} value={mesa.id}>
+                      {mesa.numero}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <label>Selecciona platillos o bebidas:</label>
               <div className="row d-flex align-items-center g-2 mb-2">
                 <div className="col-md-6">
                   <select
                     name="platillo_id"
                     className="form-control w-100"
-                    value={itemTemp.platillo_id}
+                    value={itemTemp.platillo_id || ""}
                     onChange={handleItemTempChange}
                   >
                     <option value="">Seleccionar platillo...</option>
@@ -482,11 +645,18 @@ const cambiarEstadoNombre = async (id, estadoActual) => {
                                 className="form-control form-control-sm"
                                 min="1"
                                 value={item.cantidad}
-                                onChange={(e) => actualizarCantidad(index, e.target.value)}
+                                onChange={(e) =>
+                                  actualizarCantidad(index, e.target.value)
+                                }
                               />
                             </div>
                             <div className="col-md-2 text-end">
-                              <strong>S/. {(item.precio * item.cantidad).toFixed(2)}</strong>
+                              <strong>
+                                S/.{" "}
+                                {(item.precio_unitario * item.cantidad).toFixed(
+                                  2
+                                )}
+                              </strong>
                             </div>
                             <div className="col-md-2 text-end mx-auto">
                               <button
@@ -499,12 +669,14 @@ const cambiarEstadoNombre = async (id, estadoActual) => {
                             </div>
                           </div>
                         </li>
-                      ))} 
+                      ))}
                     </ul>
                     <div className="card-footer bg-light">
                       <div className="row">
                         <div className="col text-end">
-                          <h5>Total: <strong>S/. {calcularTotal(nuevoPedido.items)}</strong></h5>
+                          <h5>
+                            Total: <strong>S/. {calcularTotal()}</strong>
+                          </h5>
                         </div>
                       </div>
                     </div>
@@ -546,7 +718,8 @@ const cambiarEstadoNombre = async (id, estadoActual) => {
                 <div className="modal-title">Confirmación de cancelación</div>
                 <div className="modal-body">
                   <label>
-                    ¿Estás seguro de que deseas cancelar el Pedido #{pedidoSeleccionado?.id}?
+                    ¿Estás seguro de que deseas cancelar el Pedido #
+                    {pedidoSeleccionado?.id}?
                   </label>
                   <button
                     type="submit"
@@ -573,43 +746,147 @@ const cambiarEstadoNombre = async (id, estadoActual) => {
       )}
 
       {/* MODAL EDITAR */}
-      {showModalE && (
+      {showModalE && pedidoAEditar && (
         <>
-          <div
-            className="modal fade show d-block"
-            tabIndex="-1"
-            aria-hidden="false"
-          >
-            <div className="modal-dialog">
-              <div className="modal-content">
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => setShowModalE(false)}
-                ></button>
-                <div className="modal-title">Área de edición</div>
-                <div className="modal-body">
-                  <label>
-                    Selecciona los platillos que quieres modificar:
-                  </label>
+          <div className="modal fade show d-block ">
+            <div className="modal-dialog modal-lg">
+              <div className="modal-content mx-auto">
+                <div className="modal-header">
+                  <h5>Editar Pedido #{pedidoAEditar.id}</h5>
                   <button
-                    type="submit"
-                    className="btn btn-warning mx-1"
-                    onClick={() => ModificarPedido(pedidoSeleccionado?.id)}
+                    className="btn-close"
+                    onClick={() => setShowModalE(false)}
+                  ></button>
+                </div>
+                <div className="modal-body">
+                  {/* Info del pedido */}
+                  <div className="alert alert-info">
+                    <strong>Mesa:</strong> {pedidoAEditar.mesa}
+                  </div>
+                  {/* Selector de platillos */}
+                  <label>Agregar más platillos:</label>
+                  <div className="d-flex align-items-center flex-wrap justify-content-center gap-2 my-1">
+                    <div className="col-8">
+                      <select
+                        name="platillo_id"
+                        className="form-control w-100"
+                        value={itemTempEditar.platillo_id}
+                        onChange={handleItemTempChangeEditar}
+                      >
+                        <option value="">Seleccionar platillo...</option>
+                        {platillos.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.nombre} - S/. {p.precio}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-3 my-2">
+                      <input
+                        type="number"
+                        name="cantidad"
+                        className="form-control fs-6"
+                        min="1"
+                        value={itemTempEditar.cantidad}
+                        onChange={handleItemTempChangeEditar}
+                      />
+                    </div>
+                    <div className="col-5 my-2">
+                      <button
+                        className="btn btn-success w-100"
+                        onClick={agregarPlatilloEditar}
+                      >
+                        Agregar
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lista de items editados */}
+                  {itemsEditados.length > 0 ? (
+                    <div className="card">
+                      <div className="card-header">
+                        <strong>Platillos del Pedido</strong>
+                      </div>
+                      <ul className="list-group list-group-flush">
+                        {itemsEditados.map((item, index) => (
+                          <li key={index} className="list-group-item">
+                            <div className="row align-items-center">
+                              <div className="col-4">
+                                <strong>{item.nombre}</strong>
+                                {item.es_nuevo && (
+                                  <span className="badge bg-success ms-2 my-2">
+                                    Nuevo
+                                  </span>
+                                )}
+                              </div>
+                              <div className="col-4">
+                                <input
+                                  type="number"
+                                  className="form-control form-control-sm"
+                                  min="1"
+                                  value={item.cantidad}
+                                  onChange={(e) =>
+                                    actualizarCantidadEditar(
+                                      index,
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="col-4 text-end">
+                                <strong>
+                                  S/.{" "}
+                                  {(
+                                    item.precio_unitario * item.cantidad
+                                  ).toFixed(2)}
+                                </strong>
+                              </div>
+                              <div className="col-4">
+                                <button
+                                  className="btn btn-danger btn-sm mx-auto"
+                                  onClick={() => eliminarPlatilloEditar(index)}
+                                >
+                                  Eliminar
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="card-footer">
+                        <h5>
+                          Total: <strong>S/. {calcularTotalEditar()}</strong>
+                        </h5>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="alert alert-warning">
+                      El pedido debe tener al menos un platillo.
+                    </div>
+                  )}
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setShowModalE(false)}
                   >
-                    Modificar
+                    Cancelar
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={guardarCambiosPedido}
+                    disabled={itemsEditados.length === 0}
+                  >
+                    Guardar Cambios
                   </button>
                 </div>
               </div>
             </div>
           </div>
-          <div
-            className="modal-backdrop fade show"
-            onClick={() => setShowModalE(false)}
-          ></div>
+          <div className="modal-backdrop fade show"></div>
         </>
       )}
     </div>
   );
 }
-

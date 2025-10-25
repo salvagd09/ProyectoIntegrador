@@ -20,7 +20,12 @@ export default function Pedidos_Fisicos() {
     cliente: "",
     items: [], 
   });
+  const [pedidosCerrados, setPedidosCerrados] = useState([]); // ← IDs de pedidos cerrados
 
+  // Función para cerrar una tarjeta
+  const cerrarTarjeta = (pedidoId) => {
+    setPedidosCerrados([...pedidosCerrados, pedidoId]);
+  };
   const handleItemTempChange = (e) => {
     const { name, value } = e.target;
     setItemTemp({ ...itemTemp, [name]: value });
@@ -92,30 +97,6 @@ export default function Pedidos_Fisicos() {
       .then((data) => setPedidos(data))
       .catch((err) => console.error(err));
   }, [])
-  const cambiarEstado = (id, estado) => {
-    if (estado === "Pendiente") {
-      setPedidos(
-        pedidos.map((pedido) =>
-          pedido.id === id ? { ...pedido, estado: "En preparacion" } : pedido
-        )
-      );
-    }
-    if (estado === "En preparacion") {
-      setPedidos(
-        pedidos.map((pedido) =>
-          pedido.id === id ? { ...pedido, estado: "Listo" } : pedido
-        )
-      );
-    }
-    if (estado === "Listo") {
-      setPedidos(
-        pedidos.map((pedido) =>
-          pedido.id === id ? { ...pedido, estado: "Servido" } : pedido
-        )
-      );
-    }
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNuevoPedido({ ...nuevoPedido, [name]: value });
@@ -157,16 +138,20 @@ export default function Pedidos_Fisicos() {
     setNuevoPedido({ id: "", mesa: "", cliente: "", items: [] });
     setItemTemp({ platillo_id: "", cantidad: 1 });
   };
-
-  // ✅ NUEVA FUNCIÓN: Eliminar pedido
+  //  NUEVA FUNCIÓN: Eliminar pedido
  async function EliminarPedido(id){
    try {
       const eliminacion = await fetch(
         `http://127.0.0.1:8000/pedidosF/eliminarPM/${pedidoSeleccionado.id}`,
         {
-          method: "DELETE",
+          method: "PUT",
+          headers:{'Content-type':'application/json'}
         }
-      );
+      );    
+      await fetch(
+      `http://127.0.0.1:8000/pedidosF/eliminarDetalles/${id}`,
+      {method:"DELETE"}
+      )
       if (!eliminacion.ok) return alert("Error al eliminar el pedido");
       const mensajeEliminacion = await eliminacion.json();
       alert(mensajeEliminacion.mensaje);
@@ -176,23 +161,51 @@ export default function Pedidos_Fisicos() {
       console.error("Hubo un error en la conexión", error);
     }
   };
-
-  // ✅ NUEVA FUNCIÓN: Modificar pedido (básica)
-  const ModificarPedido = (id) => {
-    // Aquí puedes implementar la lógica de modificación
-    alert(`Modificar pedido #${id} - Función por implementar`);
-    setShowModalE(false);
+  const obtenerTextoBoton = (estadoP) => {
+  const textos = {
+    "Pendiente": "Marcar como en preparación",
+    "En preparacion": "Marcar como listo",
+    "Listo": "Marcar como Servido"
   };
+  return textos[estadoP] || "Cambiar estado";
+};
+const cambiarEstadoNombre = async (id, estadoActual) => {
+  if (estadoActual === "Servido") {
+    alert("Este pedido ya está servido");
+    return;
+  }
 
-  const estado = (estadoP) => {
-    if (estadoP === "Pendiente") {
-      return "Marcar como en preparación";
-    } else if (estadoP === "En preparacion") {
-      return "Marcar como listo";
-    } else if (estadoP === "Listo") {
-      return "Marcar como Servido";
+  try {
+    const response = await fetch(
+      `http://127.0.0.1:8000/pedidosF/${id}/estado`, 
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+     const data = await response.json();
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Error al cambiar el estado");
     }
-  };
+    // Actualizar la vista de las tarjetas
+    setPedidos((prevPedidos) =>
+      prevPedidos.map((pedido) =>
+        pedido.id === id 
+          ? { ...pedido, estado: data.estado_nuevo } 
+          : pedido
+      )
+    );
+
+    alert(`✅ ${data.mensaje}\nNuevo estado: ${data.estado_nuevo}`);
+
+  } catch (error) {
+    console.error("Error al cambiar estado:", error);
+    alert(`❌ Error: ${error.message}`);
+  }
+}
+ const pedidosVisibles = pedidos.filter(p => !pedidosCerrados.includes(p.id));;
 
   return (
     <div className="pedidos-container">
@@ -205,9 +218,12 @@ export default function Pedidos_Fisicos() {
         )}
       </div>
 
-      <div className="pedidos-list">
-        {pedidos.map((p) => (
-          <div key={p.id} className={"pedido-card"}>
+      <div className="pedidos-grid-columnas">
+  {/* Columna: Pendiente */}
+  <div className="columna">
+    <h3 className="columna-titulo">⏳ Pendiente</h3>
+    {pedidosVisibles.filter(p => p.estado === "Pendiente").map((p) => (
+      <div key={p.id} className={"pedido-card"}>
             <div className="pedido-top">
               <div>
                 <div className="pedido-mesa">{p.mesa}</div>
@@ -231,17 +247,14 @@ export default function Pedidos_Fisicos() {
               <strong>S/ {p.monto_total}</strong>
             </div>
 
-            {p.estado != "Servido" && rol == 1 && (
+            {p.estado==="Listo" && rol == 1 && (
               <button
                 className={"btn-estado m-2"}
-                onClick={() => cambiarEstado(p.id, p.estado)}
+                onClick={() => cambiarEstadoNombre(p.id, p.estado)}
               >
-                {estado(p.estado)}
+                {obtenerTextoBoton(p.estado)} 
               </button>
             )}
-            
-            {p.estado === "Pendiente" && rol == 1 && (
-              <>
                 <button 
                   className="btn btn-warning m-1"
                   onClick={() => {
@@ -258,13 +271,117 @@ export default function Pedidos_Fisicos() {
                     setPedidoSeleccionado(p); {/* 👈 CORREGIDO */}
                   }}
                 >
-                  Eliminar pedido
+                  Cancelar pedido
                 </button>
-              </>
-            )}
           </div>
-        ))}
-      </div>
+    ))}
+  </div>
+
+  {/* Columna: En preparación */}
+  <div className="columna">
+    <h3 className="columna-titulo">👨‍🍳 En Preparación</h3>
+    {pedidosVisibles.filter(p => p.estado === "En preparacion").map((p) => (
+      <div key={p.id} className={"pedido-card"}>
+            <div className="pedido-top">
+              <div>
+                <div className="pedido-mesa">{p.mesa}</div>
+                <div className="pedido-cliente">{p.cliente}</div>
+              </div>
+              <div className="pedido-id">#{p.id}</div>
+            </div>
+            <ul className="pedido-items">
+              {p.items.map((it,idx) => (
+                <li key={idx}>
+                  <span>{it.nombre} x{it.cantidad}</span>
+                  <span className="precio">S/ {(it.precio_unitario * it.cantidad).toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="pedido-footer">
+              <small>
+                Estado: <strong>{p.estado}</strong> — {p.hora}
+              </small>
+              <strong>S/ {p.monto_total}</strong>
+            </div> 
+          </div>
+    ))}
+  </div>
+
+  {/* Columna: Listo */}
+  <div className="columna">
+    <h3 className="columna-titulo">✅ Listo</h3>
+    {pedidosVisibles.filter(p => p.estado === "Listo").map((p) => (
+      <div key={p.id} className={"pedido-card"}>
+            <div className="pedido-top">
+              <div>
+                <div className="pedido-mesa">{p.mesa}</div>
+                <div className="pedido-cliente">{p.cliente}</div>
+              </div>
+              <div className="pedido-id">#{p.id}</div>
+            </div>
+            <ul className="pedido-items">
+              {p.items.map((it,idx) => (
+                <li key={idx}>
+                  <span>{it.nombre} x{it.cantidad}</span>
+                  <span className="precio">S/ {(it.precio_unitario * it.cantidad).toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="pedido-footer">
+              <small>
+                Estado: <strong>{p.estado}</strong> — {p.hora}
+              </small>
+              <strong>S/ {p.monto_total}</strong>
+            </div>
+              <button
+                className={"btn-estado m-2"}
+                onClick={() => cambiarEstadoNombre(p.id, p.estado)}
+              >
+                {obtenerTextoBoton(p.estado)} 
+              </button>
+          </div>
+    ))}
+  </div>
+
+  {/* Columna: Servido */}
+  <div className="columna">
+    <h3 className="columna-titulo">🍽️ Servido</h3>
+    {pedidosVisibles.filter(p => p.estado === "Servido").map((p) => (
+      <div key={p.id} className={"pedido-card"}>
+            <div className="pedido-top">
+               {p.estado==='Servido' &&(<button
+                className="btn-cerrar-modal"
+                onClick={() => cerrarTarjeta(p.id)}
+              >
+                ✖
+              </button>)}
+              <div>
+                <div className="pedido-mesa">{p.mesa}</div>
+                <div className="pedido-cliente">{p.cliente}</div>
+              </div>
+              <div className="pedido-id">#{p.id}</div>
+            </div>
+            <ul className="pedido-items">
+              {p.items.map((it,idx) => (
+                <li key={idx}>
+                  <span>{it.nombre} x{it.cantidad}</span>
+                  <span className="precio">S/ {(it.precio_unitario * it.cantidad).toFixed(2)}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="pedido-footer">
+              <small>
+                Estado: <strong>{p.estado}</strong> — {p.hora}
+              </small>
+              <strong>S/ {p.monto_total}</strong>
+            </div>
+          </div>
+    ))}
+  </div>
+</div>
 
       {/* MODAL CREAR PEDIDO */}
       {showModal && (
@@ -416,7 +533,7 @@ export default function Pedidos_Fisicos() {
         </div>
       )}
 
-      {/* MODAL ELIMINAR */}
+      {/* MODAL Cancelar */}
       {showModalB && (
         <>
           <div
@@ -426,10 +543,10 @@ export default function Pedidos_Fisicos() {
           >
             <div className="modal-dialog">
               <div className="modal-content">
-                <div className="modal-title">Confirmación de eliminación</div>
+                <div className="modal-title">Confirmación de cancelación</div>
                 <div className="modal-body">
                   <label>
-                    ¿Estás seguro de que deseas eliminar el Pedido #{pedidoSeleccionado?.id}?
+                    ¿Estás seguro de que deseas cancelar el Pedido #{pedidoSeleccionado?.id}?
                   </label>
                   <button
                     type="submit"

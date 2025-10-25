@@ -176,8 +176,8 @@ class Pagos(Base):
 class Recetas(Base):
     __tablename__="recetas"
     id=Column(Integer,primary_key=True,index=True)
-    producto_id=Column(Integer,ForeignKey("productos.id"),nullable=False,unique=True)
-    ingredientes_id=Column(Integer,ForeignKey("ingredientes.id"),nullable=False,unique=True)
+    producto_id=Column(Integer,ForeignKey("productos.id"),nullable=False)
+    ingredientes_id=Column(Integer,ForeignKey("ingredientes.id"),nullable=False)
     cantidad_requerida=Column(Float,nullable=False)
     productosR=relationship("Platillo",back_populates="recetasP")
     ingredientesR=relationship("Ingredientes",back_populates="recetasI")

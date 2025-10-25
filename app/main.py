@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Importar routers correctamente
-from app.routers.pedidosF import router as pedidos_router
+from app.routers.PedidosF import router as pedidos_router
 from app.routers.menu import router as menu_router
 from app.routers.auth import router as auth_router
 from app.routers.mesas import router as mesas_router

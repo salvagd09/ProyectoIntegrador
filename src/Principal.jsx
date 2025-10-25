@@ -4,6 +4,7 @@ import Admin from "./Components/Admin";
 import Caja from "./Components/Caja";
 import Cocina from "./Components/Cocina";
 import Mesero from "./Components/Mesero";
+
 function Main() {
   return (
     <Routes>

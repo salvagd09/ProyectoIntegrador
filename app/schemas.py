@@ -112,4 +112,64 @@ class PedidoEditarSolicitud(BaseModel):
     monto_total: float
     class Config:
         from_attributes = True
+class DetallePedidoDeliveryCreate(BaseModel):
+    producto_id: int
+    cantidad: int
+    notas: Optional[str] = None
 
+class PedidoDeliveryCreate(BaseModel):
+    nombre_cliente: str
+    direccion_cliente: str
+    telefono_cliente: str
+    plataforma: str
+    codigo_pedido_externo: Optional[str] = None
+    detalles: List[DetallePedidoDeliveryCreate]
+    metodo_pago: str
+
+class PedidoDeliveryResponse(BaseModel):
+    id: int
+    estado: str
+    monto_total: float
+    tipo_pedido: str
+    fecha_creacion: str
+    nombre_cliente: str
+    direccion_cliente: str
+    telefono_cliente: str
+    plataforma: str
+    codigo_pedido_externo: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class DetallePedidoDeliveryResponse(BaseModel):
+    id: int
+    producto_id: int
+    producto_nombre: str
+    cantidad: int
+    precio_unitario: float
+    notas: Optional[str] = None
+    estado: str
+    
+    class Config:
+        from_attributes = True
+
+class PagoDeliveryResponse(BaseModel):
+    id: Optional[int] = None
+    monto: float
+    metodo_pago: Optional[str] = None
+    estado: Optional[str] = None
+    referencia_pago: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class PedidoDeliveryCompletoResponse(BaseModel):
+    pedido: PedidoDeliveryResponse
+    detalles: List[DetallePedidoDeliveryResponse]
+    pago: PagoDeliveryResponse
+    
+    class Config:
+        from_attributes = True
+
+class ActualizarEstadoDelivery(BaseModel):
+    estado: str

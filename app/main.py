@@ -8,7 +8,7 @@ from app.routers.auth import router as auth_router
 from app.routers.mesas import router as mesas_router
 from app.routers.inventario import router as inventario_router
 from app.routers.empleados import router as empleados_router
-
+from app.routers.delivery import router as delivery_router
 app = FastAPI(title="Sistema de Pedidos")
 
 # --- Middleware CORS ---
@@ -27,7 +27,7 @@ app.include_router(mesas_router)
 app.include_router(inventario_router)
 app.include_router(empleados_router)
 app.include_router(pedidos_router)
-
+app.include_router(delivery_router) 
 # --- Ruta raíz ---
 @app.get("/")
 def root():

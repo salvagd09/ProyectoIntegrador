@@ -148,19 +148,19 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Pedido #{id} no encontrado"
             )
+        estado_anterior = pedido.estado
         # Determinar nuevo estado
-        estado_map = {
-            'Pendiente': 'En preparacion',
-            'En preparacion': 'Listo',
-            'Listo': 'Servido'
-        }
-        nuevo_estado = estado_map.get(pedido.estado)
-        if not nuevo_estado:
+        if pedido.estado == 'Pendiente':
+            nuevo_estado = 'En preparacion'
+        elif pedido.estado == 'En preparacion':
+            nuevo_estado = 'Listo'
+        elif pedido.estado == 'Listo':
+            nuevo_estado = 'Entregado' if pedido.tipo_pedido == 'Delivery' else 'Servido'
+        else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Estado '{pedido.estado}' no válido"
-            )
-        estado_anterior = pedido.estado
+                detail=f"Estado '{pedido.estado}' no válido o ya está completo"
+        )
         
         # Actualizar el pedido
         pedido.estado = nuevo_estado

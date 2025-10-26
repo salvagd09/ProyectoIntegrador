@@ -305,18 +305,20 @@ const guardarCambiosPedido = async () => {
     }
   }
   //Para cambiar el nombre de los botones que cambian el estado de pedido
-  const obtenerTextoBoton = (estadoP) => {
-    const textos = {
-      Pendiente: "Marcar como en preparación",
-      "En preparacion": "Marcar como listo",
-      Listo: "Marcar como Servido",
-    };
-    return textos[estadoP] || "Cambiar estado";
+const obtenerTextoBoton = (estadoP, tipoServicio) => {
+  const textos = {
+    Pendiente: "Marcar como en preparación",
+    "En preparacion": "Marcar como listo",
+    Listo: tipoServicio === "Delivery" 
+      ? "Marcar como entregado" 
+      : "Marcar como servido"
   };
+  return textos[estadoP] || "Cambiar estado";
+};
     //Para cambiar el estado de cada tarjeta
   const cambiarEstadoNombre = async (id, estadoActual) => {
-    if (estadoActual === "Servido") {
-      alert("Este pedido ya está servido");
+    if (estadoActual === "Servido" || estadoActual==="Entregado") {
+      alert("Este pedido ya está servido y/o entregado");
       return;
     }
 
@@ -349,7 +351,9 @@ const guardarCambiosPedido = async () => {
   const pedidosVisibles = pedidos.filter(
     (p) => !pedidosCerrados.includes(p.id) && p.tipo_pedido === "Mesa"
   );
-
+  const pedidosVisiblesLyS = pedidos.filter(
+    (p) => !pedidosCerrados.includes(p.id) 
+  );
   return (
     <div className="pedidos-container">
       <div className="pedidos-topbar">
@@ -400,7 +404,7 @@ const guardarCambiosPedido = async () => {
                     className={"btn-estado m-2"}
                     onClick={() => cambiarEstadoNombre(p.id, p.estado)}
                   >
-                    {obtenerTextoBoton(p.estado)}
+                    {obtenerTextoBoton(p.estado,p.tipo_pedido)}
                   </button>
                 )}
                 <button
@@ -464,7 +468,7 @@ const guardarCambiosPedido = async () => {
         {/* Columna: Listo */}
         <div className="columna">
           <h3 className="columna-titulo">✅ Listo</h3>
-          {pedidosVisibles
+          {pedidosVisiblesLyS
             .filter((p) => p.estado === "Listo")
             .map((p) => (
               <div key={p.id} className={"pedido-card"}>
@@ -498,21 +502,21 @@ const guardarCambiosPedido = async () => {
                   className={"btn-estado m-2"}
                   onClick={() => cambiarEstadoNombre(p.id, p.estado)}
                 >
-                  {obtenerTextoBoton(p.estado)}
+                  {obtenerTextoBoton(p.estado,p.tipo_pedido)}
                 </button>
               </div>
             ))}
         </div>
 
-        {/* Columna: Servido */}
+        {/* Columna: Servido y Entregado */}
         <div className="columna">
-          <h3 className="columna-titulo">🍽️ Servido</h3>
-          {pedidosVisibles
-            .filter((p) => p.estado === "Servido")
+          <h3 className="columna-titulo">🍽️ Servido o Entregado</h3>
+          {pedidosVisiblesLyS
+            .filter((p) => p.estado === "Servido" || p.estado ==="Entregado")
             .map((p) => (
               <div key={p.id} className={"pedido-card"}>
                 <div className="pedido-top">
-                  {p.estado === "Servido" && (
+                  {(p.estado === "Servido" || p.estado==="Entregado") && (
                     <button
                       className="btn-cerrar-modal"
                       onClick={() => cerrarTarjeta(p.id)}

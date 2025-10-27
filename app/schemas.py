@@ -262,7 +262,7 @@ class PedidoCreate(PedidoBase):
 
 # Esquema de respuesta detallado de un pedido
 class PedidoResponse(PedidoBase):
-    """Schema de respuesta completo."""
+    """Schema de respuesta completo"""
     id: int
     estado: EstadoPedido
     monto_total: float

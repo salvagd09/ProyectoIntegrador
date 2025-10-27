@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@300;400;500;700&display=swap');
+/* Fuentes */
+:root {
+    --font-title: 'Bebas Neue', sans-serif;
+    --font-basic: 'Poppins', sans-serif;
+}
+
+/* Tema clásico */
+.theme-classic {
+    --color-bg: #F8FAFC;
+    --color-header: #fff;
+    --color-title: #003366;
+    --color-accent: #0099CC;
+    --color-btn: #FF7F50;
+    --color-btn-delete: #FFD700;
+    --color-secondary: #98FF98;
+    --color-card: #F3F6F9;
+    --color-text: #333;
+    --color-muted: #616161;
+}
+
+/* Tema tropical */
+.theme-tropical {
+    --color-bg: #FDF6EC;
+    --color-header: #E0F7FA;
+    --color-title: #008080;
+    --color-accent: #00BFAE;
+    --color-btn: #FFB347;
+    --color-btn-delete: #FFEB3B;
+    --color-secondary: #B2FF59;
+    --color-card: #FFF8E1;
+    --color-text: #2E3A3A;
+    --color-muted: #7E8C8C;
+}
+
+/* Tema oscuro */
+.theme-dark {
+    --color-bg: #1A2226;
+    --color-header: #232B2F;
+    --color-title: #80D8FF;
+    --color-accent: #00B8D4;
+    --color-btn: #FF7043;
+    --color-btn-delete: #FFD600;
+    --color-secondary: #69F0AE;
+    --color-card: #263238;
+    --color-text: #ECEFF1;
+    --color-muted: #90A4AE;
+}
+
+/* Tema Coral */
+.theme-coral {
+    --color-bg: #FFF5F3;
+    --color-header: #FFFFFF;
+    --color-title: #FF6B6B;
+    --color-accent: #FA8072;
+    --color-btn: #FF7F50;
+    --color-btn-delete: #FFA07A;
+    --color-secondary: #FFB6C1;
+    --color-card: #FFF0EC;
+    --color-text: #4A4A4A;
+    --color-muted: #898989;
+}
+
+/* Tema Deep Ocean */
+.theme-deep-ocean {
+    --color-bg: #0A192F;
+    --color-header: #112240;
+    --color-title: #64FFDA;
+    --color-accent: #0A7ACA;
+    --color-btn: #00B4D8;
+    --color-btn-delete: #48CAE4;
+    --color-secondary: #90E0EF;
+    --color-card: #1E2D40;
+    --color-text: #E6F1FF;
+    --color-muted: #8892B0;
+}
+
+/* Ajustes específicos para temas oscuros */
+.theme-dark .card,
+.theme-deep-ocean .card {
+    border-color: var(--color-accent);
+}
+
+.theme-dark .modal-content,
+.theme-deep-ocean .modal-content {
+    background: var(--color-header);
+    border: 1px solid var(--color-accent);
+}
+
+.theme-dark .modal-body .form-control,
+.theme-deep-ocean .modal-body .form-control,
+.theme-dark .modal-body .form-select,
+.theme-deep-ocean .modal-body .form-select {
+    background-color: var(--color-bg);
+    border-color: var(--color-accent);
+    color: var(--color-text);
+}

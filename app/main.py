@@ -10,7 +10,7 @@ from app.routers.empleados import router as empleados_router
 from app.routers.delivery import router as delivery_router
 from app.routers.categorias import router as categorias_router
 from app.routers.ingredientes import router as ingredientes_router
-from app.routers.menu_A import router as menu_router
+from app.routers.menu import router as menu_router
 from app.routers.inventario_L import router as inventario_L_router
 app = FastAPI(title="Sistema de Pedidos")
 

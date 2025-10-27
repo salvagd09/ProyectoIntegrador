@@ -1,3 +1,4 @@
+from app.routers.pagos import router as pagos_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -33,7 +34,8 @@ app.include_router(inventario_L_router)
 app.include_router(inventario_router)
 app.include_router(empleados_router)
 app.include_router(pedidos_router)
-app.include_router(delivery_router) 
+app.include_router(delivery_router)
+app.include_router(pagos_router)
 
 # --- Ruta raíz ---
 @app.get("/")

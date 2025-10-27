@@ -1,17 +1,27 @@
+import os
+import sys
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from .config import DB_URL 
-# Crear motor de conexión
-engine = create_engine(DB_URL)
+from dotenv import load_dotenv
 
-# Crear sesión
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+load_dotenv()
 
-# Base para los modelos
+DATABASE_URL = os.getenv("DATABASE_PUBLIC_URL")
+
+if not DATABASE_URL:
+    print("ERROR: No se encontró DATABASE_PUBLIC_URL en el archivo .env")
+    sys.exit(1)
+
+engine = create_engine(
+    DATABASE_URL, 
+    echo = os.getenv("SQL_ECHO", "false").lower() == "true"
+)
+
+SessionLocal = sessionmaker(bind = engine, autocommit = False, autoflush = False)
+
 Base = declarative_base()
 
-# Dependencia para usar en rutas
 def get_db():
     db = SessionLocal()
     try:

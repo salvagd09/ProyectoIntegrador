@@ -36,8 +36,8 @@ def descontar_insumos_merma(merma_id: int, db: Session):
     
     # 3. Verificar y descontar con row locking
     for insumo_id, cantidad in insumos_necesarios.items():
-        insumo = db.query(models.Ingredientes).filter(
-            models.Ingredientes.id == insumo_id
+        insumo = db.query(models.Ingrediente).filter(
+            models.Ingrediente.id == insumo_id
         ).with_for_update().first()
         
         if not insumo:
@@ -57,7 +57,7 @@ def descontar_insumos_merma(merma_id: int, db: Session):
 # GET /api/inventario/ - Obtener todo el inventario
 @router.get("/")
 def Mostrar_inventario(db: Session = Depends(get_db)):
-    ingredientes = db.query(models.Ingredientes).order_by(models.Ingredientes.id.asc()).all()
+    ingredientes = db.query(models.Ingrediente).order_by(models.Ingrediente.id.asc()).all()
     mostrar_ingredientes = []
     for ingrediente in ingredientes:
         mostrar_ingredientes.append({
@@ -66,7 +66,7 @@ def Mostrar_inventario(db: Session = Depends(get_db)):
             "cantidad_actual": float(ingrediente.cantidad_actual),
             "minimo": float(ingrediente.stock_minimo),
             "categoria": ingrediente.descripcion,  # descripcion como categoria
-            "precio": float(ingrediente.precio),
+            "precio": float(ingrediente.precio_unitario),
             "unidad_medida": ingrediente.unidad_de_medida,
             "perecible": ingrediente.es_perecible
         })
@@ -77,19 +77,19 @@ def Mostrar_inventario(db: Session = Depends(get_db)):
 def crear_insumo(insumo: schemas.AInsumo, db: Session = Depends(get_db)):
     try:
         # Verificar si ya existe
-        insumo_existente = db.query(models.Ingredientes).filter(
-            models.Ingredientes.nombre == insumo.nombre
+        insumo_existente = db.query(models.Ingrediente).filter(
+            models.Ingrediente.nombre == insumo.nombre
         ).first()
         
         if insumo_existente:
             raise HTTPException(status_code=400, detail="Ya existe un insumo con este nombre")
         
         # Crear nuevo ingrediente
-        db_ingrediente = models.Ingredientes(
+        db_ingrediente = models.Ingrediente(
             nombre=insumo.nombre,
             descripcion=insumo.categoria,  # categoria -> descripcion
             cantidad_actual=insumo.cantidad,
-            precio=insumo.precio,
+            precio=insumo.precio_unitario,
             unidad_de_medida=insumo.unidad,
             stock_minimo=insumo.minimo,
             es_perecible=insumo.perecible
@@ -105,7 +105,7 @@ def crear_insumo(insumo: schemas.AInsumo, db: Session = Depends(get_db)):
             "cantidad_actual": float(db_ingrediente.cantidad_actual),
             "minimo": float(db_ingrediente.stock_minimo),
             "categoria": db_ingrediente.descripcion,
-            "precio": float(db_ingrediente.precio),
+            "precio": float(db_ingrediente.precio_unitario),
             "unidad_medida": db_ingrediente.unidad_de_medida,
             "perecible": db_ingrediente.es_perecible
         }
@@ -119,16 +119,16 @@ def crear_insumo(insumo: schemas.AInsumo, db: Session = Depends(get_db)):
 def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Depends(get_db)):
     try:
         # Buscar el ingrediente
-        db_ingrediente = db.query(models.Ingredientes).filter(models.Ingredientes.id == insumo_id).first()
+        db_ingrediente = db.query(models.Ingrediente).filter(models.Ingrediente.id == insumo_id).first()
         
         if not db_ingrediente:
             raise HTTPException(status_code=404, detail="Insumo no encontrado")
         
         # Verificar nombre duplicado
         if insumo.nombre != db_ingrediente.nombre:
-            insumo_existente = db.query(models.Ingredientes).filter(
-                models.Ingredientes.nombre == insumo.nombre,
-                models.Ingredientes.id != insumo_id
+            insumo_existente = db.query(models.Ingrediente).filter(
+                models.Ingrediente.nombre == insumo.nombre,
+                models.Ingrediente.id != insumo_id
             ).first()
             if insumo_existente:
                 raise HTTPException(status_code=400, detail="Ya existe otro insumo con este nombre")
@@ -137,7 +137,7 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
         db_ingrediente.nombre = insumo.nombre
         db_ingrediente.descripcion = insumo.categoria
         db_ingrediente.cantidad_actual = insumo.cantidad
-        db_ingrediente.precio = insumo.precio
+        db_ingrediente.precio = insumo.precio_unitario
         db_ingrediente.unidad_de_medida = insumo.unidad
         db_ingrediente.stock_minimo = insumo.minimo
         db_ingrediente.es_perecible = insumo.perecible
@@ -151,7 +151,7 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
             "cantidad_actual": float(db_ingrediente.cantidad_actual),
             "minimo": float(db_ingrediente.stock_minimo),
             "categoria": db_ingrediente.descripcion,
-            "precio": float(db_ingrediente.precio),
+            "precio": float(db_ingrediente.precio_unitario),
             "unidad_medida": db_ingrediente.unidad_de_medida,
             "perecible": db_ingrediente.es_perecible
         }
@@ -164,7 +164,7 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
 @router.delete("/{insumo_id}")
 def eliminar_insumo(insumo_id: int, db: Session = Depends(get_db)):
     try:
-        db_ingrediente = db.query(models.Ingredientes).filter(models.Ingredientes.id == insumo_id).first()
+        db_ingrediente = db.query(models.Ingrediente).filter(models.Ingrediente.id == insumo_id).first()
         
         if not db_ingrediente:
             raise HTTPException(status_code=404, detail="Insumo no encontrado")
@@ -195,7 +195,7 @@ def registrar_movimiento(movimiento_data: dict, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Datos incompletos")
         
         # Buscar el insumo
-        ingrediente = db.query(models.Ingredientes).filter(models.Ingredientes.id == insumo_id).first()
+        ingrediente = db.query(models.Ingrediente).filter(models.Ingrediente.id == insumo_id).first()
         if not ingrediente:
             raise HTTPException(status_code=404, detail="Insumo no encontrado")
         

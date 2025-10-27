@@ -27,16 +27,16 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
             for receta in recetas:
                 cantidad = receta.cantidad_requerida * detalle.cantidad
                 # ✅ Acumular, no sobrescribir
-                if receta.ingredientes_id in insumos_necesarios:
-                    insumos_necesarios[receta.ingredientes_id] += cantidad
+                if receta.ingrediente_id in insumos_necesarios:
+                    insumos_necesarios[receta.ingrediente_id] += cantidad
                 else:
-                    insumos_necesarios[receta.ingredientes_id] = cantidad
+                    insumos_necesarios[receta.ingrediente_id] = cantidad
         
         # 3. Verificar y descontar de forma ATÓMICA
         for insumo_id, cantidad in insumos_necesarios.items():
             # ✅ Usar row locking para evitar race conditions
-            insumo = db.query(models.Ingredientes).filter(
-                models.Ingredientes.id == insumo_id
+            insumo = db.query(models.Ingrediente).filter(
+                models.Ingrediente.id == insumo_id
             ).with_for_update().first()
             
             if not insumo:
@@ -78,7 +78,7 @@ def listar_productos(db: Session = Depends(get_db)):
 #Para colocar mesas disponibles en el select
 @router.get("/mesas")
 def Mostrar_mesas(db:Session=Depends(get_db)):
-    mesas=db.query(models.Mesas).filter(models.Mesas.estado=="Libre").order_by(models.Mesas.id.asc())
+    mesas=db.query(models.Mesas).filter(models.Mesas.estado=="libre").order_by(models.Mesas.id.asc())
     mostrar_mesas = []
     for mesa in mesas:
         mostrar_mesas.append({
@@ -86,6 +86,7 @@ def Mostrar_mesas(db:Session=Depends(get_db)):
             "numero": mesa.numero
         })
     return mostrar_mesas
+
 @router.get("/pedidosM", response_model=List[schemas.MostrarPedido])
 def Mostrar_Pedidos(db: Session = Depends(get_db)):
     pedidos = db.query(models.Pedidos).all()
@@ -110,20 +111,22 @@ def Mostrar_Pedidos(db: Session = Depends(get_db)):
             "estado": pedido.estado,
             "tipo_pedido":pedido.tipo_pedido,
             "hora": hora,
-            "monto_total": float(pedido.monto_total),
+            "monto_total": float(pedido.monto_total), # type: ignore
             "items": items
         })
     return mostrar_pedidos
+
 @router.put("/eliminarPM/{id}")
 def cancelar_Pedidos(id: int, db: Session = Depends(get_db)):
     # Buscar el pedido
     pedido = db.query(models.Pedidos).filter(models.Pedidos.id == id).first()
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
-    pedido.estado='Cancelado'
+    pedido.estado=models.EstadoPedidoEnum.cancelado # type: ignore # type: ignore
     db.commit()
     db.refresh(pedido)
     return {"mensaje": "Pedido cancelado correctamente"}
+
 @router.delete("/eliminarDetalles/{id}")
 def eliminar_detalles_pedidos(id:int,db:Session=Depends(get_db)):
     detalles_pedidos=db.query(models.Detalles_Pedido).filter(models.Detalles_Pedido.pedido_id==id)
@@ -131,10 +134,11 @@ def eliminar_detalles_pedidos(id:int,db:Session=Depends(get_db)):
     if registros_a_eliminar>0:
         detalles_pedidos.delete(synchronize_session="fetch")
         db.commit()
+        return {"mensaje": f"Se eliminaron {registros_a_eliminar} detalles para el pedido {id}"}
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No se encontraron detalles para el pedido con ID {id}."
+            detail=f"No se encontraron detalles para el pedido con ID {id}"
         )
     return
 ##Cambiar estado de una mesa a otra y restar cantidad de insumos
@@ -150,21 +154,28 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
             )
         estado_anterior = pedido.estado
         # Determinar nuevo estado
-        if pedido.estado == 'Pendiente':
-            nuevo_estado = 'En preparacion'
-        elif pedido.estado == 'En preparacion':
-            nuevo_estado = 'Listo'
-        elif pedido.estado == 'Listo':
-            nuevo_estado = 'Entregado' if pedido.tipo_pedido == 'Delivery' else 'Servido'
+        if pedido.estado == models.EstadoPedidoEnum.pendiente: # type: ignore
+            nuevo_estado = models.EstadoPedidoEnum.en_preparacion
+        elif pedido.estado == models.EstadoPedidoEnum.en_preparacion: # type: ignore
+            nuevo_estado = models.EstadoPedidoEnum.listo
+        elif pedido.estado == models.EstadoPedidoEnum.listo: # type: ignore
+            # Aquí la lógica es un poco más compleja, ya que compara con un string
+            # DEBES COMPARAR CON LOS VALORES DE ENUM
+            if pedido.tipo_pedido == models.TipoPedidoEnum.delivery: # type: ignore
+                nuevo_estado = models.EstadoPedidoEnum.entregado
+            else:
+                nuevo_estado = models.EstadoPedidoEnum.servido
         else:
+            # Ahora, la comparación final es segura porque compara objetos Enum
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Estado '{pedido.estado}' no válido o ya está completo"
-        )
+                detail=f"Estado '{pedido.estado.value}' no válido o ya está completo"
+            )
         
         # Actualizar el pedido
-        pedido.estado = nuevo_estado
-        if (estado_anterior=='Pendiente' and nuevo_estado=='En preparacion'):
+        pedido.estado = nuevo_estado # type: ignore
+
+        if (estado_anterior==models.EstadoPedidoEnum.pendiente and nuevo_estado == models.EstadoPedidoEnum.en_preparacion): # type: ignore
             descontar_insumos_pedido(id,db)
         # Actualizar todos los detalles en una sola query (MÁS EFICIENTE)
         detalles_actualizados = db.query(models.Detalles_Pedido).filter(
@@ -221,14 +232,14 @@ def agregar_Pedido(data:schemas.AgregarPedido,db:Session=Depends(get_db)):
             "estado": nuevo_pedido.estado,
             "hora": nuevo_pedido.fecha_creacion.strftime("%H:%M"),
             "tipo_pedido": nuevo_pedido.tipo_pedido,
-            "monto_total": float(nuevo_pedido.monto_total),
+            "monto_total": float(nuevo_pedido.monto_total), # type: ignore
             "items": [
                 {
                     "pedido_id": d.pedido_id,
                     "producto_id": d.producto_id,
                     "nombre": d.platillos.nombre,
                     "cantidad": d.cantidad,
-                    "precio_unitario": float(d.precio_unitario)
+                    "precio_unitario": float(d.precio_unitario) # type: ignore
                 }
                 for d in detalles
             ]}
@@ -281,12 +292,12 @@ def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Se
                 cantidad=detalle.cantidad,
                 precio_unitario=detalle.precio_unitario,
                 notas=detalle.notas,
-                estado="Pendiente"                                 
+                estado="pendiente"                                 
             )
             db.add(nuevo_detalle)
         
         # Actualizar monto total
-        pedido.monto_total = pedido_data.monto_total
+        pedido.monto_total = pedido_data.monto_total # type: ignore
         
         db.commit()
         db.refresh(pedido)

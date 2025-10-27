@@ -42,8 +42,9 @@ def cambiar_estado_mesa(mesa_id: int, db: Session = Depends(get_db)):
     mesa = db.query(models.Mesas).filter(models.Mesas.id == mesa_id).first()
     if not mesa:
         raise HTTPException(status_code=404, detail="Mesa no encontrada")
-    if mesa.estado == "Ocupada":
-        mesa.estado = "Libre"
+    if mesa.estado == "ocupada": # type: ignore
+        mesa.estado = "libre" # type: ignore
     db.commit()
     db.refresh(mesa)
     return {"id": mesa.id, "numero": mesa.numero, "estado": mesa.estado}
+

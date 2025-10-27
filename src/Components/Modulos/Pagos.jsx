@@ -1,3 +1,4 @@
+import CulqiTester from "./CulqiTester";
 import { useState, useRef, useEffect } from 'react';
 
 const PaymentManager = () => {
@@ -7,12 +8,63 @@ const PaymentManager = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [selectedPedido, setSelectedPedido] = useState(null);
+
+  const [payments, setPayments] = useState([
+    {
+      id: '1',
+      orderId: 'PED-001',
+      type: 'local',
+      customerName: 'Juan Pérez',
+      customerEmail: 'juan@example.com',
+      tableNumber: '5',
+      items: [
+        { id: '1', name: 'Ceviche Mixto', quantity: 1, price: 35 },
+        { id: '2', name: 'Chicha Morada', quantity: 2, price: 6 }
+      ],
+      subtotal: 47,
+      tax: 8.46,
+      discount: 0,
+      total: 55.46,
+      paymentMethod: 'cash',
+      cashReceived: 60,
+      changeAmount: 4.54,
+      status: 'completed',
+      createdAt: new Date().toLocaleString('es-PE')
+    }
+  ]);
+
+  const [orderData, setOrderData] = useState({
+    orderId: `PED-${Date.now().toString().slice(-3)}`,
+    type: 'local',
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    customerAddress: '',
+    tableNumber: '',
+    discount: 0
+  });
+
+  const [orderItems, setOrderItems] = useState([
+    { id: '1', name: '', quantity: 1, price: 0 }
+  ]);
   
   const [cashData, setCashData] = useState({
     received: 0,
     change: 0
   });
 
+  const [qrData, setQrData] = useState({
+    url: null,
+    loading: false,
+    verified: false
+  });
+
+  const [culqiData, setCulqiData] = useState({
+    processing: false,
+    success: false,
+    cargoId: null
+  });
+  
   const receiptRef = useRef(null);
 
   // ✅ OBTENER PEDIDOS DELIVERY PENDIENTES DE PAGO
@@ -46,6 +98,41 @@ const PaymentManager = () => {
     obtenerPagosCompletados();
   }, []);
 
+  // Cálculos
+  const calculateTotals = () => {
+    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const tax = subtotal * 0.18;
+    const total = subtotal + tax - orderData.discount;
+    
+    return { subtotal, tax, total };
+  };
+
+  const { subtotal, tax, total } = calculateTotals();
+
+  // Manejo de items
+  const addOrderItem = () => {
+    setOrderItems(prev => [...prev, {
+      id: Date.now().toString(),
+      name: '',
+      quantity: 1,
+      price: 0
+    }]);
+  };
+
+  const updateOrderItem = (id, field, value) => {
+    setOrderItems(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const removeOrderItem = (id) => {
+    if (orderItems.length > 1) {
+      setOrderItems(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
+
+  
   // ✅ CÁLCULO DE CAMBIO
   const calculateChange = (received) => {
     if (!selectedPedido) return;
@@ -121,10 +208,118 @@ const PaymentManager = () => {
     }
   };
 
-  // ✅ RESET FORMULARIO
+  // 🔹 Verificar pago QR
+  const verifyQrPayment = async () => {
+  if (!qrData.orderId) {
+    alert('No hay una orden para verificar');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/api/pagos/verificar-orden-culqi/${qrData.orderId}`, {
+      method: "POST"
+    });
+    
+    const data = await response.json();
+    
+    if (data.success && data.verificado) {
+      setQrData(prev => ({ ...prev, verified: true }));
+      alert('✅ Pago verificado correctamente con Culqi');
+    } else {
+      alert(`⚠️ ${data.mensaje}`);
+    }
+    } catch (error) {
+      console.error('Error al verificar pago:', error);
+      alert('Error al verificar el pago: ' + error.message);
+    }
+    };
+  
+  // 🔹 Callback para pago con Culqi exitoso
+  const handleCulqiSuccess = (paymentData) => {
+    console.log("✅ Pago Culqi exitoso:", paymentData);
+    setCulqiData({
+      processing: false,
+      success: true,
+      cargoId: paymentData.cargo_id
+    });
+    
+    alert('✅ Pago con tarjeta procesado exitosamente');
+  
+    // Procesar automáticamente el pago
+    setTimeout(() => {
+      processPayment(paymentData.cargo_id);
+    }, 1000);
+  };
+
+  // 🔹 Callback para error en Culqi
+  const handleCulqiError = (error) => {
+    console.error("❌ Error en Culqi:", error);
+    setCulqiData({
+      processing: false,
+      success: false,
+      cargoId: null
+    });
+    alert('❌ Error al procesar el pago con tarjeta: ' + error);
+  };
+
+  
+  // Procesar pago
+  const processPayment = (cargoId = null) => {
+    // Validaciones según método de pago
+    if (paymentMethod === 'cash' && cashData.received < total) {
+      alert('El monto recibido es insuficiente');
+      return;
+    }
+
+    if (paymentMethod === 'qr' && !qrData.verified) {
+      alert('⚠️ Debe verificar el pago QR antes de continuar');
+      return;
+    }
+
+    if (paymentMethod === 'card' && !culqiData.success) {
+      alert('⚠️ El pago con tarjeta no se ha completado');
+      return;
+    }
+
+    const newPayment = {
+      id: Date.now().toString(),
+      orderId: orderData.orderId,
+      type: orderData.type,
+      customerName: orderData.customerName,
+      customerEmail: orderData.customerEmail,
+      items: orderItems.filter(item => item.name && item.price > 0),
+      subtotal,
+      tax,
+      discount: orderData.discount,
+      total,
+      paymentMethod,
+      cashReceived: paymentMethod === 'cash' ? cashData.received : undefined,
+      changeAmount: paymentMethod === 'cash' ? cashData.change : undefined,
+      cargoId: cargoId || culqiData.cargoId,
+      status: 'completed',
+      createdAt: new Date().toLocaleString('es-PE')
+    };
+
+    setPayments(prev => [newPayment, ...prev]);
+    setCurrentStep(3);
+  };
+  
+  // Resetear formulario
   const resetForm = () => {
-    setSelectedPedido(null);
+    setOrderData({
+      orderId: `PED-${Date.now().toString().slice(-3)}`,
+      type: 'local',
+      customerName: '',
+      customerEmail: '',
+      customerPhone: '',
+      customerAddress: '',
+      tableNumber: '',
+      discount: 0
+    });
+    setOrderItems([{ id: '1', name: '', quantity: 1, price: 0 }]);
     setCashData({ received: 0, change: 0 });
+    setQrData({ url: null, loading: false, verified: false });
+    setCulqiData({ processing: false, success: false, cargoId: null });
     setPaymentMethod('cash');
     setCurrentStep(1);
     setShowModal(false);
@@ -337,23 +532,18 @@ const PaymentManager = () => {
                 )}
 
                 {/* Paso 2: Método de Pago */}
-                {currentStep === 2 && selectedPedido && (
+                {currentStep === 2 && (
                   <div className="row">
                     <div className="col-12 mb-4">
                       <div className="alert alert-dark text-center border-0">
-                        <h4 className="mb-0 fw-bold">
-                          TOTAL A PAGAR: S/ {selectedPedido.pedido.monto_total.toFixed(2)}
-                        </h4>
-                        <small className="text-muted">
-                          Cliente: {selectedPedido.delivery_info.nombre_cliente}
-                        </small>
+                        <h4 className="mb-0 fw-bold">TOTAL A PAGAR: S/ {total.toFixed(2)}</h4>
                       </div>
                     </div>
 
                     <div className="col-12 mb-4">
                       <h6 className="fw-bold text-dark mb-3">SELECCIONE MÉTODO DE PAGO</h6>
                       <div className="row g-2">
-                        <div className="col-md-3 col-6">
+                        <div className="col-md-4 col-6">
                           <button
                             className={`btn w-100 fw-bold ${paymentMethod === 'cash' ? 'btn-success' : 'btn-outline-success'}`}
                             onClick={() => setPaymentMethod('cash')}
@@ -362,7 +552,7 @@ const PaymentManager = () => {
                             EFECTIVO
                           </button>
                         </div>
-                        <div className="col-md-3 col-6">
+                        <div className="col-md-4 col-6">
                           <button
                             className={`btn w-100 fw-bold ${paymentMethod === 'card' ? 'btn-primary' : 'btn-outline-primary'}`}
                             onClick={() => setPaymentMethod('card')}
@@ -371,27 +561,24 @@ const PaymentManager = () => {
                             TARJETA
                           </button>
                         </div>
-                        <div className="col-md-3 col-6">
+                        <div className="col-md-4 col-6">
                           <button
-                            className={`btn w-100 fw-bold ${paymentMethod === 'yape' ? 'btn-warning text-dark' : 'btn-outline-warning'}`}
-                            onClick={() => setPaymentMethod('yape')}
+                            className={`btn w-100 fw-bold ${paymentMethod === 'qr' ? 'btn-warning text-dark' : 'btn-outline-warning'}`}
+                            onClick={() => {
+                              setPaymentMethod('qr');
+                              if (!qrData.url) {
+                                generateQr();
+                              }
+                            }}
                           >
-                            <i className="fas fa-mobile-alt me-2"></i>
-                            YAPE
-                          </button>
-                        </div>
-                        <div className="col-md-3 col-6">
-                          <button
-                            className={`btn w-100 fw-bold ${paymentMethod === 'plin' ? 'btn-info text-dark' : 'btn-outline-info'}`}
-                            onClick={() => setPaymentMethod('plin')}
-                          >
-                            <i className="fas fa-comment-dollar me-2"></i>
-                            PLIN
+                            <i className="fas fa-qrcode me-2"></i>
+                            YAPE / PLIN
                           </button>
                         </div>
                       </div>
                     </div>
 
+                    {/* Efectivo */}
                     {paymentMethod === 'cash' && (
                       <div className="col-12">
                         <label className="form-label fw-bold text-dark">MONTO RECIBIDO (S/)</label>
@@ -419,64 +606,101 @@ const PaymentManager = () => {
                         )}
                       </div>
                     )}
-
-                    {paymentMethod === 'yape' && (
-                      <div className="col-12 text-center">
-                        <div className="card border-warning">
-                          <div className="card-body">
-                            <div className="bg-white p-4 rounded border border-warning mb-4">
-                              <img 
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=YAPE-${selectedPedido.pedido.monto_total}-${selectedPedido.pedido.id}&format=png&margin=10&color=000000&bgcolor=FFFFFF`}
-                                alt="QR Yape" 
-                                className="img-fluid"
-                                style={{ maxWidth: '200px' }}
-                              />
-                            </div>
-                            <h5 className="text-warning fw-bold">PAGA CON YAPE</h5>
-                            <p className="mb-2 fw-bold text-dark">NÚMERO: <span className="fs-4 text-primary">999 888 777</span></p>
-                            <h4 className="text-warning fw-bold mb-3">S/ {selectedPedido.pedido.monto_total.toFixed(2)}</h4>
-                            <div className="alert alert-warning fw-bold">
-                              REFERENCIA: <strong>DEL-{selectedPedido.pedido.id}</strong>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {paymentMethod === 'plin' && (
-                      <div className="col-12 text-center">
-                        <div className="card border-info">
-                          <div className="card-body">
-                            <div className="bg-white p-4 rounded border border-info mb-4">
-                              <img 
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PLIN-${selectedPedido.pedido.monto_total}-${selectedPedido.pedido.id}&format=png&margin=10&color=000000&bgcolor=FFFFFF`}
-                                alt="QR Plin" 
-                                className="img-fluid"
-                                style={{ maxWidth: '200px' }}
-                              />
-                            </div>
-                            <h5 className="text-info fw-bold">PAGA CON PLIN</h5>
-                            <p className="mb-2 fw-bold text-dark">NÚMERO: <span className="fs-4 text-primary">999 888 777</span></p>
-                            <h4 className="text-info fw-bold mb-3">S/ {selectedPedido.pedido.monto_total.toFixed(2)}</h4>
-                            <div className="alert alert-info fw-bold">
-                              REFERENCIA: <strong>DEL-{selectedPedido.pedido.id}</strong>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
+                   
+                    {/* Tarjeta con Culqi */}
                     {paymentMethod === 'card' && (
-                      <div className="col-12 text-center">
+                      <div className="col-12">
                         <div className="card border-primary">
                           <div className="card-body">
-                            <i className="fas fa-credit-card fa-5x text-primary mb-3"></i>
-                            <h5 className="text-primary fw-bold">PAGO CON TARJETA</h5>
-                            <p className="text-dark fw-bold">PROCESAR CON DATÁFONO</p>
-                            <h4 className="text-primary fw-bold">S/ {selectedPedido.pedido.monto_total.toFixed(2)}</h4>
-                            <div className="alert alert-primary fw-bold mt-3">
-                              REFERENCIA: <strong>DEL-{selectedPedido.pedido.id}</strong>
+                            <div className="text-center mb-3">
+                              <i className="fas fa-credit-card fa-5x text-primary mb-3"></i>
+                              <h5 className="text-primary fw-bold">PAGO CON TARJETA</h5>
+                              <h4 className="text-primary fw-bold">S/ {total.toFixed(2)}</h4>
                             </div>
+                            
+                            {culqiData.success ? (
+                              <div className="alert alert-success">
+                                <i className="fas fa-check-circle me-2"></i>
+                                ¡Pago procesado exitosamente!
+                                <br />
+                                <small>ID: {culqiData.cargoId}</small>
+                              </div>
+                            ) : (
+                              <CulqiTester 
+                                total={total}
+                                pedidoId={parseInt(orderData.orderId.split('-')[1])}
+                                email={orderData.customerEmail}
+                                onPaymentSuccess={handleCulqiSuccess}
+                                onPaymentError={handleCulqiError}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* QR Mejorado */}
+                    {paymentMethod === 'qr' && (
+                      <div className="col-12">
+                        <div className="card border-warning">
+                          <div className="card-body text-center">
+                            <h5 className="text-dark fw-bold mb-3">
+                              <i className="fas fa-qrcode me-2"></i>
+                              PAGO CON QR
+                            </h5>
+                            
+                            {qrData.loading ? (
+                              <div className="py-5">
+                                <div className="spinner-border text-warning" role="status">
+                                  <span className="visually-hidden">Generando QR...</span>
+                                </div>
+                                <p className="mt-3">Generando código QR...</p>
+                              </div>
+                            ) : qrData.url ? (
+                              <>
+                                <div className="bg-white p-4 rounded d-inline-block mb-3" style={{ border: '2px solid #ffc107' }}>
+                                  <img 
+                                    src={qrData.url} 
+                                    alt="QR de pago" 
+                                    className="img-fluid"
+                                    style={{ maxWidth: '300px', display: 'block' }}
+                                  />
+                                </div>
+                                
+                                <div className="alert alert-info">
+                                  <strong>📱 Instrucciones:</strong>
+                                  <ol className="text-start mb-0 mt-2">
+                                    <li>Abre tu app <b>Yape</b> o <b>Plin</b></li>
+                                    <li>Escanea este código QR</li>
+                                    <li>Confirma el pago de <b>S/ {total.toFixed(2)}</b></li>
+                                    <li>Haz clic en "Verificar Pago"</li>
+                                  </ol>
+                                </div>
+
+                                {!qrData.verified ? (
+                                  <button 
+                                    className="btn btn-success fw-bold btn-lg"
+                                    onClick={verifyQrPayment}
+                                  >
+                                    <i className="fas fa-check-circle me-2"></i>
+                                    Verificar Pago
+                                  </button>
+                                ) : (
+                                  <div className="alert alert-success">
+                                    <i className="fas fa-check-circle me-2"></i>
+                                    ¡Pago verificado exitosamente!
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <button 
+                                className="btn btn-warning fw-bold btn-lg"
+                                onClick={generateQr}
+                              >
+                                <i className="fas fa-qrcode me-2"></i>
+                                GENERAR CÓDIGO QR
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -522,8 +746,7 @@ const PaymentManager = () => {
                               <span className="fw-bold text-success">
                                 {paymentMethod === 'cash' && 'EFECTIVO'}
                                 {paymentMethod === 'card' && 'TARJETA'}
-                                {paymentMethod === 'yape' && 'YAPE'}
-                                {paymentMethod === 'plin' && 'PLIN'}
+                                {paymentMethod === 'qr' && 'YAPE/PLIN'}
                               </span>
                             </div>
                           </div>
@@ -558,6 +781,26 @@ const PaymentManager = () => {
                               <span>TOTAL:</span>
                               <span>S/ {payments[0].total.toFixed(2)}</span>
                             </div>
+                          </div>
+
+                          {paymentMethod === 'cash' && payments[0].cashReceived && (
+                              <>
+                                <div className="d-flex justify-content-between small fw-bold text-dark mt-2">
+                                  <span>Recibido:</span>
+                                  <span>S/ {payments[0].cashReceived.toFixed(2)}</span>
+                                </div>
+                                <div className="d-flex justify-content-between small fw-bold text-success">
+                                  <span>Cambio:</span>
+                                  <span>S/ {payments[0].changeAmount.toFixed(2)}</span>
+                                </div>
+                              </>
+                            )}
+
+                            {paymentMethod === 'card' && payments[0].cargoId && (
+                              <div className="mt-2 text-center small">
+                                <span className="text-muted">Ref. Pago: {payments[0].cargoId}</span>
+                              </div>
+                            )}
                           </div>
 
                           <div className="text-center mt-4 pt-3 border-top">
@@ -619,57 +862,51 @@ const PaymentManager = () => {
         </div>
       )}
 
-      {/* Lista de Pagos Recientes - SOLO DELIVERY */}
+      {/* Lista de Pagos Recientes */}
       <div className="row">
         <div className="col-12">
-          <h3 className="h4 mb-3 fw-bold text-dark">PAGOS DELIVERY RECIENTES</h3>
+          <h3 className="h4 mb-3 fw-bold text-dark">PAGOS RECIENTES</h3>
           {payments.length === 0 ? (
             <div className="card border-dark">
               <div className="card-body text-center text-dark">
-                <p className="mb-0 fw-bold">NO HAY PAGOS DELIVERY REGISTRADOS</p>
+                <p className="mb-0 fw-bold">NO HAY PAGOS REGISTRADOS</p>
               </div>
             </div>
           ) : (
             <div className="row">
               {payments.map((payment) => (
                 <div key={payment.id} className="col-md-6 col-lg-4 mb-3">
-                  <div className="card h-100 border-dark">
+                  <div className="card h-100 border-dark shadow-sm">
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-start mb-2">
                         <h6 className="card-title fw-bold text-primary">{payment.orderId}</h6>
                         <span className="badge bg-success fw-bold">COMPLETADO</span>
                       </div>
-                      <p className="card-text small text-dark">
+                      <p className="card-text small text-dark mb-2">
                         <i className="fas fa-user me-1"></i>
                         <strong>{payment.customerName}</strong>
                         <br />
-                        <i className="fas fa-map-marker-alt me-1"></i>
-                        {payment.customerAddress}
-                        <br />
-                        <i className="fas fa-phone me-1"></i>
-                        {payment.customerPhone}
+                        {payment.tableNumber && (
+                          <><i className="fas fa-utensils me-1"></i>MESA {payment.tableNumber}<br /></>
+                        )}
+                        {!payment.tableNumber && (
+                          <><i className="fas fa-motorcycle me-1"></i>DELIVERY<br /></>
+                        )}
+                        <i className="fas fa-clock me-1"></i>
+                        <small>{payment.createdAt}</small>
                       </p>
-                      <div className="d-flex justify-content-between align-items-center">
+                      <div className="d-flex justify-content-between align-items-center mt-3">
                         <span className={`badge fw-bold ${
                           payment.paymentMethod === 'cash' ? 'bg-success' :
                           payment.paymentMethod === 'card' ? 'bg-primary' :
-                          payment.paymentMethod === 'yape' ? 'bg-warning text-dark' : 'bg-info text-dark'
+                          'bg-warning text-dark'
                         }`}>
                           {payment.paymentMethod === 'cash' && 'EFECTIVO'}
                           {payment.paymentMethod === 'card' && 'TARJETA'}
-                          {payment.paymentMethod === 'yape' && 'YAPE'}
-                          {payment.paymentMethod === 'plin' && 'PLIN'}
+                          {payment.paymentMethod === 'qr' && 'YAPE/PLIN'}
                         </span>
                         <strong className="h5 mb-0 text-dark">S/ {payment.total.toFixed(2)}</strong>
                       </div>
-                      {payment.plataforma && (
-                        <div className="mt-2">
-                          <small className="text-muted">
-                            <i className="fas fa-truck me-1"></i>
-                            {payment.plataforma}
-                          </small>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

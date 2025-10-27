@@ -480,7 +480,8 @@ class RegistarMerma(BaseModel):
     platillo_id:int
     cantidad:int
     motivo:str
-
+    
+#Para pago de delivery
 class DetallePedidoDeliveryCreate(BaseModel):
     producto_id: int
     cantidad: int
@@ -542,3 +543,12 @@ class PedidoDeliveryCompletoResponse(BaseModel):
 
 class ActualizarEstadoDelivery(BaseModel):
     estado: str
+    #Para generar codigo QR en metodos de pago
+class CrearQrResponse(BaseModel):
+    success: bool
+    qr_url: str
+    pedido_id: int
+    monto: float
+    mensaje: str
+    order_id: Optional[str] = None  # ← NUEVO
+    payment_code: Optional[str] = None  # ← NUEVO

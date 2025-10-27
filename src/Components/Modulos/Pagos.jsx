@@ -1,47 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const PaymentManager = () => {
-  const [payments, setPayments] = useState([
-    {
-      id: '1',
-      orderId: 'PED-001',
-      type: 'local',
-      customerName: 'Juan Pérez',
-      tableNumber: '5',
-      items: [
-        { id: '1', name: 'Ceviche Mixto', quantity: 1, price: 35 },
-        { id: '2', name: 'Chicha Morada', quantity: 2, price: 6 }
-      ],
-      subtotal: 47,
-      tax: 8.46,
-      discount: 0,
-      total: 55.46,
-      paymentMethod: 'cash',
-      cashReceived: 60,
-      changeAmount: 4.54,
-      status: 'completed',
-      createdAt: new Date().toLocaleString('es-PE')
-    }
-  ]);
-
+  const [payments, setPayments] = useState([]);
+  const [pedidosDeliveryPendientes, setPedidosDeliveryPendientes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [selectedPedido, setSelectedPedido] = useState(null);
   
-  const [orderData, setOrderData] = useState({
-    orderId: `PED-${Date.now().toString().slice(-3)}`,
-    type: 'local',
-    customerName: '',
-    customerPhone: '',
-    customerAddress: '',
-    tableNumber: '',
-    discount: 0
-  });
-
-  const [orderItems, setOrderItems] = useState([
-    { id: '1', name: '', quantity: 1, price: 0 }
-  ]);
-
   const [cashData, setCashData] = useState({
     received: 0,
     change: 0
@@ -49,98 +15,125 @@ const PaymentManager = () => {
 
   const receiptRef = useRef(null);
 
-  // Cálculos
-  const calculateTotals = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.18;
-    const total = subtotal + tax - orderData.discount;
-    
-    return { subtotal, tax, total };
-  };
-
-  const { subtotal, tax, total } = calculateTotals();
-
-  // Manejo de items
-  const addOrderItem = () => {
-    setOrderItems(prev => [...prev, {
-      id: Date.now().toString(),
-      name: '',
-      quantity: 1,
-      price: 0
-    }]);
-  };
-
-  const updateOrderItem = (id, field, value) => {
-    setOrderItems(prev => prev.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const removeOrderItem = (id) => {
-    if (orderItems.length > 1) {
-      setOrderItems(prev => prev.filter(item => item.id !== id));
+  // ✅ OBTENER PEDIDOS DELIVERY PENDIENTES DE PAGO
+  const obtenerPedidosDeliveryPendientes = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/pedidosF/delivery-pendientes-pago/');
+      if (response.ok) {
+        const data = await response.json();
+        setPedidosDeliveryPendientes(data);
+      }
+    } catch (error) {
+      console.error('Error al obtener pedidos delivery:', error);
     }
   };
 
-  // Cálculo de cambio
+  // ✅ OBTENER PAGOS COMPLETADOS
+  const obtenerPagosCompletados = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/pedidosF/pagos-completados/');
+      if (response.ok) {
+        const data = await response.json();
+        setPayments(data);
+      }
+    } catch (error) {
+      console.error('Error al obtener pagos:', error);
+    }
+  };
+
+  useEffect(() => {
+    obtenerPedidosDeliveryPendientes();
+    obtenerPagosCompletados();
+  }, []);
+
+  // ✅ CÁLCULO DE CAMBIO
   const calculateChange = (received) => {
-    const change = received - total;
+    if (!selectedPedido) return;
+    const change = received - selectedPedido.pedido.monto_total;
     setCashData({ received, change: Math.max(0, change) });
   };
 
-  // Procesar pago
-  const processPayment = () => {
-    if (paymentMethod === 'cash' && cashData.received < total) {
+  // ✅ PROCESAR PAGO DELIVERY
+  const procesarPagoDelivery = async () => {
+    if (!selectedPedido) {
+      alert('No hay pedido delivery seleccionado');
+      return;
+    }
+
+    if (paymentMethod === 'cash' && cashData.received < selectedPedido.pedido.monto_total) {
       alert('El monto recibido es insuficiente');
       return;
     }
 
-    const newPayment = {
-      id: Date.now().toString(),
-      orderId: orderData.orderId,
-      type: orderData.type,
-      customerName: orderData.customerName,
-      customerPhone: orderData.customerPhone || undefined,
-      customerAddress: orderData.customerAddress || undefined,
-      tableNumber: orderData.tableNumber || undefined,
-      items: orderItems.filter(item => item.name && item.price > 0),
-      subtotal,
-      tax,
-      discount: orderData.discount,
-      total,
-      paymentMethod: paymentMethod,
-      cashReceived: paymentMethod === 'cash' ? cashData.received : undefined,
-      changeAmount: paymentMethod === 'cash' ? cashData.change : undefined,
-      status: 'completed',
-      createdAt: new Date().toLocaleString('es-PE')
-    };
+    try {
+      const pagoData = {
+        pedido_id: selectedPedido.pedido.id,
+        metodo_pago: paymentMethod === 'cash' ? 'Efectivo' : 
+                     paymentMethod === 'card' ? 'Tarjeta' :
+                     paymentMethod === 'yape' ? 'Yape' : 'Plin',
+        referencia_pago: `REF-${Date.now()}`
+      };
 
-    setPayments(prev => [newPayment, ...prev]);
-    setCurrentStep(3);
+      const response = await fetch('http://localhost:8000/pedidosF/procesar-pago-delivery/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pagoData),
+      });
+
+      if (response.ok) {
+        const resultado = await response.json();
+        
+        // Crear pago para mostrar en el frontend
+        const nuevoPago = {
+          id: resultado.pago_id,
+          orderId: `DEL-${selectedPedido.pedido.id}`,
+          type: 'delivery',
+          customerName: resultado.datos_cliente.nombre,
+          customerPhone: resultado.datos_cliente.telefono,
+          customerAddress: resultado.datos_cliente.direccion,
+          items: selectedPedido.detalles,
+          subtotal: selectedPedido.pedido.monto_total / 1.18,
+          tax: selectedPedido.pedido.monto_total * 0.18,
+          discount: 0,
+          total: selectedPedido.pedido.monto_total,
+          paymentMethod: paymentMethod,
+          cashReceived: paymentMethod === 'cash' ? cashData.received : undefined,
+          changeAmount: paymentMethod === 'cash' ? cashData.change : undefined,
+          status: 'completed',
+          createdAt: new Date().toLocaleString('es-PE'),
+          plataforma: resultado.datos_cliente.plataforma
+        };
+
+        setPayments(prev => [nuevoPago, ...prev]);
+        setCurrentStep(3);
+        
+        // Actualizar lista de pedidos pendientes
+        obtenerPedidosDeliveryPendientes();
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.detail}`);
+      }
+    } catch (error) {
+      console.error('Error al procesar pago delivery:', error);
+      alert('Error al procesar el pago');
+    }
   };
 
-  // Resetear formulario
+  // ✅ RESET FORMULARIO
   const resetForm = () => {
-    setOrderData({
-      orderId: `PED-${Date.now().toString().slice(-3)}`,
-      type: 'local',
-      customerName: '',
-      customerPhone: '',
-      customerAddress: '',
-      tableNumber: '',
-      discount: 0
-    });
-    setOrderItems([{ id: '1', name: '', quantity: 1, price: 0 }]);
+    setSelectedPedido(null);
     setCashData({ received: 0, change: 0 });
     setPaymentMethod('cash');
     setCurrentStep(1);
     setShowModal(false);
   };
 
-  // Imprimir recibo
+  // ✅ IMPRIMIR RECIBO
   const printReceipt = () => {
     const receiptContent = receiptRef.current;
-    if (receiptContent) {
+    if (receiptContent && payments[0]) {
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
@@ -167,33 +160,29 @@ const PaymentManager = () => {
     }
   };
 
-  // Estadísticas
-  const totalRevenue = payments
-    .filter(p => p.status === 'completed')
-    .reduce((sum, payment) => sum + payment.total, 0);
-
-  const todayPayments = payments.filter(p => {
-    const today = new Date().toDateString();
-    return new Date(p.createdAt).toDateString() === today;
-  });
+  // ✅ ESTADÍSTICAS ACTUALIZADAS - DEFINIDAS ANTES DE USARSE
+  const totalRevenue = payments.reduce((sum, payment) => sum + payment.total, 0);
+  const todayPayments = payments.filter(payment => 
+    new Date(payment.createdAt).toDateString() === new Date().toDateString()
+  );
 
   return (
     <div className="container-fluid p-4">
-      {/* Header sin título */}
+      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          {/* Sin título - espacio vacío */}
+          {/* Espacio vacío */}
         </div>
         <button 
           className="btn btn-success fw-bold"
           onClick={() => setShowModal(true)}
         >
           <i className="fas fa-plus me-2"></i>
-          Nuevo Pago
+          Nuevo Pago Delivery
         </button>
       </div>
 
-      {/* Estadísticas con mejor contraste */}
+      {/* Estadísticas */}
       <div className="row mb-4">
         <div className="col-md-3 col-6 mb-3">
           <div className="card border-0 shadow-sm bg-primary text-white">
@@ -215,7 +204,7 @@ const PaymentManager = () => {
               <div className="d-flex justify-content-between">
                 <div>
                   <h6 className="card-title fw-bold">INGRESOS</h6>
-                  <h4 className="fw-bold">S/ {totalRevenue.toFixed(2)}</h4>
+                  <h4 className="fw-bold">S/ {(totalRevenue || 0).toFixed(2)}</h4>
                   <small>Total acumulado</small>
                 </div>
                 <i className="fas fa-dollar-sign fa-2x opacity-75"></i>
@@ -242,13 +231,11 @@ const PaymentManager = () => {
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
-                  <h6 className="card-title fw-bold">PRODUCTOS</h6>
-                  <h4 className="fw-bold">
-                    {payments.reduce((sum, payment) => sum + payment.items.length, 0)}
-                  </h4>
-                  <small>Total vendidos</small>
+                  <h6 className="card-title fw-bold">PENDIENTES</h6>
+                  <h4 className="fw-bold">{pedidosDeliveryPendientes.length}</h4>
+                  <small>Por cobrar</small>
                 </div>
-                <i className="fas fa-shopping-cart fa-2x opacity-75"></i>
+                <i className="fas fa-clock fa-2x opacity-75"></i>
               </div>
             </div>
           </div>
@@ -262,8 +249,8 @@ const PaymentManager = () => {
             <div className="modal-content">
               <div className="modal-header bg-primary text-white">
                 <h5 className="modal-title fw-bold">
-                  {currentStep === 1 && '📝 REGISTRAR PEDIDO'}
-                  {currentStep === 2 && '💳 PROCESAR PAGO'}
+                  {currentStep === 1 && '🛵 SELECCIONAR PEDIDO DELIVERY'}
+                  {currentStep === 2 && '💳 PROCESAR PAGO DELIVERY'}
                   {currentStep === 3 && '✅ PAGO COMPLETADO'}
                 </h5>
                 <button 
@@ -274,185 +261,92 @@ const PaymentManager = () => {
               </div>
 
               <div className="modal-body">
-                {/* Paso 1: Información del Pedido */}
+                {/* Paso 1: Seleccionar Pedido Delivery */}
                 {currentStep === 1 && (
                   <div className="row">
-                    <div className="col-12 mb-4">
-                      <h6 className="fw-bold text-dark mb-3">TIPO DE PEDIDO</h6>
-                      <div className="btn-group w-100" role="group">
-                        <button
-                          type="button"
-                          className={`btn ${orderData.type === 'local' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
-                          onClick={() => setOrderData(prev => ({ ...prev, type: 'local' }))}
-                        >
-                          🏠 EN LOCAL
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn ${orderData.type === 'delivery' ? 'btn-success fw-bold' : 'btn-outline-success'}`}
-                          onClick={() => setOrderData(prev => ({ ...prev, type: 'delivery' }))}
-                        >
-                          🛵 DELIVERY
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold text-dark">NOMBRE DEL CLIENTE *</label>
-                      <input
-                        type="text"
-                        className="form-control border-dark"
-                        value={orderData.customerName}
-                        onChange={(e) => setOrderData(prev => ({ ...prev, customerName: e.target.value }))}
-                        placeholder="Ingrese nombre completo"
-                      />
-                    </div>
-
-                    {orderData.type === 'local' ? (
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label fw-bold text-dark">NÚMERO DE MESA</label>
-                        <input
-                          type="text"
-                          className="form-control border-dark"
-                          value={orderData.tableNumber}
-                          onChange={(e) => setOrderData(prev => ({ ...prev, tableNumber: e.target.value }))}
-                          placeholder="Ej: 5"
-                        />
-                      </div>
-                    ) : (
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label fw-bold text-dark">TELÉFONO *</label>
-                        <input
-                          type="tel"
-                          className="form-control border-dark"
-                          value={orderData.customerPhone}
-                          onChange={(e) => setOrderData(prev => ({ ...prev, customerPhone: e.target.value }))}
-                          placeholder="+51 987 654 321"
-                        />
-                      </div>
-                    )}
-
-                    {orderData.type === 'delivery' && (
-                      <div className="col-12 mb-3">
-                        <label className="form-label fw-bold text-dark">DIRECCIÓN DE ENTREGA *</label>
-                        <input
-                          type="text"
-                          className="form-control border-dark"
-                          value={orderData.customerAddress}
-                          onChange={(e) => setOrderData(prev => ({ ...prev, customerAddress: e.target.value }))}
-                          placeholder="Dirección completa"
-                        />
-                      </div>
-                    )}
-
-                    <div className="col-12 mb-4">
-                      <div className="d-flex justify-content-between align-items-center mb-3">
-                        <label className="form-label mb-0 fw-bold text-dark">ITEMS DEL PEDIDO</label>
-                        <button 
-                          type="button" 
-                          className="btn btn-sm btn-primary fw-bold"
-                          onClick={addOrderItem}
-                        >
-                          <i className="fas fa-plus me-1"></i>AGREGAR ITEM
-                        </button>
-                      </div>
+                    <div className="col-12">
+                      <h6 className="fw-bold text-dark mb-3">PEDIDOS DELIVERY PENDIENTES DE PAGO</h6>
                       
-                      {orderItems.map((item, index) => (
-                        <div key={item.id} className="row g-2 mb-2 align-items-center">
-                          <div className="col-5">
-                            <input
-                              type="text"
-                              className="form-control form-control-sm border-dark"
-                              value={item.name}
-                              onChange={(e) => updateOrderItem(item.id, 'name', e.target.value)}
-                              placeholder={`Producto ${index + 1}`}
-                            />
-                          </div>
-                          <div className="col-2">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm border-dark"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                            />
-                          </div>
-                          <div className="col-3">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm border-dark"
-                              min="0"
-                              step="0.01"
-                              value={item.price}
-                              onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div className="col-1 text-center small fw-bold text-primary">
-                            S/ {(item.price * item.quantity).toFixed(2)}
-                          </div>
-                          <div className="col-1">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => removeOrderItem(item.id)}
-                              disabled={orderItems.length === 1}
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
-                          </div>
+                      {pedidosDeliveryPendientes.length === 0 ? (
+                        <div className="alert alert-info text-center">
+                          <i className="fas fa-info-circle me-2"></i>
+                          No hay pedidos delivery pendientes de pago
                         </div>
-                      ))}
-                    </div>
+                      ) : (
+                        <div className="row">
+                          {pedidosDeliveryPendientes.map((pedido) => (
+                            <div key={pedido.pedido.id} className="col-md-6 mb-3">
+                              <div 
+                                className={`card cursor-pointer ${selectedPedido?.pedido.id === pedido.pedido.id ? 'border-primary bg-light' : 'border-dark'}`}
+                                onClick={() => setSelectedPedido(pedido)}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <div className="card-body">
+                                  <div className="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 className="card-title fw-bold text-dark">
+                                      Pedido #{pedido.pedido.id}
+                                    </h6>
+                                    <span className="badge bg-warning text-dark">PENDIENTE</span>
+                                  </div>
+                                  
+                                  <p className="card-text small text-dark mb-2">
+                                    <i className="fas fa-user me-1"></i>
+                                    <strong>{pedido.delivery_info.nombre_cliente}</strong>
+                                  </p>
+                                  
+                                  <p className="card-text small text-dark mb-2">
+                                    <i className="fas fa-map-marker-alt me-1"></i>
+                                    {pedido.delivery_info.direccion_cliente}
+                                  </p>
+                                  
+                                  <p className="card-text small text-dark mb-2">
+                                    <i className="fas fa-phone me-1"></i>
+                                    {pedido.delivery_info.telefono_cliente}
+                                  </p>
 
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold text-dark">DESCUENTO (S/)</label>
-                      <input
-                        type="number"
-                        className="form-control border-dark"
-                        min="0"
-                        step="0.01"
-                        value={orderData.discount}
-                        onChange={(e) => setOrderData(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
-                        placeholder="0.00"
-                      />
-                    </div>
+                                  <div className="mt-3">
+                                    <small className="text-muted">Productos:</small>
+                                    {pedido.detalles.slice(0, 2).map((detalle, idx) => (
+                                      <div key={idx} className="small text-dark">
+                                        • {detalle.cantidad}x {detalle.nombre_producto}
+                                      </div>
+                                    ))}
+                                    {pedido.detalles.length > 2 && (
+                                      <div className="small text-muted">
+                                        ...y {pedido.detalles.length - 2} más
+                                      </div>
+                                    )}
+                                  </div>
 
-                    <div className="col-md-6 mb-3">
-                      <div className="card border-dark">
-                        <div className="card-body">
-                          <h6 className="card-title fw-bold text-dark">RESUMEN DEL PEDIDO</h6>
-                          <div className="d-flex justify-content-between small fw-bold text-dark">
-                            <span>Subtotal:</span>
-                            <span>S/ {subtotal.toFixed(2)}</span>
-                          </div>
-                          <div className="d-flex justify-content-between small fw-bold text-dark">
-                            <span>IGV (18%):</span>
-                            <span>S/ {tax.toFixed(2)}</span>
-                          </div>
-                          {orderData.discount > 0 && (
-                            <div className="d-flex justify-content-between small fw-bold text-success">
-                              <span>Descuento:</span>
-                              <span>- S/ {orderData.discount.toFixed(2)}</span>
+                                  <div className="d-flex justify-content-between align-items-center mt-3">
+                                    <span className="badge bg-secondary">
+                                      {pedido.delivery_info.plataforma}
+                                    </span>
+                                    <strong className="h5 mb-0 text-primary">
+                                      S/ {pedido.pedido.monto_total.toFixed(2)}
+                                    </strong>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                          )}
-                          <hr className="my-2 border-dark" />
-                          <div className="d-flex justify-content-between fw-bold fs-5 text-primary">
-                            <span>TOTAL:</span>
-                            <span>S/ {total.toFixed(2)}</span>
-                          </div>
+                          ))}
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Paso 2: Método de Pago */}
-                {currentStep === 2 && (
+                {currentStep === 2 && selectedPedido && (
                   <div className="row">
                     <div className="col-12 mb-4">
                       <div className="alert alert-dark text-center border-0">
-                        <h4 className="mb-0 fw-bold">TOTAL A PAGAR: S/ {total.toFixed(2)}</h4>
+                        <h4 className="mb-0 fw-bold">
+                          TOTAL A PAGAR: S/ {selectedPedido.pedido.monto_total.toFixed(2)}
+                        </h4>
+                        <small className="text-muted">
+                          Cliente: {selectedPedido.delivery_info.nombre_cliente}
+                        </small>
                       </div>
                     </div>
 
@@ -530,10 +424,9 @@ const PaymentManager = () => {
                       <div className="col-12 text-center">
                         <div className="card border-warning">
                           <div className="card-body">
-                            {/* QR Mejorado */}
                             <div className="bg-white p-4 rounded border border-warning mb-4">
                               <img 
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=YAPE-${total}-${orderData.orderId}&format=png&margin=10&color=000000&bgcolor=FFFFFF`}
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=YAPE-${selectedPedido.pedido.monto_total}-${selectedPedido.pedido.id}&format=png&margin=10&color=000000&bgcolor=FFFFFF`}
                                 alt="QR Yape" 
                                 className="img-fluid"
                                 style={{ maxWidth: '200px' }}
@@ -541,9 +434,9 @@ const PaymentManager = () => {
                             </div>
                             <h5 className="text-warning fw-bold">PAGA CON YAPE</h5>
                             <p className="mb-2 fw-bold text-dark">NÚMERO: <span className="fs-4 text-primary">999 888 777</span></p>
-                            <h4 className="text-warning fw-bold mb-3">S/ {total.toFixed(2)}</h4>
+                            <h4 className="text-warning fw-bold mb-3">S/ {selectedPedido.pedido.monto_total.toFixed(2)}</h4>
                             <div className="alert alert-warning fw-bold">
-                              REFERENCIA: <strong>{orderData.orderId}</strong>
+                              REFERENCIA: <strong>DEL-{selectedPedido.pedido.id}</strong>
                             </div>
                           </div>
                         </div>
@@ -554,10 +447,9 @@ const PaymentManager = () => {
                       <div className="col-12 text-center">
                         <div className="card border-info">
                           <div className="card-body">
-                            {/* QR Mejorado */}
                             <div className="bg-white p-4 rounded border border-info mb-4">
                               <img 
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PLIN-${total}-${orderData.orderId}&format=png&margin=10&color=000000&bgcolor=FFFFFF`}
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PLIN-${selectedPedido.pedido.monto_total}-${selectedPedido.pedido.id}&format=png&margin=10&color=000000&bgcolor=FFFFFF`}
                                 alt="QR Plin" 
                                 className="img-fluid"
                                 style={{ maxWidth: '200px' }}
@@ -565,9 +457,9 @@ const PaymentManager = () => {
                             </div>
                             <h5 className="text-info fw-bold">PAGA CON PLIN</h5>
                             <p className="mb-2 fw-bold text-dark">NÚMERO: <span className="fs-4 text-primary">999 888 777</span></p>
-                            <h4 className="text-info fw-bold mb-3">S/ {total.toFixed(2)}</h4>
+                            <h4 className="text-info fw-bold mb-3">S/ {selectedPedido.pedido.monto_total.toFixed(2)}</h4>
                             <div className="alert alert-info fw-bold">
-                              REFERENCIA: <strong>{orderData.orderId}</strong>
+                              REFERENCIA: <strong>DEL-{selectedPedido.pedido.id}</strong>
                             </div>
                           </div>
                         </div>
@@ -581,7 +473,10 @@ const PaymentManager = () => {
                             <i className="fas fa-credit-card fa-5x text-primary mb-3"></i>
                             <h5 className="text-primary fw-bold">PAGO CON TARJETA</h5>
                             <p className="text-dark fw-bold">PROCESAR CON DATÁFONO</p>
-                            <h4 className="text-primary fw-bold">S/ {total.toFixed(2)}</h4>
+                            <h4 className="text-primary fw-bold">S/ {selectedPedido.pedido.monto_total.toFixed(2)}</h4>
+                            <div className="alert alert-primary fw-bold mt-3">
+                              REFERENCIA: <strong>DEL-{selectedPedido.pedido.id}</strong>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -642,9 +537,9 @@ const PaymentManager = () => {
                             </thead>
                             <tbody>
                               {payments[0].items.map((item) => (
-                                <tr key={item.id}>
-                                  <td className="text-dark">{item.quantity}x {item.name}</td>
-                                  <td className="text-end fw-bold text-dark">S/ {(item.price * item.quantity).toFixed(2)}</td>
+                                <tr key={item.producto_id || item.id}>
+                                  <td className="text-dark">{item.cantidad}x {item.nombre_producto}</td>
+                                  <td className="text-end fw-bold text-dark">S/ {(item.precio_unitario * item.cantidad).toFixed(2)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -659,12 +554,6 @@ const PaymentManager = () => {
                               <span>IGV (18%):</span>
                               <span>S/ {payments[0].tax.toFixed(2)}</span>
                             </div>
-                            {payments[0].discount > 0 && (
-                              <div className="d-flex justify-content-between small fw-bold text-success">
-                                <span>Descuento:</span>
-                                <span>- S/ {payments[0].discount.toFixed(2)}</span>
-                              </div>
-                            )}
                             <div className="d-flex justify-content-between fw-bold fs-5 mt-2 pt-2 border-top text-primary">
                               <span>TOTAL:</span>
                               <span>S/ {payments[0].total.toFixed(2)}</span>
@@ -673,6 +562,9 @@ const PaymentManager = () => {
 
                           <div className="text-center mt-4 pt-3 border-top">
                             <p className="text-dark fw-bold">¡GRACIAS POR SU PREFERENCIA!</p>
+                            {payments[0].plataforma && (
+                              <small className="text-muted">Plataforma: {payments[0].plataforma}</small>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -700,7 +592,7 @@ const PaymentManager = () => {
                       type="button" 
                       className="btn btn-primary fw-bold"
                       onClick={() => setCurrentStep(2)}
-                      disabled={!orderData.customerName || orderItems.every(item => !item.name || item.price <= 0)}
+                      disabled={!selectedPedido}
                     >
                       CONTINUAR AL PAGO
                     </button>
@@ -714,8 +606,8 @@ const PaymentManager = () => {
                     <button 
                       type="button" 
                       className="btn btn-success fw-bold"
-                      onClick={processPayment}
-                      disabled={paymentMethod === 'cash' && cashData.received < total}
+                      onClick={procesarPagoDelivery}
+                      disabled={paymentMethod === 'cash' && cashData.received < selectedPedido?.pedido.monto_total}
                     >
                       CONFIRMAR PAGO
                     </button>
@@ -727,14 +619,14 @@ const PaymentManager = () => {
         </div>
       )}
 
-      {/* Lista de Pagos Recientes */}
+      {/* Lista de Pagos Recientes - SOLO DELIVERY */}
       <div className="row">
         <div className="col-12">
-          <h3 className="h4 mb-3 fw-bold text-dark">PAGOS RECIENTES</h3>
+          <h3 className="h4 mb-3 fw-bold text-dark">PAGOS DELIVERY RECIENTES</h3>
           {payments.length === 0 ? (
             <div className="card border-dark">
               <div className="card-body text-center text-dark">
-                <p className="mb-0 fw-bold">NO HAY PAGOS REGISTRADOS</p>
+                <p className="mb-0 fw-bold">NO HAY PAGOS DELIVERY REGISTRADOS</p>
               </div>
             </div>
           ) : (
@@ -751,12 +643,11 @@ const PaymentManager = () => {
                         <i className="fas fa-user me-1"></i>
                         <strong>{payment.customerName}</strong>
                         <br />
-                        {payment.tableNumber && (
-                          <><i className="fas fa-utensils me-1"></i>MESA {payment.tableNumber}</>
-                        )}
-                        {!payment.tableNumber && (
-                          <><i className="fas fa-motorcycle me-1"></i>DELIVERY</>
-                        )}
+                        <i className="fas fa-map-marker-alt me-1"></i>
+                        {payment.customerAddress}
+                        <br />
+                        <i className="fas fa-phone me-1"></i>
+                        {payment.customerPhone}
                       </p>
                       <div className="d-flex justify-content-between align-items-center">
                         <span className={`badge fw-bold ${
@@ -771,6 +662,14 @@ const PaymentManager = () => {
                         </span>
                         <strong className="h5 mb-0 text-dark">S/ {payment.total.toFixed(2)}</strong>
                       </div>
+                      {payment.plataforma && (
+                        <div className="mt-2">
+                          <small className="text-muted">
+                            <i className="fas fa-truck me-1"></i>
+                            {payment.plataforma}
+                          </small>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

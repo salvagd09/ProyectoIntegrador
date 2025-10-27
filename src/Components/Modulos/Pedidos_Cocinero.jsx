@@ -8,18 +8,6 @@ export default function Pedidos_Cocinero() {
     const cerrarTarjeta = (pedidoId) => {
       setPedidosCerrados([...pedidosCerrados, pedidoId]);
     };
-    useEffect(() => {
-      fetch("http://127.0.0.1:8000/pedidosF/platillos")
-        .then((res) => res.json())
-        .then((data) => setPlatillos(data))
-        .catch((err) => console.error(err));
-    }, []);
-    useEffect(() => {
-      fetch("http://127.0.0.1:8000/pedidosF/mesas")
-        .then((res) => res.json())
-        .then((data) => setMesas(data))
-        .catch((err) => console.error(err));
-    }, []);
     useEffect(()=> {
       fetch("http://127.0.0.1:8000/pedidosF/pedidosM")
         .then((res) => res.json())

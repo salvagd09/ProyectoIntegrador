@@ -25,12 +25,12 @@ function Insumos() {
   const [insumos, setInsumos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
   const [showModal, setShowModal] = useState(false);
   const [insumoEditando, setInsumoEditando] = useState(null);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
-
+  const [showModalMerma,setShowModalMerma]=useState(false);
+  const [registroMerma,setRegistroMerma]=useState([]);
   // Cargar datos de la base de datos
   const cargarInsumos = async () => {
     setLoading(true);
@@ -46,7 +46,6 @@ function Insumos() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     cargarInsumos();
   }, []);
@@ -115,7 +114,16 @@ function Insumos() {
       await agregarInsumo(datos);
     }
   };
-
+  const manejarEnvioMerma=async(nuevaMerma)=>{
+    const respuesta=await fetch(`${API_BASE_URL}/api/inventario/rMerma`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(nuevaMerma)
+    })
+    const datoR=await respuesta.json()
+    alert(datoR.mensaje)
+    setShowModalMerma(false) 
+  }
   // Filtrar insumos
   const categorias = ["Todas", ...new Set(insumos.map(insumo => insumo.categoria))];
   const insumosFiltrados = insumos.filter(insumo =>
@@ -188,7 +196,7 @@ function Insumos() {
             <Card.Body className="text-center">
               <div className="text-warning mb-2">⚠️</div>
               <Card.Title className="fs-6">Stock Bajo</Card.Title>
-              <h3 className="text-warning">{stockBajo}</h3>
+              <h3 className="text-danger">{stockBajo}</h3>
             </Card.Body>
           </Card>
         </Col>
@@ -197,7 +205,7 @@ function Insumos() {
             <Card.Body className="text-center">
               <div className="text-info mb-2">🏷️</div>
               <Card.Title className="fs-6">Categorías</Card.Title>
-              <h3 className="text-info">{categoriasActivas}</h3>
+              <h3 className="text-primary">{categoriasActivas}</h3>
             </Card.Body>
           </Card>
         </Col>
@@ -226,7 +234,7 @@ function Insumos() {
                 </Button>
               )}
               {rol === "cocina" && (
-                <Button variant="secondary" onClick={() => { setInsumoEditando(null); setShowModal(true); }} className="px-4">
+                <Button variant="secondary" onClick={() => { setRegistroMerma(null); setShowModalMerma(true); }} className="px-4">
                   Registrar Merma
                 </Button>
               )}
@@ -246,7 +254,7 @@ function Insumos() {
                 <th>Insumo</th>
                 <th>Cantidad</th>
                 <th>Precio</th>
-                <th>Categoría</th>
+                <th>Descripción</th>
                 <th>Valor Total</th>
                 <th>¿Es perecible?</th>
                 {rol === "admin" && <th width="200">Acciones</th>}
@@ -305,26 +313,75 @@ function Insumos() {
           )}
         </Card.Body>
       </Card>
-
+      <Modal show={showModalMerma} onHide={()=>{setShowModalMerma(false);setRegistroMerma(null)}} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Área de registro de mermas 🗑️</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <FormMermas merma={registroMerma} onGuardar={manejarEnvioMerma} onCancelar={()=>{setShowModalMerma(false),setRegistroMerma(null)}} />
+          </Modal.Body>
+      </Modal>
       <Modal show={showModal} onHide={() => { setShowModal(false); setInsumoEditando(null); }} centered>
         <Modal.Header closeButton>
           <Modal.Title>{insumoEditando ? "✏️ Editar Insumo" : "➕ Agregar Nuevo Insumo"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {rol === "admin" ? (
             <FormInsumo insumo={insumoEditando} onGuardar={manejarGuardarInsumo} onCancelar={() => { setShowModal(false); setInsumoEditando(null); }} />
-          ) : (
-            <div className="text-center p-4">
-              <h5>❌ Acceso Denegado</h5>
-              <p>No tienes permisos para modificar insumos</p>
-            </div>
-          )}
         </Modal.Body>
       </Modal>
     </Container>
   );
 }
-
+function FormMermas({merma,onGuardar,onCancelar}){
+  const [formInfo,setformInfo]=useState({
+     platillo_id:merma?.platillo_id||"",
+     cantidad:merma?.cantidad|| "",
+     motivo:merma?.motivo|| ""
+  })
+  const [platillos,setPlatillos]=useState([])
+  useEffect(()=> {
+      fetch("http://127.0.0.1:8000/pedidosF/platillos")
+        .then((res) => res.json())
+        .then((data) => {setPlatillos(data);      
+          console.log("🍽️ Platillos cargados:", data);
+      data.forEach(p => {
+        console.log(`- ${p.nombre}: ID = ${p.id}`);
+      });})
+        .catch((err) => console.error(err));
+  }, [])
+  const manejarEnvio=(e)=>{
+    e.preventDefault();
+   const datosLimpios = {
+    platillo_id: Number(formInfo.platillo_id),
+    cantidad: Number(formInfo.cantidad),
+    motivo: formInfo.motivo.trim()
+  };  
+  onGuardar(datosLimpios);
+  }
+     return(
+  <>
+    <Form onSubmit={manejarEnvio}>
+      <Form.Group className="mb-3">
+        <Form.Label>Selecciona el platillo:</Form.Label>
+        <Form.Select className="form-control w-100" value={formInfo.platillo_id} 
+        onChange={(e)=>setformInfo({...formInfo,platillo_id:e.target.value})} >
+          <option value="">Selecciona un platillo...</option>
+          {platillos.map((platillo)=>(
+              <option key={platillo.id} value={platillo.id}>{platillo.nombre}</option>
+          ))}
+        </Form.Select>
+        <Form.Label>Selecciona la cantidad:</Form.Label>
+        <Form.Control type="number" className="form-control w-25" value={formInfo.cantidad}   onChange={(e) => setformInfo({...formInfo,cantidad:Number(e.target.value)})} required min="1" />
+        <Form.Label>Establece el motivo:</Form.Label>
+        <Form.Control as="textarea" className="w-100" rows={3} value={formInfo.motivo}  onChange={(e)=>setformInfo({...formInfo,motivo:e.target.value})} required/>
+      </Form.Group>
+      <Button variant="outline-primary mx-1" onClick={onCancelar}>Cancelar</Button>
+      <Button variant="warning mx-1" type="submit">Registrar merma</Button>
+    </Form>
+  
+  </>)
+  }
+ 
 function FormInsumo({ insumo, onGuardar, onCancelar }) {
   const [formData, setFormData] = useState({
     nombre: insumo?.nombre || "",

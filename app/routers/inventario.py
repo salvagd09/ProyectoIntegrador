@@ -11,7 +11,49 @@ def get_db():
         yield db
     finally:
         db.close()
-
+def descontar_insumos_merma(merma_id: int, db: Session):
+    # 1. Obtener detalles de la merma
+    merma = db.query(models.Mermas).filter(
+        models.Mermas.id == merma_id
+    ).first()  # ✅ .first() en lugar de .all()
+    if not merma:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Merma {merma_id} no encontrada"
+        )
+    # 2. Obtener recetas y calcular insumos necesarios
+    recetas = db.query(models.Recetas).filter(
+        models.Recetas.producto_id == merma.platillo_id
+    ).all()
+    
+    insumos_necesarios = {}
+    for receta in recetas:
+        cantidad = receta.cantidad_requerida * merma.cantidad
+        if receta.ingredientes_id in insumos_necesarios:
+            insumos_necesarios[receta.ingredientes_id] += cantidad
+        else:
+            insumos_necesarios[receta.ingredientes_id] = cantidad
+    
+    # 3. Verificar y descontar con row locking
+    for insumo_id, cantidad in insumos_necesarios.items():
+        insumo = db.query(models.Ingredientes).filter(
+            models.Ingredientes.id == insumo_id
+        ).with_for_update().first()
+        
+        if not insumo:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Ingrediente {insumo_id} no encontrado"
+            )
+        
+        if insumo.cantidad_actual < cantidad:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Stock insuficiente de {insumo.nombre}. "
+                       f"Disponible: {insumo.cantidad_actual}, Necesario: {cantidad}"
+            )
+        
+        insumo.cantidad_actual -= cantidad
 # GET /api/inventario/ - Obtener todo el inventario
 @router.get("/")
 def Mostrar_inventario(db: Session = Depends(get_db)):
@@ -191,3 +233,61 @@ def registrar_movimiento(movimiento_data: dict, db: Session = Depends(get_db)):
         db.rollback()
         print(f"Error completo: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error registrando movimiento: {str(e)}")
+@router.post("/rMerma")
+def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
+    try:
+        # ✅ Verificar que el platillo existe
+        platillo = db.query(models.Platillo).filter(
+            models.Platillo.id == data.platillo_id
+        ).first()
+        
+        if not platillo:
+            raise HTTPException(
+                status_code=404,
+                detail=f"El platillo con ID {data.platillo_id} no existe"
+            )
+        
+        print(f"✅ Platillo encontrado: {platillo.nombre}")
+        
+        # ✅ Verificar que el platillo tiene recetas
+        recetas = db.query(models.Recetas).filter(
+            models.Recetas.producto_id == data.platillo_id
+        ).all()
+        
+        if not recetas:
+            raise HTTPException(
+                status_code=400,
+                detail=f"El platillo '{platillo.nombre}' no tiene recetas configuradas"
+            )
+        
+        print(f"✅ Recetas encontradas: {len(recetas)}")
+        
+        # Crear merma
+        nueva_merma = models.Mermas(
+            platillo_id=data.platillo_id,
+            cantidad=data.cantidad,
+            motivo=data.motivo
+        )
+        db.add(nueva_merma)
+        db.flush()
+        
+        # Descontar insumos
+        descontar_insumos_merma(nueva_merma.id, db)
+        
+        # Commit
+        db.commit()
+        db.refresh(nueva_merma)
+        
+        return {
+            "mensaje": f"Merma registrada correctamente para {platillo.nombre}",
+            "merma_id": nueva_merma.id
+        }
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))

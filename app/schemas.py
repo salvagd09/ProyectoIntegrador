@@ -112,11 +112,14 @@ class PedidoEditarSolicitud(BaseModel):
     monto_total: float
     class Config:
         from_attributes = True
+class RegistarMerma(BaseModel):
+    platillo_id:int
+    cantidad:int
+    motivo:str
 class DetallePedidoDeliveryCreate(BaseModel):
     producto_id: int
     cantidad: int
     notas: Optional[str] = None
-
 class PedidoDeliveryCreate(BaseModel):
     nombre_cliente: str
     direccion_cliente: str
@@ -125,7 +128,6 @@ class PedidoDeliveryCreate(BaseModel):
     codigo_pedido_externo: Optional[str] = None
     detalles: List[DetallePedidoDeliveryCreate]
     metodo_pago: str
-
 class PedidoDeliveryResponse(BaseModel):
     id: int
     estado: str

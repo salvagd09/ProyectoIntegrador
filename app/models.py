@@ -84,6 +84,7 @@ class Platillo(Base):
     categoria=relationship("Categorias",back_populates="platillos")
     DPedidoP=relationship("Detalles_Pedido",back_populates="platillos")
     recetasP=relationship("Recetas",back_populates="productosR")
+    PLmer=relationship("Mermas",back_populates="mermas")
 class Categorias(Base):
     __tablename__="categorias"
     id=Column(Integer,primary_key=True,index=True)
@@ -139,6 +140,7 @@ class Detalles_Pedido(Base):
             'En preparacion',  
             'Listo', 
             'Servido',
+            'Entregado',
             name='estado_item_pedido',
             create_type=False 
         ),
@@ -213,3 +215,10 @@ class Movimientos_Inventario(Base):
     Fecha_Hora=Column(TIMESTAMP,default=func.now())
     empleadosMI=relationship("Empleado",back_populates="eMI")
     LotesMI=relationship("Lotes_Inventarios",back_populates="LIMI")
+class Mermas(Base):
+    __tablename__="registrarMermas"
+    id=Column(Integer,primary_key=True,index=True)
+    platillo_id=Column(Integer,ForeignKey("productos.id"),nullable=False)
+    cantidad=Column(Integer)
+    motivo=Column(Text)
+    mermas=relationship("Platillo",back_populates="PLmer")

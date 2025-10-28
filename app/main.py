@@ -1,6 +1,15 @@
 from app.routers.pagos import router as pagos_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+
+# --- SOLUCIÓN FORZADA PARA VARIABLES DE ENTORNO ---
+# Establecer variables críticas directamente
+os.environ['DATABASE_PUBLIC_URL'] = 'postgresql://postgres:admin@localhost:5432/db_restaurante'
+os.environ['CULQI_SECRET_KEY'] = 'sk_test_UTCQSGcXW8bCyU59'
+os.environ['CULQI_PUBLIC_KEY'] = 'pk_test_vzMuTHoueOMlbUbG'
+
+print("✅ Variables de entorno configuradas forzadamente")
 
 # Importar routers correctamente
 from app.routers.PedidosF import router as pedidos_router
@@ -13,12 +22,13 @@ from app.routers.categorias import router as categorias_router
 from app.routers.ingredientes import router as ingredientes_router
 from app.routers.menu import router as menu_router
 from app.routers.inventario_L import router as inventario_L_router
+
 app = FastAPI(title="Sistema de Pedidos")
 
 # --- Middleware CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,3 +51,14 @@ app.include_router(pagos_router)
 @app.get("/")
 def root():
     return {"msg": "Bienvenido a GestaFood"}
+
+# --- Ruta de salud para verificar configuración ---
+@app.get("/health")
+async def health():
+    return {
+        "status": "healthy", 
+        "service": "GestaFood API",
+        "database": os.getenv('DATABASE_PUBLIC_URL', 'not found'),
+        "culqi": "configured" if os.getenv('CULQI_SECRET_KEY') else "demo_mode",
+        "message": "✅ Servidor funcionando correctamente"
+    }

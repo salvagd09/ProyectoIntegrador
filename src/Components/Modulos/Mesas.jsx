@@ -49,7 +49,7 @@ function Mesas() {
     <>
       <div>
         <h1>
-          Área donde se encuentran las mesas {rol == 1 && <h1>ocupadas</h1>}
+          Área donde se encuentran las mesas {rol == 1 && (<h1>ocupadas</h1>)}
         </h1>
         <div className="container">
           {rol == 4 && (

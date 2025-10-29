@@ -154,7 +154,7 @@ function Cajero() {
                     <img
                         src={usuario}
                         alt="Usuario"
-                        className={`ms-2 me-2 mb-2 ${styles.profileAvatar}`}
+                        className={`ms-2 me-2 ${styles.profileAvatar}`}
                         style={{ border: `2px solid var(--color-accent)`, filter: `invert(1)` }}
                     />
                     {/* Info de Usuario */}

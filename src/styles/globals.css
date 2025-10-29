@@ -105,3 +105,29 @@ span, button {
 .status-offline {
     background-color: var(--color-btn-delete);
 }
+
+/* Contenedor de Contraseña para el icono de ojo */
+.input-group button {
+    border-left: none !important; 
+}
+.input-group button i {
+    color: var(--color-muted); /* Color del icono de ojo */
+}
+
+/* Estilo para los Modales temáticos (si no se aplicaron correctamente con las variables) */
+.modal-content {
+    background-color: var(--color-card) !important;
+    color: var(--color-text) !important;
+    border-color: var(--color-accent) !important;
+}
+
+.modal-header {
+    background-color: var(--color-header) !important;
+    border-bottom-color: var(--color-muted) !important;
+}
+/* Estilo de los inputs dentro del modal */
+.modal-body .form-control {
+    background-color: var(--color-bg) !important;
+    border-color: var(--color-accent) !important;
+    color: var(--color-text) !important;
+}

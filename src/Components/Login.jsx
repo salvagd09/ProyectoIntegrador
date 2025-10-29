@@ -1,16 +1,51 @@
 import { useState } from "react";
 import comida from "../assets/comida.png";
 import { useNavigate, Link } from "react-router-dom";
-import "./App.css";
+import { Button, Form, Card, Modal } from 'react-bootstrap';
 
 function App() {
   const [nombreUsuario, setNombreUsuario] = useState("");
-  const [contrasena, setNombreContrasena] = useState("");
+  const [contrasena, setContrasena] = useState("");
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [PIN, setPIN] = useState("");
+  const [showMeseroModal, setShowMeseroModal] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  // Estilos Temáticos
+    const cardStyle = {
+        backgroundColor: 'var(--color-card)',
+        color: 'var(--color-text)',
+        borderColor: 'var(--color-muted)',
+    };
+    const inputStyle = {
+        backgroundColor: 'var(--color-bg)',
+        color: 'var(--color-text)',
+        borderColor: 'var(--color-muted)',
+    };
+    const titleStyle = {
+        color: 'var(--color-title)',
+        fontFamily: 'var(--font-title)',
+    };
+    const btnPrimaryStyle = {
+        backgroundColor: 'var(--color-btn)',
+        borderColor: 'var(--color-btn)',
+        color: 'white',
+        fontWeight: 'bold',
+    };
+    const btnOutlineStyle = {
+        color: 'var(--color-text)',
+        borderColor: 'var(--color-accent)',
+    };
+
+  const getLogoFilterStyle = () => {
+      const rootClass = document.documentElement.className;
+      if (rootClass.includes('theme-dark') || rootClass.includes('theme-deep-ocean')) {
+          return 'invert(1)';
+      }
+      return 'none';
+  };
+
+  const handleLoginPassword = async (e) => {
     e.preventDefault();
     try {
       const res = await fetch("http://127.0.0.1:8000/auth/login-password", {
@@ -41,7 +76,7 @@ function App() {
     }
   };
 
-  const handleSubmitPin = async (e) => {
+  const handleLoginPin = async (e) => {
     e.preventDefault();
     try {
       const res = await fetch("http://127.0.0.1:8000/auth/login-pin", {
@@ -59,6 +94,7 @@ function App() {
       localStorage.setItem("userData", JSON.stringify(data));
       localStorage.setItem("userRole", data.rol_id);
       localStorage.setItem("isAuthenticated", "true");
+      setShowMeseroModal(false);
       // Navegación al apartado mesero
       navigate("/mesero");
     } catch (err) {
@@ -72,109 +108,129 @@ function App() {
 
   return (
     <>
-      <div className="container">
-        <div className="d-flex justify-content-center">
-          <img
-            src={comida}
-            alt="Icono de comida"
-            className="img-fluid rounded-circle"
-          />
-        </div>
-        <h1 className="text-center mb-4 display-3">
-          Software para gestionar pedidos
-        </h1>
-        <form
-          onSubmit={handleSubmit}
-          className="card p-4 shadow mx-auto align-items-center w-50"
-        >
-          <h2 className="mb-3 display-4 text-center">Iniciar Sesión</h2>
-          <label htmlFor="nombreUsuario" className="form-label fs-4">
-            Usuario:
-          </label>
-          <input
-            type="text"
-            id="nombreUsuario"
-            name="nombreUsuario"
-            value={nombreUsuario}
-            onChange={(e) => setNombreUsuario(e.target.value)}
-            className="form-control fs-5"
-          />
-          <label htmlFor="contrasena" className="form-label fs-4">
-            Contraseña:
-          </label>
-          <div className="contenedorContra">
-            <input
-              className="form-control fs-5 contrasena"
-              type={mostrarContrasena ? "text" : "password"}
-              id="contrasena"
-              name="contrasena"
-              value={contrasena}
-              onChange={(e) => setNombreContrasena(e.target.value)}
+      <div className="min-vh-100 d-flex flex-column align-items-center py-5" style={{ backgroundColor: 'var(--color-bg)' }}>
+        <div className="container d-flex flex-column align-items-center">
+          <div className="d-flex justify-content-center mb-4">
+            <img
+              src={comida}
+              alt="Icono de comida"
+              className="img-fluid rounded-circle"
+              style={{ width: '150px', height: '150px', filter: getLogoFilterStyle() }}
             />
-            <i
-              className={`fa-solid ${
-                mostrarContrasena ? "fa-eye" : "fa-eye-slash"
-              }`}
-              onClick={toggleMostrarContrasena}
-            ></i>
           </div>
-          <div className="d-flex gap-4 align-items-center">
-            <button
-              type="button"
-              className="btn btn-outline-dark fs-4 mt-3"
-              data-bs-toggle="modal"
-              data-bs-target="#exampleModal"
-              data-bs-whatever="@mdo"
-            >
-              Soy mesero
-            </button>
-            <button type="submit" className="btn btn-success fs-4  mt-3 ">
-              Ingresar
-            </button>
-            <Link to="/cocina" className="btn btn-outline-dark fs-4 mt-3">
-              Soy del área de cocina
-            </Link>
-          </div>
-        </form>
-        <div
-          className="modal fade"
-          id="exampleModal"
-          tabIndex="-1"
-          aria-labelledby="exampleModalLabel"
-          aria-hidden="true"
-        >
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h1 className="modal-title fs-5" id="exampleModalLabel">
-                  PIN del mesero
-                </h1>
-              </div>
-              <div className="modal-body">
-                <form onSubmit={handleSubmitPin}>
-                  <div className="mb-3 mx-2">
-                    <label htmlFor="PIN">Ingresa tu PIN:</label>
-                    <input
-                      type="password"
-                      value={PIN}
-                      onChange={(e) => setPIN(e.target.value)}
-                      className="mx-2"
-                    />
-                  </div>
-                  <div className="modal-footer">
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      data-bs-dismiss="modal"
-                    >
-                      Ingresar
-                    </button>
-                  </div>
-                </form>
-              </div>
+          <h1 className="text-center mb-5 display-5" style={{ color: 'var(--color-title)', fontFamily: 'var(--font-title)' }}>
+              Software para gestionar pedidos
+          </h1>
+
+          <Card 
+                    className="p-4 shadow mx-auto w-75 w-md-50" 
+                    style={cardStyle}
+                >
+                    <Card.Body>
+                        <h2 className="mb-4 display-6 text-center" style={titleStyle}>
+                            Iniciar Sesión (Admin/Caja)
+                        </h2>
+                        <Form onSubmit={handleLoginPassword}>
+                            
+                            {/* Usuario */}
+                            <Form.Group className="mb-3">
+                                <Form.Label htmlFor="nombreUsuario" style={{ color: 'var(--color-text)' }}>Usuario:</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    id="nombreUsuario"
+                                    value={nombreUsuario}
+                                    onChange={(e) => setNombreUsuario(e.target.value)}
+                                    style={inputStyle}
+                                    required
+                                />
+                            </Form.Group>
+                            
+                            {/* Contraseña */}
+                            <Form.Group className="mb-4">
+                                <Form.Label htmlFor="contrasena" style={{ color: 'var(--color-text)' }}>Contraseña:</Form.Label>
+                                <div className="input-group">
+                                    <Form.Control
+                                        type={mostrarContrasena ? "text" : "password"}
+                                        id="contrasena"
+                                        value={contrasena}
+                                        onChange={(e) => setContrasena(e.target.value)}
+                                        style={inputStyle}
+                                        required
+                                    />
+                                    {/* Botón de mostrar/ocultar contraseña */}
+                                    <Button 
+                                        variant="outline-secondary" 
+                                        onClick={toggleMostrarContrasena} 
+                                        style={btnOutlineStyle}
+                                    >
+                                        <i className={`fa-solid ${mostrarContrasena ? "fa-eye" : "fa-eye-slash"}`}></i>
+                                    </Button>
+                                </div>
+                            </Form.Group>
+                            
+                            {/* Botón de Ingresar */}
+                            <Button type="submit" className="w-100 fs-4 mt-3" style={btnPrimaryStyle}>
+                                Ingresar
+                            </Button>
+                        </Form>
+                    </Card.Body>
+                </Card>
+
+                <Card 
+                    className="p-3 shadow mx-auto mt-4 w-75 w-md-50" 
+                    style={cardStyle}
+                >
+                    <Card.Body className="d-flex flex-column flex-md-row justify-content-center gap-3">
+                        
+                        <Button
+                            variant="primary"
+                            onClick={() => setShowMeseroModal(true)}
+                            className="fs-5"
+                            style={btnOutlineStyle}
+                        >
+                            <i className="fa-solid fa-bell-concierge me-2"></i> Soy Mesero
+                        </Button>
+                        
+                        <Link 
+                            to="/cocina" 
+                            className="btn fs-5"
+                            style={btnOutlineStyle}
+                        >
+                            <i className="fa-solid fa-kitchen-set me-2"></i> Soy del área de Cocina
+                        </Link>
+                    </Card.Body>
+                </Card>
             </div>
-          </div>
-        </div>
+
+            {/* Modal para PIN del Mesero */}
+            <Modal show={showMeseroModal} onHide={() => setShowMeseroModal(false)} centered>
+                <Modal.Header closeButton style={{ backgroundColor: 'var(--color-header)', borderColor: 'var(--color-muted)' }}>
+                    <Modal.Title style={titleStyle}>PIN del Mesero</Modal.Title>
+                </Modal.Header>
+                <Modal.Body style={cardStyle}>
+                    <Form onSubmit={handleLoginPin}>
+                        <Form.Group className="mb-3 d-flex align-items-center">
+                            <Form.Label htmlFor="PIN" className="mb-0 me-3">Ingresa tu PIN:</Form.Label>
+                            <Form.Control
+                                type="password"
+                                value={PIN}
+                                onChange={(e) => setPIN(e.target.value)}
+                                style={{ ...inputStyle, width: '150px' }}
+                                maxLength={4}
+                                required
+                            />
+                        </Form.Group>
+                        <Modal.Footer style={{ borderTop: 'none' }}>
+                            <Button 
+                                type="submit"
+                                style={btnPrimaryStyle}
+                            >
+                                Ingresar
+                            </Button>
+                        </Modal.Footer>
+                    </Form>
+                </Modal.Body>
+            </Modal>
       </div>
     </>
   );

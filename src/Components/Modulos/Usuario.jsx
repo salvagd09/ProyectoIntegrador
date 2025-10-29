@@ -141,7 +141,6 @@ function Usuario() {
         <Table responsive hover className="mb-0">
           <thead className="bg-light">
             <tr>
-              <th>ID</th>
               <th>Nombres</th>
               <th>Apellidos</th>
               <th>Username</th>
@@ -155,7 +154,6 @@ function Usuario() {
             {usuariosVisibles.map((usuario) => {
               return (
                 <tr key={usuario.id}>
-                  <td>{usuario.id}</td>
                   <td>{usuario.nombre}</td>
                   <td>{usuario.apellido}</td>
                   <td>{usuario.nombreUs}</td>

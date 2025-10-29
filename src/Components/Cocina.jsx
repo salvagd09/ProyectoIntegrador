@@ -163,6 +163,7 @@ function Cocinero() {
                             <i className="bi bi-box-seam me-2"></i>{isSidebarOpen && "Insumos"}
                         </Link>
                     </li>
+                    
                 </ul>
             </div>
 

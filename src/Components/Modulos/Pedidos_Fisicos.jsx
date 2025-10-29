@@ -308,9 +308,9 @@ const guardarCambiosPedido = async () => {
   //Para cambiar el nombre de los botones que cambian el estado de pedido
 const obtenerTextoBoton = (estadoP, tipoServicio) => {
   const textos = {
-    Pendiente: "Marcar como en preparación",
+    pendiente: "Marcar como en preparación",
     "en_preparacion": "Marcar como listo",
-    Listo: tipoServicio === "delivery" 
+    listo: tipoServicio === "delivery" 
       ? "Marcar como entregado" 
       : "Marcar como servido"
   };
@@ -359,7 +359,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
     <div className="pedidos-container">
       <div className="pedidos-topbar">
         <h2>Gestión de Pedidos 🐟</h2>
-        {rol == 1 && (
+        {rol == 4 && (
           <button className="btn-crear" onClick={() => setShowModal(true)}>
             ➕ Crear Pedido
           </button>
@@ -408,7 +408,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                     {obtenerTextoBoton(p.estado,p.tipo_pedido)}
                   </button>
                 )}
-                <button
+                {rol == 4 &&(<><button
                   className="btn btn-warning m-1"
                   onClick={() => {
                     abrirModalEditar(p);
@@ -424,7 +424,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                   }}
                 >
                   Cancelar pedido
-                </button>
+                </button></>)}
               </div>
             ))}
         </div>
@@ -499,12 +499,12 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                   </small>
                   <strong>S/ {p.monto_total}</strong>
                 </div>
-                <button
+                {rol==4 &&(<button
                   className={"btn-estado m-2"}
                   onClick={() => cambiarEstadoNombre(p.id, p.estado)}
                 >
                   {obtenerTextoBoton(p.estado,p.tipo_pedido)}
-                </button>
+                </button>)}
               </div>
             ))}
         </div>

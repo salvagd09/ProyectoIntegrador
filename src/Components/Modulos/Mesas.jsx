@@ -44,7 +44,7 @@ function Mesas() {
       .catch((err) => console.error(err));
   }
   const mesasVisibles =
-    rol == 4 ? mesas : mesas.filter((m) => m.estado === "Ocupada");
+    rol == 1 ? mesas : mesas.filter((m) => m.estado === "ocupada");
   return (
     <>
       <div>
@@ -146,7 +146,7 @@ function Mesas() {
                         Estado de la mesa:{" "}
                         <span
                           className={`${
-                            mesa.estado === "Libre"
+                            mesa.estado === "libre"
                               ? "text-dark"
                               : "text-danger"
                           } fw-bolder`}
@@ -157,10 +157,10 @@ function Mesas() {
                       {rol == 1 && (
                         <button
                           type="button"
-                          className="btn-dark my-2 w-50 mx-auto btn"
+                          className={`${mesa.estado==="libre" ? "btn-dark":"btn-danger"} my-2 w-50 mx-auto btn`}
                           onClick={() => ocupar(mesa.id)}
                         >
-                          Marcar como desocupado
+                          {mesa.estado==="libre"? "Marcar como ocupado":"Marcar como desoccupado"}
                         </button>
                       )}
                     </ul>

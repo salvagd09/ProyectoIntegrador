@@ -5,6 +5,7 @@ import os
 
 # --- SOLUCIÓN FORZADA PARA VARIABLES DE ENTORNO ---
 # Establecer variables críticas directamente
+os.environ['DATABASE_PUBLIC_URL'] = 'postgresql://postgres:CKHelhFLVFGKNAaGoKHazUnmiZaWEVgZ@mainline.proxy.rlwy.net:34440/railway'
 os.environ['CULQI_SECRET_KEY'] = 'sk_test_UTCQSGcXW8bCyU59'
 os.environ['CULQI_PUBLIC_KEY'] = 'pk_test_vzMuTHoueOMlbUbG'
 

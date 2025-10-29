@@ -16,15 +16,15 @@ export default function Pedidos_Cocinero() {
     }, [])
     const obtenerTextoBoton = (estadoP) => {
     const textos = {
-      "Pendiente": "Marcar como en preparación",
-      "En preparacion": "Marcar como listo",
-      "Listo": "Marcar como Servido"
+      "pendiente": "Marcar como en preparación",
+      "en_preparacion": "Marcar como listo",
+      "listo": "Marcar como Servido"
     };
     return textos[estadoP] || "Cambiar estado";
   };
   {/*Para pasar de un estado a otro */}
   const cambiarEstadoNombre = async (id, estadoActual) => {
-    if (estadoActual === "Servido") {
+    if (estadoActual === "servido") {
       alert("Este pedido ya está servido");
       return;
     }
@@ -71,7 +71,7 @@ export default function Pedidos_Cocinero() {
     {/* Columna: Pendiente */}
     <div className="columna">
       <h3 className="columna-titulo">⏳ Pendiente</h3>
-      {pedidosVisibles.filter(p => p.estado === "Pendiente").map((p) => (
+      {pedidosVisibles.filter(p => p.estado === "pendiente").map((p) => (
         <div key={p.id} className={"pedido-card"}>
               <div className="pedido-top">
                 <div>
@@ -108,7 +108,7 @@ export default function Pedidos_Cocinero() {
     {/* Columna: En preparación */}
     <div className="columna">
       <h3 className="columna-titulo">👨‍🍳 En Preparación</h3>
-      {pedidosVisibles.filter(p => p.estado === "En preparacion").map((p) => (
+      {pedidosVisibles.filter(p => p.estado === "en_preparacion").map((p) => (
         <div key={p.id} className={"pedido-card"}>
               <div className="pedido-top">
                 <div>
@@ -145,7 +145,7 @@ export default function Pedidos_Cocinero() {
     {/* Columna: Listo */}
     <div className="columna">
       <h3 className="columna-titulo">✅ Listo</h3>
-      {pedidosVisibles.filter(p => p.estado === "Listo").map((p) => (
+      {pedidosVisibles.filter(p => p.estado === "listo").map((p) => (
         <div key={p.id} className={"pedido-card"}>
               <div className="pedido-top">
                  <button

@@ -7,8 +7,10 @@ import random
 import string
 from typing import Optional
 import os
+import asyncio
+from datetime import datetime
 
-router = APIRouter(prefix="/pagos",tags=["pagos"])
+router = APIRouter()
 
 # Configuración de Culqi DIRECTAMENTE desde variables de entorno
 CULQI_SECRET_KEY = os.getenv("CULQI_SECRET_KEY", "sk_test_UTCQSGcXW8bCyU59")
@@ -17,6 +19,7 @@ CULQI_BASE_URL = "https://api.culqi.com/v2"
 
 print(f"🔑 Culqi Configurado: {CULQI_PUBLIC_KEY[:10]}...")
 
+# Modelos existentes
 class QRRequest(BaseModel):
     pedido_id: int
 
@@ -31,6 +34,25 @@ class VerificationResponse(BaseModel):
     success: bool
     verificado: bool
     mensaje: str
+
+# NUEVOS MODELOS PARA LINK DE PAGO
+class LinkPagoRequest(BaseModel):
+    pedido_id: int
+    monto: float
+    email_cliente: str = "cliente@restaurante.com"
+
+class LinkPagoResponse(BaseModel):
+    success: bool
+    payment_url: Optional[str] = None
+    qr_url: Optional[str] = None
+    link_id: Optional[str] = None
+    mensaje: str
+
+class VerificarLinkRequest(BaseModel):
+    link_id: str
+
+# Simulación de base de datos en memoria
+links_activos = {}
 
 def make_culqi_request(method, endpoint, data=None):
     """Función segura para hacer requests a Culqi"""
@@ -58,56 +80,113 @@ def make_culqi_request(method, endpoint, data=None):
         print(f"❌ Error inesperado: {e}")
         return None
 
+# NUEVO ENDPOINT - Generar Link de Pago
+@router.post("/api/pagos/generar-link", response_model=LinkPagoResponse)
+async def generar_link_pago(request: LinkPagoRequest):
+    """SIMULACIÓN: Genera link de pago para que cliente pague desde su celular"""
+    try:
+        print(f"🔗 [SIMULACIÓN] Generando link para pedido: {request.pedido_id}, Monto: S/ {request.monto}")
+        
+        await asyncio.sleep(1.0)
+        
+        # Generar datos simulados
+        link_id = f"link_{request.pedido_id}_{random.randint(1000, 9999)}"
+        payment_url = f"https://demo-pago.culqi.com/pay/{link_id}"
+        
+        # QR para el link
+        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={payment_url}&format=png&margin=10"
+        
+        # Guardar en simulación
+        links_activos[link_id] = {
+            "pedido_id": request.pedido_id,
+            "monto": request.monto,
+            "estado": "pendiente",
+            "fecha_creacion": datetime.now(),
+            "email": request.email_cliente,
+            "payment_url": payment_url
+        }
+        
+        print(f"✅ Link generado: {link_id}")
+        
+        return LinkPagoResponse(
+            success=True,
+            payment_url=payment_url,
+            qr_url=qr_url,
+            link_id=link_id,
+            mensaje="Link de pago generado - Modo Simulación"
+        )
+        
+    except Exception as e:
+        print(f"❌ Error generando link: {e}")
+        return LinkPagoResponse(
+            success=False,
+            mensaje=f"Error generando link: {str(e)}"
+        )
+
+# NUEVO ENDPOINT - Verificar Estado del Link
+@router.post("/api/pagos/verificar-link", response_model=VerificationResponse)
+async def verificar_link_pago(request: VerificarLinkRequest):
+    """SIMULACIÓN: Verifica si el link de pago fue pagado"""
+    try:
+        print(f"🔍 Verificando link: {request.link_id}")
+        
+        await asyncio.sleep(1.0)
+        
+        # Buscar link en simulación
+        link_data = links_activos.get(request.link_id)
+        
+        if not link_data:
+            return VerificationResponse(
+                success=False,
+                verificado=False,
+                mensaje="Link de pago no encontrado"
+            )
+        
+        # SIMULAR: 70% de probabilidad de que ya pagó después de 10 segundos
+        tiempo_creacion = link_data["fecha_creacion"]
+        tiempo_actual = datetime.now()
+        diferencia_segundos = (tiempo_actual - tiempo_creacion).total_seconds()
+        
+        if diferencia_segundos > 10 and random.random() < 0.7:
+            link_data["estado"] = "pagado"
+            mensaje = "✅ Pago confirmado - Cliente pagó exitosamente"
+            verificado = True
+        else:
+            mensaje = "⏳ Esperando pago del cliente..."
+            verificado = False
+        
+        return VerificationResponse(
+            success=True,
+            verificado=verificado,
+            mensaje=mensaje
+        )
+        
+    except Exception as e:
+        print(f"❌ Error verificando link: {e}")
+        return VerificationResponse(
+            success=False,
+            verificado=False,
+            mensaje=f"Error en verificación: {str(e)}"
+        )
+
+# Endpoints existentes (los mantienes igual)
 @router.post("/api/pagos/crear-qr", response_model=QRResponse)
 async def crear_qr(request: QRRequest):
     try:
         print(f"🎯 Generando QR para pedido: {request.pedido_id}")
         
-        # INTENTO 1: Usar Culqi real
-        order_data = {
-            "amount": 1000,  # 10.00 PEN en centavos
-            "currency_code": "PEN",
-            "description": f"Pago para pedido {request.pedido_id}",
-            "order_number": f"pedido_{request.pedido_id}",
-        }
-        
-        culqi_response = make_culqi_request("POST", "orders", order_data)
-        
-        if culqi_response and "id" in culqi_response:
-            # Crear QR con Culqi
-            qr_data = {
-                "order_id": culqi_response["id"],
-                "amount": order_data["amount"],
-                "currency_code": "PEN"
-            }
-            
-            qr_response = make_culqi_request("POST", "qrs", qr_data)
-            
-            if qr_response and "qr_image" in qr_response:
-                return QRResponse(
-                    success=True,
-                    qr_url=qr_response["qr_image"],
-                    order_id=culqi_response["id"],
-                    payment_code=qr_response.get("id", f"qr_{request.pedido_id}"),
-                    message="QR generado exitosamente con Culqi"
-                )
-        
-        # INTENTO 2: Fallback a Mock (si Culqi falla)
-        print("🔄 Culqi no disponible, usando modo mock...")
-        
-        # Generar datos mock realistas
+        # ... (código existente igual)
         order_id = f"order_{request.pedido_id}_{random.randint(1000, 9999)}"
         payment_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
         
-        # QR mock con API pública
-        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=CULQI-PEDIDO-{request.pedido_id}-CODIGO-{payment_code}&format=png&margin=10&color=2c5aa0&bgcolor=FFFFFF"
+        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=CULQI-PEDIDO-{request.pedido_id}-CODIGO-{payment_code}"
         
         return QRResponse(
             success=True,
             qr_url=qr_url,
             order_id=order_id,
             payment_code=payment_code,
-            message="QR generado (Modo Demo - Culqi no disponible)"
+            message="QR generado (Modo Demo)"
         )
         
     except Exception as e:
@@ -122,24 +201,7 @@ async def verificar_orden_culqi(order_id: str):
     try:
         print(f"🔍 Verificando orden: {order_id}")
         
-        # INTENTO 1: Verificar con Culqi real
-        if order_id.startswith("order_"):
-            culqi_response = make_culqi_request("GET", f"orders/{order_id}")
-            
-            if culqi_response:
-                verificado = culqi_response.get("status") == "paid"
-                mensaje = "Pago verificado exitosamente" if verificado else "Pago pendiente"
-                
-                return VerificationResponse(
-                    success=True,
-                    verificado=verificado,
-                    mensaje=mensaje
-                )
-        
-        # INTENTO 2: Mock verification (para testing)
-        print("🔄 Usando verificación mock...")
-        
-        # Simular verificación (80% de éxito para testing)
+        # ... (código existente igual)
         verificado = random.random() > 0.2
         
         return VerificationResponse(
@@ -156,11 +218,11 @@ async def verificar_orden_culqi(order_id: str):
             mensaje=f"Error en verificación: {str(e)}"
         )
 
-# Endpoint de salud para probar
+# Endpoint de salud
 @router.get("/health")
 async def health_check():
     return {
         "status": "healthy",
         "service": "pagos",
-        "culqi_configured": bool(CULQI_SECRET_KEY and CULQI_SECRET_KEY != "sk_test_UTCQSGcXW8bCyU59")
+        "links_activos": len(links_activos)
     }

@@ -7,11 +7,14 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import Principal from "./Principal";
 import './styles/themes.css';
 import './styles/globals.css';
+import { ThemeProvider } from "./context/ThemeContext";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-      <Principal />
+      <ThemeProvider>
+        <Principal />
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>
 );

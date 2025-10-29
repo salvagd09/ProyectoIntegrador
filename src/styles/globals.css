@@ -9,7 +9,8 @@ body {
     font-family: var(--font-basic);
     margin: 0;
     padding: 0;
-    background-color: var(--color-header);
+    background-color: var(--color-bg);
+    color: var(--color-text);
 }
 
 *,
@@ -19,6 +20,7 @@ body {
 }
 
 html {
+    font-size: var(--font-scale-base);
     scroll-behavior: smooth;
 }
 
@@ -37,4 +39,24 @@ html {
 a {
     text-decoration: none;
     color: inherit;
+}
+
+h1 { 
+    font-size: 2.5rem; color: var(--color-title); 
+}
+
+h2 { 
+    font-size: 2rem; color: var(--color-title); 
+}
+
+h3 { 
+    font-size: 1.5rem; color: var(--color-accent); 
+}
+
+p { 
+    font-size: 1rem; color: var(--color-text); 
+}
+
+span, button { 
+    font-size: 1rem; 
 }

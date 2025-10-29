@@ -8,7 +8,7 @@ import string
 from typing import Optional
 import os
 
-router = APIRouter()
+router = APIRouter(prefix="/pagos",tags=["pagos"])
 
 # Configuración de Culqi DIRECTAMENTE desde variables de entorno
 CULQI_SECRET_KEY = os.getenv("CULQI_SECRET_KEY", "sk_test_UTCQSGcXW8bCyU59")

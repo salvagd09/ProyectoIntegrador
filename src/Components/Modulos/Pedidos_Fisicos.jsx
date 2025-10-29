@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./tarjetasPedidos.css";
+
 export default function Pedidos_Fisicos() {
   const [pedidos, setPedidos] = useState([]);
   const rol = localStorage.getItem("userRole");
@@ -23,8 +24,8 @@ export default function Pedidos_Fisicos() {
   const [mesas, setMesas] = useState([]);
   const [nuevoPedido, setNuevoPedido] = useState({
     mesa_id: null,
-    estado: "Pendiente",
-    tipo_pedido: "Mesa",
+    estado: "pendiente",
+    tipo_pedido: "mesa",
     items: [],
   });
   const [pedidosCerrados, setPedidosCerrados] = useState([]); // ← IDs de pedidos cerrados
@@ -91,8 +92,8 @@ useEffect(() => {
         // Resetear formulario
         setNuevoPedido({
           mesa_id: null,
-          estado: "Pendiente",
-          tipo_pedido: "Mesa",
+          estado: "pendiente",
+          tipo_pedido: "mesa",
           items: [],
         });
       } else {
@@ -129,7 +130,7 @@ useEffect(() => {
 
     if (yaExiste) {
       alert(
-        "Este platillo ya fue agregado. Edita la cantidad si es necesario."
+        "Este platillo ya fue agregado. Edita la cantidad si es necesario"
       );
       return;
     }
@@ -308,8 +309,8 @@ const guardarCambiosPedido = async () => {
 const obtenerTextoBoton = (estadoP, tipoServicio) => {
   const textos = {
     Pendiente: "Marcar como en preparación",
-    "En preparacion": "Marcar como listo",
-    Listo: tipoServicio === "Delivery" 
+    "en_preparacion": "Marcar como listo",
+    Listo: tipoServicio === "delivery" 
       ? "Marcar como entregado" 
       : "Marcar como servido"
   };
@@ -317,7 +318,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
 };
     //Para cambiar el estado de cada tarjeta
   const cambiarEstadoNombre = async (id, estadoActual) => {
-    if (estadoActual === "Servido" || estadoActual==="Entregado") {
+    if (estadoActual === "servido" || estadoActual==="entregado") {
       alert("Este pedido ya está servido y/o entregado");
       return;
     }
@@ -349,7 +350,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
     }
   };
   const pedidosVisibles = pedidos.filter(
-    (p) => !pedidosCerrados.includes(p.id) && p.tipo_pedido === "Mesa"
+    (p) => !pedidosCerrados.includes(p.id) && p.tipo_pedido === "mesa"
   );
   const pedidosVisiblesLyS = pedidos.filter(
     (p) => !pedidosCerrados.includes(p.id) 
@@ -370,7 +371,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
         <div className="columna">
           <h3 className="columna-titulo">⏳ Pendiente</h3>
           {pedidosVisibles
-            .filter((p) => p.estado === "Pendiente")
+            .filter((p) => p.estado === "pendiente")
             .map((p) => (
               <div key={p.id} className={"pedido-card"}>
                 <div className="pedido-top">
@@ -399,7 +400,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                   <strong>S/ {p.monto_total}</strong>
                 </div>
 
-                {p.estado === "Listo" && rol == 1 && (
+                {p.estado === "listo" && rol == 1 && (
                   <button
                     className={"btn-estado m-2"}
                     onClick={() => cambiarEstadoNombre(p.id, p.estado)}
@@ -432,7 +433,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
         <div className="columna">
           <h3 className="columna-titulo">👨‍🍳 En Preparación</h3>
           {pedidosVisibles
-            .filter((p) => p.estado === "En preparacion")
+            .filter((p) => p.estado === "en_preparacion")
             .map((p) => (
               <div key={p.id} className={"pedido-card"}>
                 <div className="pedido-top">
@@ -469,7 +470,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
         <div className="columna">
           <h3 className="columna-titulo">✅ Listo</h3>
           {pedidosVisiblesLyS
-            .filter((p) => p.estado === "Listo")
+            .filter((p) => p.estado === "listo")
             .map((p) => (
               <div key={p.id} className={"pedido-card"}>
                 <div className="pedido-top">
@@ -512,11 +513,11 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
         <div className="columna">
           <h3 className="columna-titulo">🍽️ Servido o Entregado</h3>
           {pedidosVisiblesLyS
-            .filter((p) => p.estado === "Servido" || p.estado ==="Entregado")
+            .filter((p) => p.estado === "servido" || p.estado ==="entregado")
             .map((p) => (
               <div key={p.id} className={"pedido-card"}>
                 <div className="pedido-top">
-                  {(p.estado === "Servido" || p.estado==="Entregado") && (
+                  {(p.estado === "servido" || p.estado==="entregado") && (
                     <button
                       className="btn-cerrar-modal"
                       onClick={() => cerrarTarjeta(p.id)}

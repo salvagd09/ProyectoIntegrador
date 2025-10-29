@@ -1,17 +1,17 @@
-from app.routers.pagos import router as pagos_router
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
 # --- SOLUCIÓN FORZADA PARA VARIABLES DE ENTORNO ---
 # Establecer variables críticas directamente
-os.environ['DATABASE_PUBLIC_URL'] = 'postgresql://postgres:admin@localhost:5432/db_restaurante'
 os.environ['CULQI_SECRET_KEY'] = 'sk_test_UTCQSGcXW8bCyU59'
 os.environ['CULQI_PUBLIC_KEY'] = 'pk_test_vzMuTHoueOMlbUbG'
 
 print("✅ Variables de entorno configuradas forzadamente")
 
 # Importar routers correctamente
+from app.routers.pagos import router as pagos_router
 from app.routers.PedidosF import router as pedidos_router
 from app.routers.auth import router as auth_router
 from app.routers.mesas import router as mesas_router

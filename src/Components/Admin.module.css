@@ -1,0 +1,214 @@
+.layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--color-bg); 
+    color: var(--color-text);
+}
+
+.logoImg {
+    width: 40px;
+    height: auto;
+    filter: var(--logo-filter);
+    transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+#sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease-in-out;
+    display: flex; 
+    flex-direction: column;
+}
+
+#sidebar[data-open="false"] {
+    width: 90px !important;
+}
+
+.modulesContainer {
+    margin: 1rem 0;
+    height: auto;
+    max-height: 600px ;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+#sidebar[data-open="false"] .nav-link {
+    padding: 0.75rem 0.5rem;
+    justify-content: center;
+}
+
+#sidebar[data-open="false"] .nav-link i {
+    margin: 0 !important;
+    font-size: 1.2rem;
+}
+
+#sidebar[data-open="false"] .nav-link-base, 
+#sidebar[data-open="false"] .active-link {
+    justify-content: center;
+}
+
+#sidebar[data-open="false"] .nav-link i.me-2 {
+    margin-right: 0 !important;
+}
+
+.modulesContainer .nav-link {
+    margin: 0.2rem 0;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.main {
+    flex-grow: 1;
+    transition: margin-left 0.3s ease-in-out;
+    padding-top: 70px;
+}
+
+.appHeader {
+    height: 70px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    z-index: 1100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    transition: left 0.3s ease, width 0.3s ease;
+    backdrop-filter: blur(3px);
+}
+
+.sidebarToggleBtn {
+    background-color: transparent;
+    border: 1px solid var(--color-muted);
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.sidebarToggleBtn:hover {
+    background-color: var(--color-card);
+}
+
+.active-link {
+    background-color: var(--color-accent) !important;
+    color: var(--color-header) !important;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.nav-link-base {
+    color: var(--color-text);
+    transition: background-color 0.2s;
+}
+
+.nav-link-base:hover {
+    background-color: var(--color-card);
+    color: var(--color-title);
+}
+
+.nav-link-base, .active-link {
+    display: flex;
+    align-items: center;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+}
+
+.status-online {
+    background-color: var(--color-secondary);
+    box-shadow: 0 0 6px var(--color-secondary);
+}
+
+.status-offline {
+    background-color: var(--color-btn-delete);
+}
+
+.btnIcon {
+    background-color: transparent;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+.btnIcon:hover {
+    background-color: var(--color-card);
+}
+
+.badgeDot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--color-header);
+}
+
+.appContent {
+    padding-top: 12px;
+}
+
+.profileAvatar {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.headerAvatar {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.profileContainer {
+    margin-top: 0;
+    padding: 1rem;
+    border-top: 1px solid var(--color-muted);
+    background-color: var(--color-header);
+}
+
+.logoutBtn {
+    padding: 0.4rem 1.5rem;
+    min-height: 40px;
+    font-size: 1rem;
+}   
+
+#sidebar[data-open="false"] .profileAvatar {
+    margin: 0 auto;
+    display: block;
+}
+
+#sidebar[data-open="false"] .profileContainer .d-flex {
+    justify-content: center;
+}
+
+#sidebar[data-open="false"] .logoutBtn {
+    padding: 0.75rem 0.5rem;
+    min-height: 44px;
+    width: 100%;
+    margin-left: -19px !important;
+}
+
+#sidebar[data-open="false"] .logoutBtn .fa-right-from-bracket {
+    margin-right: 0 !important;
+}

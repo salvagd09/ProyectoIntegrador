@@ -60,3 +60,48 @@ p {
 span, button { 
     font-size: 1rem; 
 }
+
+/* -- Estilos para Layout -- */
+/* Estilo del contenedor general del sidebar */
+.layout #sidebar {
+    background-color: var(--color-header) !important; 
+    border-right: 1px solid var(--color-muted); 
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Estilo para los enlaces de navegación */
+.layout #sidebar .nav-link {
+    color: var(--color-text);
+    transition: background-color 0.2s; 
+}
+
+.layout #sidebar .nav-link:hover {
+    background-color: var(--color-card); 
+    color: var(--color-title);
+}
+
+/* Estilo para el enlace activo */
+.layout #sidebar .active-link {
+    background-color: var(--color-accent) !important;
+    color: var(--color-header) !important;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* Estilo para online/offline */
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-left: 5px;
+    display: inline-block;
+}
+
+.status-online {
+    background-color: var(--color-secondary);
+    box-shadow: 0 0 5px var(--color-secondary);
+}
+
+.status-offline {
+    background-color: var(--color-btn-delete);
+}

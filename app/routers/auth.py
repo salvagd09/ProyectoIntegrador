@@ -30,7 +30,14 @@ def login_password(data: schemas.LoginPassword, db: Session = Depends(get_db)):
     if not hashed_password_value or not pwd_context.verify(data.password, hashed_password_value):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
-    return {"rol_id": emp.rol_id, "id": emp.id}
+    return {
+        "id": emp.id,
+        "nombre": emp.nombre,
+        "apellido": emp.apellido,
+        "rol_id": emp.rol_id, 
+        "rol_nombre": emp.rol.nombre if emp.rol else None,
+        "email": emp.email
+    }
 
 @router.post("/login-pin")
 def login_pin(data: schemas.LoginPin, db: Session = Depends(get_db)):
@@ -43,9 +50,13 @@ def login_pin(data: schemas.LoginPin, db: Session = Depends(get_db)):
         pin_hash: Optional[str] = str(emp.pin_code_hash) if emp.pin_code_hash else None # type: ignore
         
         if pin_hash and pwd_context.verify(data.pin_code, pin_hash):
-            return {"rol_id": emp.rol_id, "id": emp.id}
+            return {
+                "id": emp.id,
+                "nombre": emp.nombre,
+                "apellido": emp.apellido,
+                "rol_id": emp.rol_id, 
+                "rol_nombre": emp.rol.nombre if emp.rol else None,
+                "email": emp.email
+            }
         
     raise HTTPException(status_code=401, detail="PIN inválido")
-
-
-

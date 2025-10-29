@@ -2,12 +2,14 @@ import { useState } from "react";
 import comida from "../assets/comida.png";
 import { useNavigate, Link } from "react-router-dom";
 import "./App.css";
+
 function App() {
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [contrasena, setNombreContrasena] = useState("");
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [PIN, setPIN] = useState("");
   const navigate = useNavigate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -26,14 +28,19 @@ function App() {
 
       const data = await res.json();
       console.log(data);
+      // Guardar los datos
+      localStorage.setItem("userData", JSON.stringify(data));
       localStorage.setItem("userRole", data.rol_id);
       localStorage.setItem("isAuthenticated", "true");
+
       if (data.rol_id === 4) navigate("/admin");
       else if (data.rol_id === 3) navigate("/caja");
+
     } catch (err) {
       alert(err.message);
     }
   };
+
   const handleSubmitPin = async (e) => {
     e.preventDefault();
     try {
@@ -48,16 +55,21 @@ function App() {
       }
 
       const data = await res.json();
+      // Guardar los datos
+      localStorage.setItem("userData", JSON.stringify(data));
       localStorage.setItem("userRole", data.rol_id);
       localStorage.setItem("isAuthenticated", "true");
+      // Navegación al apartado mesero
       navigate("/mesero");
     } catch (err) {
       alert(err.message);
     }
   };
+  
   const toggleMostrarContrasena = () => {
     setMostrarContrasena(!mostrarContrasena);
   };
+
   return (
     <>
       <div className="container">

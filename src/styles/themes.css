@@ -18,6 +18,7 @@
     --color-card: #F3F6F9;
     --color-text: #333;
     --color-muted: #616161;
+    --logo-filter: invert(0);
 }
 
 /* Tema tropical */
@@ -32,6 +33,7 @@
     --color-card: #FFF8E1;
     --color-text: #2E3A3A;
     --color-muted: #7E8C8C;
+    --logo-filter: invert(0);
 }
 
 /* Tema oscuro */
@@ -46,6 +48,7 @@
     --color-card: #263238;
     --color-text: #ECEFF1;
     --color-muted: #90A4AE;
+    --logo-filter: invert(1) saturate(0.9);
 }
 
 /* Tema Coral */
@@ -60,6 +63,7 @@
     --color-card: #FFF0EC;
     --color-text: #4A4A4A;
     --color-muted: #898989;
+    --logo-filter: invert(0);
 }
 
 /* Tema Deep Ocean */
@@ -74,6 +78,7 @@
     --color-card: #1E2D40;
     --color-text: #E6F1FF;
     --color-muted: #8892B0;
+    --logo-filter: invert(1) saturate(0.9);
 }
 
 /* Ajustes específicos para temas oscuros */

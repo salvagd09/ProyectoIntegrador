@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import CulqiTester from "./CulqiTester";
 
 const PaymentManager = () => {
   // ========== ESTADOS COMBINADOS ==========
@@ -20,7 +19,7 @@ const PaymentManager = () => {
       tax: 8.46,
       discount: 0,
       total: 55.46,
-      paymentMethod: 'efectivo',
+      paymentMethod: 'cash',
       cashReceived: 60,
       changeAmount: 4.54,
       status: 'completed',
@@ -31,7 +30,7 @@ const PaymentManager = () => {
   const [pedidosDeliveryPendientes, setPedidosDeliveryPendientes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('efectivo');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [modalMode, setModalMode] = useState('local');
   const [selectedPedido, setSelectedPedido] = useState(null);
 
@@ -57,18 +56,19 @@ const PaymentManager = () => {
     change: 0
   });
 
-  const [qrData, setQrData] = useState({
-    url: null,
-    loading: false,
-    verified: false,
-    orderId: null,
-    paymentCode: null
-  });
-
   const [culqiData, setCulqiData] = useState({
     processing: false,
     success: false,
     cargoId: null
+  });
+
+  // NUEVO ESTADO PARA LINK DE PAGO
+  const [linkPago, setLinkPago] = useState({
+    loading: false,
+    paymentUrl: null,
+    qrUrl: null,
+    linkId: null,
+    verificando: false
   });
 
   const receiptRef = useRef(null);
@@ -83,7 +83,7 @@ const PaymentManager = () => {
 
   const obtenerPedidosDeliveryPendientes = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/pedidosF/delivery-pendientes-pago/');
+      const response = await fetch('http://localhost:8000/pedidosF/delivery-pendientes-pago/');
       if (response.ok) {
         const data = await response.json();
         setPedidosDeliveryPendientes(data);
@@ -140,111 +140,98 @@ const PaymentManager = () => {
     setCashData({ received, change: Math.max(0, change) });
   };
 
-  // 🔹 Generar QR 
-  const generateQr = async () => {
-    setQrData({ url: null, loading: true, verified: false, orderId: null, paymentCode: null });
+  // 🔹 NUEVA FUNCIÓN: Generar Link de Pago
+  const generarLinkPago = async () => {
+    setLinkPago({ loading: true, paymentUrl: null, qrUrl: null, linkId: null, verificando: false });
     
     try {
-      const pedidoId = modalMode === 'local' 
-        ? parseInt(orderData.orderId.split('-')[1]) || Date.now()
-        : selectedPedido.pedido.id;
+      const monto = getTotalAmount();
+      const email = modalMode === 'local' ? orderData.customerEmail : 
+                   selectedPedido?.delivery_info?.email || 'cliente@restaurante.com';
       
-      const response = await fetch("http://127.0.0.1:8000/api/pagos/crear-qr", {
+      const response = await fetch("http://127.0.0.1:8000/api/pagos/generar-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pedido_id: pedidoId })
+        body: JSON.stringify({
+          pedido_id: modalMode === 'local' ? parseInt(orderData.orderId.split('-')[1]) : selectedPedido.pedido.id,
+          monto: monto,
+          email_cliente: email
+        })
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
       const data = await response.json();
-      if (data.success && data.qr_url) {
-        setQrData({
-          url: data.qr_url,
+      
+      if (data.success) {
+        setLinkPago({
           loading: false,
-          verified: false,
-          orderId: data.order_id,
-          paymentCode: data.payment_code
+          paymentUrl: data.payment_url,
+          qrUrl: data.qr_url,
+          linkId: data.link_id,
+          verificando: false
         });
+        
+        // Iniciar verificación automática
+        iniciarVerificacionAutomatica(data.link_id);
       } else {
-        throw new Error("Respuesta inválida del servidor");
-      }
-    } catch (err) {
-      console.error("❌ Error al generar QR:", err);
-      alert("Error al generar QR: " + err.message);
-      setQrData({ url: null, loading: false, verified: false, orderId: null, paymentCode: null });
-    }
-  };
-
-  // 🔹 Verificar pago QR
-  const verifyQrPayment = async () => {
-    if (!qrData.orderId) {
-      alert('No hay una orden para verificar');
-      return;
-    }
-    
-    try {
-      const response = await fetch(`http://127.0.0.1:8000/api/pagos/verificar-orden-culqi/${qrData.orderId}`, {
-        method: "POST"
-      });
-      
-      const data = await response.json();
-      
-      if (data.success && data.verificado) {
-        setQrData(prev => ({ ...prev, verified: true }));
-        alert('✅ Pago verificado correctamente con Culqi');
-      } else {
-        alert(`⚠️ ${data.mensaje}`);
+        alert('Error: ' + data.mensaje);
+        setLinkPago({ loading: false, paymentUrl: null, qrUrl: null, linkId: null, verificando: false });
       }
     } catch (error) {
-      console.error('Error al verificar pago:', error);
-      alert('Error al verificar el pago: ' + error.message);
+      console.error('Error generando link:', error);
+      alert('Error al generar link de pago');
+      setLinkPago({ loading: false, paymentUrl: null, qrUrl: null, linkId: null, verificando: false });
     }
   };
 
-  // 🔹 Callbacks Culqi
-  const handleCulqiSuccess = (paymentData) => {
-    console.log("✅ Pago Culqi exitoso:", paymentData);
-    setCulqiData({
-      processing: false,
-      success: true,
-      cargoId: paymentData.cargoId
-    });
+  // 🔄 NUEVA FUNCIÓN: Verificar Pago Automáticamente
+  const iniciarVerificacionAutomatica = (linkId) => {
+    const verificar = async () => {
+      if (!linkPago.verificando) return;
+      
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/pagos/verificar-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ link_id: linkId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.verificado) {
+          // ✅ PAGO CONFIRMADO - Proceder al siguiente paso
+          setLinkPago(prev => ({ ...prev, verificando: false }));
+          setCulqiData({ processing: false, success: true, cargoId: linkId });
+          alert('✅ Pago confirmado! El cliente pagó exitosamente.');
+          
+          // Procesar automáticamente el pago
+          setTimeout(() => {
+            processPayment(linkId);
+          }, 1000);
+        } else if (data.success && !data.verificado) {
+          // ⏳ Seguir verificando cada 3 segundos
+          setTimeout(() => verificar(), 3000);
+        }
+      } catch (error) {
+        console.error('Error verificando pago:', error);
+        setTimeout(() => verificar(), 3000);
+      }
+    };
     
-    alert('✅ Pago con tarjeta procesado exitosamente');
-    
-    // Procesar automáticamente el pago
-    setTimeout(() => {
-      processPayment(paymentData.cargoId);
-    }, 1000);
-  };
-
-  const handleCulqiError = (error) => {
-    console.error("❌ Error en Culqi:", error);
-    setCulqiData({
-      processing: false,
-      success: false,
-      cargoId: null
-    });
-    alert('❌ Error al procesar el pago con tarjeta: ' + error);
+    setLinkPago(prev => ({ ...prev, verificando: true }));
+    setTimeout(() => verificar(), 3000);
   };
 
   // ========== PROCESAR PAGO ==========
 
   const processPayment = (cargoId = null) => {
     // Validaciones según método de pago
-    if (paymentMethod === 'efectivo' && cashData.received < getTotalAmount()) {
+    if (paymentMethod === 'cash' && cashData.received < getTotalAmount()) {
       alert('El monto recibido es insuficiente');
       return;
     }
 
-    if (paymentMethod === 'qr' && !qrData.verified) {
-      alert('⚠️ Debe verificar el pago QR antes de continuar');
-      return;
-    }
-
-    if (paymentMethod === 'card' && !culqiData.success) {
-      alert('⚠️ El pago con tarjeta no se ha completado');
+    if (paymentMethod === 'digital' && !culqiData.success) {
+      alert('⚠️ El pago digital no se ha completado');
       return;
     }
 
@@ -280,7 +267,7 @@ const PaymentManager = () => {
           discount: orderData.discount,
           total,
           paymentMethod,
-          cashReceived: paymentMethod === 'efectivo' ? cashData.received : undefined,
+          cashReceived: paymentMethod === 'cash' ? cashData.received : undefined,
           changeAmount: paymentMethod === 'cash' ? cashData.change : undefined,
           cargoId: cargoId || culqiData.cargoId,
           status: 'completed',
@@ -346,8 +333,7 @@ const PaymentManager = () => {
   };
 
   const getPaymentMethodText = () => {
-    return paymentMethod === 'cash' ? 'Efectivo' : 
-           paymentMethod === 'card' ? 'Tarjeta' : 'Yape/Plin';
+    return paymentMethod === 'cash' ? 'Efectivo' : 'Pago Digital';
   };
 
   // ========== RESET Y UTILIDADES ==========
@@ -365,8 +351,8 @@ const PaymentManager = () => {
     });
     setOrderItems([{ id: '1', name: '', quantity: 1, price: 0 }]);
     setCashData({ received: 0, change: 0 });
-    setQrData({ url: null, loading: false, verified: false });
     setCulqiData({ processing: false, success: false, cargoId: null });
+    setLinkPago({ loading: false, paymentUrl: null, qrUrl: null, linkId: null, verificando: false });
     setPaymentMethod('cash');
     setSelectedPedido(null);
     setCurrentStep(1);
@@ -445,7 +431,7 @@ const PaymentManager = () => {
       {/* Estadísticas combinadas */}
       <div className="row mb-4">
         <div className="col-md-3 col-6 mb-3">
-          <div className="card border-0 shadow-sm bg-primary text-dark">
+          <div className="card border-0 shadow-sm bg-primary text-white">
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
@@ -459,7 +445,7 @@ const PaymentManager = () => {
           </div>
         </div>
         <div className="col-md-3 col-6 mb-3">
-          <div className="card border-0 shadow-sm bg-success text-dark">
+          <div className="card border-0 shadow-sm bg-success text-white">
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
@@ -473,7 +459,7 @@ const PaymentManager = () => {
           </div>
         </div>
         <div className="col-md-3 col-6 mb-3">
-          <div className="card border-0 shadow-sm bg-info text-dark">
+          <div className="card border-0 shadow-sm bg-info text-white">
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
@@ -525,7 +511,6 @@ const PaymentManager = () => {
                 {/* Paso 1: Dependiendo del modo */}
                 {currentStep === 1 && modalMode === 'local' && (
                   <div className="row">
-                    {/* ... (formulario local completo igual al anterior) */}
                     <div className="col-12 mb-4">
                       <h6 className="fw-bold text-dark mb-3">TIPO DE PEDIDO</h6>
                       <div className="btn-group w-100" role="group">
@@ -627,7 +612,7 @@ const PaymentManager = () => {
                               placeholder={`Producto ${index + 1}`}
                             />
                           </div>
-                          <div className="col-3">
+                          <div className="col-2">
                             <input
                               type="number"
                               className="form-control form-control-sm border-dark"
@@ -780,7 +765,7 @@ const PaymentManager = () => {
                   </div>
                 )}
 
-                {/* Paso 2: Método de Pago - SOLO 3 OPCIONES */}
+                {/* Paso 2: Método de Pago - SOLO 2 OPCIONES */}
                 {currentStep === 2 && (
                   <div className="row">
                     <div className="col-12 mb-4">
@@ -804,37 +789,23 @@ const PaymentManager = () => {
                     <div className="col-12 mb-4">
                       <h6 className="fw-bold text-dark mb-3">SELECCIONE MÉTODO DE PAGO</h6>
                       <div className="row g-2">
-                        {/* SOLO 3 MÉTODOS DE PAGO */}
-                        <div className="col-md-4">
+                        {/* SOLO 2 MÉTODOS DE PAGO */}
+                        <div className="col-md-6">
                           <button
-                            className={`btn w-100 fw-bold ${paymentMethod === 'efectivo' ? 'btn-success' : 'btn-outline-success'}`}
+                            className={`btn w-100 fw-bold ${paymentMethod === 'cash' ? 'btn-success' : 'btn-outline-success'}`}
                             onClick={() => setPaymentMethod('cash')}
                           >
                             <i className="fas fa-money-bill-wave me-2"></i>
                             EFECTIVO
                           </button>
                         </div>
-                        <div className="col-md-4">
+                        <div className="col-md-6">
                           <button
-                            className={`btn w-100 fw-bold ${paymentMethod === 'card' ? 'btn-primary' : 'btn-outline-primary'}`}
-                            onClick={() => setPaymentMethod('card')}
+                            className={`btn w-100 fw-bold ${paymentMethod === 'digital' ? 'btn-primary' : 'btn-outline-primary'}`}
+                            onClick={() => setPaymentMethod('digital')}
                           >
-                            <i className="fas fa-credit-card me-2"></i>
-                            TARJETA
-                          </button>
-                        </div>
-                        <div className="col-md-4">
-                          <button
-                            className={`btn w-100 fw-bold ${paymentMethod === 'qr' ? 'btn-warning text-dark' : 'btn-outline-warning'}`}
-                            onClick={() => {
-                              setPaymentMethod('qr');
-                              if (!qrData.url) {
-                                generateQr();
-                              }
-                            }}
-                          >
-                            <i className="fas fa-qrcode me-2"></i>
-                            QR YAPE/PLIN
+                            <i className="fas fa-mobile-alt me-2"></i>
+                            PAGO DIGITAL
                           </button>
                         </div>
                       </div>
@@ -869,99 +840,112 @@ const PaymentManager = () => {
                       </div>
                     )}
 
-                    {/* Tarjeta con Culqi */}
-                    {paymentMethod === 'card' && (
+                    {/* Pago Digital con LINK DE PAGO */}
+                    {paymentMethod === 'digital' && (
                       <div className="col-12">
                         <div className="card border-primary">
-                          <div className="card-body">
-                            <div className="text-center mb-3">
-                              <i className="fas fa-credit-card fa-5x text-primary mb-3"></i>
-                              <h5 className="text-primary fw-bold">PAGO CON TARJETA</h5>
-                              <h4 className="text-primary fw-bold">S/ {getTotalAmount().toFixed(2)}</h4>
-                            </div>
-                            
-                            {culqiData.success ? (
-                              <div className="alert alert-success">
-                                <i className="fas fa-check-circle me-2"></i>
-                                ¡Pago procesado exitosamente!
-                                <br />
-                                <small>ID: {culqiData.cargoId}</small>
-                              </div>
-                            ) : (
-                              <CulqiTester 
-                                total={getTotalAmount()}
-                                pedidoId={modalMode === 'local' ? parseInt(orderData.orderId.split('-')[1]) : selectedPedido.pedido.id}
-                                email={modalMode === 'local' ? orderData.customerEmail : selectedPedido.delivery_info.email}
-                                onPaymentSuccess={handleCulqiSuccess}
-                                onPaymentError={handleCulqiError}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* QR Yape/Plin */}
-                    {paymentMethod === 'qr' && (
-                      <div className="col-12">
-                        <div className="card border-warning">
                           <div className="card-body text-center">
-                            <h5 className="text-dark fw-bold mb-3">
-                              <i className="fas fa-qrcode me-2"></i>
-                              PAGO CON QR
+                            <h5 className="text-primary fw-bold mb-3">
+                              <i className="fas fa-link me-2"></i>
+                              PAGO DIGITAL
                             </h5>
+                            <p className="text-muted mb-4">
+                              Genera un link de pago para que el cliente pague desde su celular
+                            </p>
                             
-                            {qrData.loading ? (
-                              <div className="py-5">
-                                <div className="spinner-border text-warning" role="status">
-                                  <span className="visually-hidden">Generando QR...</span>
-                                </div>
-                                <p className="mt-3">Generando código QR...</p>
-                              </div>
-                            ) : qrData.url ? (
-                              <>
-                                <div className="bg-white p-4 rounded d-inline-block mb-3" style={{ border: '2px solid #ffc107' }}>
-                                  <img 
-                                      src={qrData.url} 
-                                      alt="QR de pago" 
-                                      className="img-fluid"
-                                      style={{ maxWidth: '200px', display: 'block' }}  // ← 200px
-                                    />
-                                </div>
-                                
-                                <div className="alert alert-info">
-                                  <strong>📱 Instrucciones:</strong>
+                            {!linkPago.paymentUrl ? (
+                              <div>
+                                <div className="alert alert-info mb-4">
+                                  <strong>📱 Flujo del Pago Digital:</strong>
                                   <ol className="text-start mb-0 mt-2">
-                                    <li>Abre tu app <b>Yape</b> o <b>Plin</b></li>
-                                    <li>Escanea este código QR</li>
-                                    <li>Confirma el pago de <b>S/ {getTotalAmount().toFixed(2)}</b></li>
-                                    <li>Haz clic en "Verificar Pago"</li>
+                                    <li>Generas link/QR de pago</li>
+                                    <li>Cliente escanea o recibe el link</li>
+                                    <li>Cliente paga con: <b>Tarjeta, Yape, Plin, etc.</b></li>
+                                    <li>Sistema confirma automáticamente</li>
                                   </ol>
                                 </div>
-
-                                {!qrData.verified ? (
-                                  <button 
-                                    className="btn btn-success fw-bold btn-lg"
-                                    onClick={verifyQrPayment}
-                                  >
-                                    <i className="fas fa-check-circle me-2"></i>
-                                    Verificar Pago
-                                  </button>
-                                ) : (
-                                  <div className="alert alert-success">
-                                    <i className="fas fa-check-circle me-2"></i>
-                                    ¡Pago verificado exitosamente!
-                                  </div>
-                                )}
-                              </>
+                                
+                                <button 
+                                  className="btn btn-primary btn-lg fw-bold"
+                                  onClick={generarLinkPago}
+                                  disabled={linkPago.loading}
+                                >
+                                  {linkPago.loading ? (
+                                    <>
+                                      <span className="spinner-border spinner-border-sm me-2"></span>
+                                      Generando Link...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <i className="fas fa-link me-2"></i>
+                                      GENERAR LINK DE PAGO
+                                    </>
+                                  )}
+                                </button>
+                              </div>
                             ) : (
-                              <button 
-                                className="btn btn-warning fw-bold btn-lg"
-                                onClick={generateQr}
-                              >
-                                <i className="fas fa-qrcode me-2"></i>
-                                GENERAR CÓDIGO QR
-                              </button>
+                              <div>
+                                {/* QR PARA ESCANEAR */}
+                                <div className="mb-4">
+                                  <h6 className="fw-bold text-dark">📱 ESCANEAR CÓDIGO QR</h6>
+                                  <div className="bg-white p-3 rounded d-inline-block border">
+                                    <img 
+                                      src={linkPago.qrUrl} 
+                                      alt="QR de pago" 
+                                      className="img-fluid"
+                                      style={{ maxWidth: '250px' }}
+                                    />
+                                  </div>
+                                  <p className="small text-muted mt-2">
+                                    El cliente escanea con su celular para pagar
+                                  </p>
+                                </div>
+                                
+                                {/* LINK PARA COMPARTIR */}
+                                <div className="mb-4">
+                                  <h6 className="fw-bold text-dark">🔗 LINK DE PAGO</h6>
+                                  <div className="input-group">
+                                    <input 
+                                      type="text" 
+                                      className="form-control" 
+                                      value={linkPago.paymentUrl}
+                                      readOnly
+                                    />
+                                    <button 
+                                      className="btn btn-outline-primary"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(linkPago.paymentUrl);
+                                        alert('Link copiado al portapapeles');
+                                      }}
+                                    >
+                                      <i className="fas fa-copy"></i>
+                                    </button>
+                                  </div>
+                                  <p className="small text-muted mt-2">
+                                    Copia y comparte este link con el cliente
+                                  </p>
+                                </div>
+                                
+                                {/* ESTADO DE VERIFICACIÓN */}
+                                <div className="alert alert-warning">
+                                  <div className="d-flex align-items-center">
+                                    <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                                    <div>
+                                      <strong>⏳ Esperando pago del cliente...</strong>
+                                      <br />
+                                      <small>El sistema verificará automáticamente cuando el cliente pague</small>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <button 
+                                  className="btn btn-outline-secondary me-2"
+                                  onClick={() => setLinkPago({ loading: false, paymentUrl: null, qrUrl: null, linkId: null, verificando: false })}
+                                >
+                                  <i className="fas fa-sync me-1"></i>
+                                  Generar Nuevo Link
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1007,8 +991,7 @@ const PaymentManager = () => {
                               <strong className="text-dark">MÉTODO:</strong><br />
                               <span className="fw-bold text-success">
                                 {paymentMethod === 'cash' && 'EFECTIVO'}
-                                {paymentMethod === 'card' && 'TARJETA'}
-                                {paymentMethod === 'qr' && 'QR YAPE/PLIN'}
+                                {paymentMethod === 'digital' && 'PAGO DIGITAL'}
                               </span>
                             </div>
                           </div>
@@ -1067,7 +1050,7 @@ const PaymentManager = () => {
                               </>
                             )}
 
-                            {(paymentMethod === 'card' || payments[0].cargoId) && (
+                            {(paymentMethod === 'digital' || payments[0].cargoId) && (
                               <div className="mt-2 text-center small">
                                 <span className="text-muted">Ref. Pago: {payments[0].cargoId}</span>
                               </div>
@@ -1130,8 +1113,7 @@ const PaymentManager = () => {
                       onClick={() => processPayment()}
                       disabled={
                         (paymentMethod === 'cash' && cashData.received < getTotalAmount()) ||
-                        (paymentMethod === 'qr' && !qrData.verified) ||
-                        (paymentMethod === 'card' && !culqiData.success)
+                        (paymentMethod === 'digital' && !culqiData.success)
                       }
                     >
                       CONFIRMAR PAGO
@@ -1182,13 +1164,10 @@ const PaymentManager = () => {
                       </p>
                       <div className="d-flex justify-content-between align-items-center mt-3">
                         <span className={`badge fw-bold ${
-                          payment.paymentMethod === 'cash' ? 'bg-success' :
-                          payment.paymentMethod === 'card' ? 'bg-primary' :
-                          'bg-warning text-dark'
+                          payment.paymentMethod === 'cash' ? 'bg-success' : 'bg-primary'
                         }`}>
                           {payment.paymentMethod === 'cash' && 'EFECTIVO'}
-                          {payment.paymentMethod === 'card' && 'TARJETA'}
-                          {payment.paymentMethod === 'qr' && 'QR YAPE/PLIN'}
+                          {payment.paymentMethod === 'digital' && 'PAGO DIGITAL'}
                         </span>
                         <strong className="h5 mb-0 text-dark">S/ {payment.total.toFixed(2)}</strong>
                       </div>

@@ -20,7 +20,7 @@ const PaymentManager = () => {
       tax: 8.46,
       discount: 0,
       total: 55.46,
-      paymentMethod: 'cash',
+      paymentMethod: 'efectivo',
       cashReceived: 60,
       changeAmount: 4.54,
       status: 'completed',
@@ -31,7 +31,7 @@ const PaymentManager = () => {
   const [pedidosDeliveryPendientes, setPedidosDeliveryPendientes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [modalMode, setModalMode] = useState('local');
   const [selectedPedido, setSelectedPedido] = useState(null);
 
@@ -83,7 +83,7 @@ const PaymentManager = () => {
 
   const obtenerPedidosDeliveryPendientes = async () => {
     try {
-      const response = await fetch('http://localhost:8000/pedidosF/delivery-pendientes-pago/');
+      const response = await fetch('http://127.0.0.1:8000/pedidosF/delivery-pendientes-pago/');
       if (response.ok) {
         const data = await response.json();
         setPedidosDeliveryPendientes(data);
@@ -233,7 +233,7 @@ const PaymentManager = () => {
 
   const processPayment = (cargoId = null) => {
     // Validaciones según método de pago
-    if (paymentMethod === 'cash' && cashData.received < getTotalAmount()) {
+    if (paymentMethod === 'efectivo' && cashData.received < getTotalAmount()) {
       alert('El monto recibido es insuficiente');
       return;
     }
@@ -280,7 +280,7 @@ const PaymentManager = () => {
           discount: orderData.discount,
           total,
           paymentMethod,
-          cashReceived: paymentMethod === 'cash' ? cashData.received : undefined,
+          cashReceived: paymentMethod === 'efectivo' ? cashData.received : undefined,
           changeAmount: paymentMethod === 'cash' ? cashData.change : undefined,
           cargoId: cargoId || culqiData.cargoId,
           status: 'completed',
@@ -445,7 +445,7 @@ const PaymentManager = () => {
       {/* Estadísticas combinadas */}
       <div className="row mb-4">
         <div className="col-md-3 col-6 mb-3">
-          <div className="card border-0 shadow-sm bg-primary text-white">
+          <div className="card border-0 shadow-sm bg-primary text-dark">
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
@@ -459,7 +459,7 @@ const PaymentManager = () => {
           </div>
         </div>
         <div className="col-md-3 col-6 mb-3">
-          <div className="card border-0 shadow-sm bg-success text-white">
+          <div className="card border-0 shadow-sm bg-success text-dark">
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
@@ -473,7 +473,7 @@ const PaymentManager = () => {
           </div>
         </div>
         <div className="col-md-3 col-6 mb-3">
-          <div className="card border-0 shadow-sm bg-info text-white">
+          <div className="card border-0 shadow-sm bg-info text-dark">
             <div className="card-body">
               <div className="d-flex justify-content-between">
                 <div>
@@ -627,7 +627,7 @@ const PaymentManager = () => {
                               placeholder={`Producto ${index + 1}`}
                             />
                           </div>
-                          <div className="col-2">
+                          <div className="col-3">
                             <input
                               type="number"
                               className="form-control form-control-sm border-dark"
@@ -807,7 +807,7 @@ const PaymentManager = () => {
                         {/* SOLO 3 MÉTODOS DE PAGO */}
                         <div className="col-md-4">
                           <button
-                            className={`btn w-100 fw-bold ${paymentMethod === 'cash' ? 'btn-success' : 'btn-outline-success'}`}
+                            className={`btn w-100 fw-bold ${paymentMethod === 'efectivo' ? 'btn-success' : 'btn-outline-success'}`}
                             onClick={() => setPaymentMethod('cash')}
                           >
                             <i className="fas fa-money-bill-wave me-2"></i>

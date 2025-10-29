@@ -1,5 +1,5 @@
 from fastapi import APIRouter,Depends,HTTPException,status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session,joinedload
 from typing import List
 from datetime import datetime
 from .. import models, database,schemas
@@ -44,15 +44,15 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
                     status_code=404,
                     detail=f"Ingrediente {insumo_id} no encontrado"
                 )
-            
-            if insumo.cantidad_actual < cantidad:
+            cantidad_float=float(cantidad)
+            if insumo.cantidad_actual < cantidad_float:
                 raise HTTPException(
                     status_code=400,
                     detail=f"Stock insuficiente de {insumo.nombre}"
                 )
             
             # ✅ Descontar correctamente
-            insumo.cantidad_actual -= cantidad
+            insumo.cantidad_actual -=float(insumo.cantidad)
         
         # ✅ Commit para guardar cambios
         db.commit()
@@ -332,3 +332,169 @@ def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Se
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al editar el pedido: {str(e)}"
         )
+@router.get("/delivery-pendientes-pago/")
+def obtener_pedidos_delivery_pendientes_pago(db: Session = Depends(get_db)):
+    try:
+        # Pedidos delivery que estén en estado 'Entregado' y no tengan un pago completado
+        pedidos = db.query(models.Pedidos).join(models.Pedidos_Delivery).outerjoin(models.Pagos).filter(
+            models.Pedidos.tipo_pedido == models.TipoPedidoEnum.delivery,
+            models.Pedidos.estado == models.EstadoPedidoEnum.entregado,
+            ~models.Pedidos.pagos.any(models.Pagos.estado == models.EstadoPagoEnum.pagado)
+        ).all()
+
+        resultado = []
+        for pedido in pedidos:
+            # Obtener información de delivery
+            delivery_info = db.query(models.Pedidos_Delivery).filter(
+                models.Pedidos_Delivery.pedido_id == pedido.id
+            ).first()
+
+            # Obtener detalles del pedido
+            detalles = db.query(models.Detalles_Pedido).filter(
+                models.Detalles_Pedido.pedido_id == pedido.id
+            ).all()
+
+            detalles_lista = []
+            for detalle in detalles:
+                producto = db.query(models.Platillo).filter(models.Platillo.id == detalle.producto_id).first()
+                detalles_lista.append({
+                    "producto_id": detalle.producto_id,
+                    "nombre_producto": producto.nombre if producto else "Producto no encontrado",
+                    "cantidad": detalle.cantidad,
+                    "precio_unitario": float(detalle.precio_unitario)
+                })
+
+            resultado.append({
+                "pedido": {
+                    "id": pedido.id,
+                    "monto_total": float(pedido.monto_total),
+                    "estado": pedido.estado,
+                },
+                "delivery_info": {
+                    "nombre_cliente": delivery_info.nombre_cliente,
+                    "direccion_cliente": delivery_info.direccion_cliente,
+                    "telefono_cliente": delivery_info.telefono_cliente,
+                    "plataforma": delivery_info.plataforma
+                },
+                "detalles": detalles_lista
+            })
+
+        return resultado
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ✅ ENDPOINT NUEVO: Obtener pagos completados (solo delivery)
+@router.get("/pagos-completados/")
+def obtener_pagos_completados(db: Session = Depends(get_db)):
+    try:    # ✅ Cargar TODO con joins anticipados (evita N+1 queries)
+        pagos = db.query(models.Pagos).join(
+            models.Pedidos
+        ).options(
+            joinedload(models.Pagos.pedidosP)  # Cargar pedido
+            .joinedload(models.Pedidos.PedidosD),  # Cargar delivery_info
+            
+            joinedload(models.Pagos.pedidosP)  # Cargar pedido otra vez
+            .joinedload(models.Pedidos.Dpedido)  # Cargar detalles
+            .joinedload(models.Detalles_Pedido.platillos)  # Cargar productos
+        ).filter(
+            models.Pedidos.tipo_pedido == models.TipoPedidoEnum.delivery,
+            models.Pagos.estado == models.EstadoPagoEnum.pagado
+        ).all()
+
+        resultado = []
+        for pago in pagos:
+            pedido = pago.pedidosP  # Ya cargado
+            delivery_info = pedido.PedidosD  # Ya cargado por joinedload
+            
+            # ✅ Sin queries adicionales - todo ya está en memoria
+            detalles_lista = [{
+                "producto_id": detalle.producto_id,
+                "nombre_producto": detalle.platillos.nombre if detalle.platillos else "Producto no encontrado",
+                "cantidad": detalle.cantidad,
+                "precio_unitario": float(detalle.precio_unitario)
+            } for detalle in pedido.Dpedido]  # Ya cargado
+
+            resultado.append({
+                "id": pago.id,
+                "orderId": f"DEL-{pedido.id}",
+                "type": "delivery",
+                "customerName": delivery_info.nombre_cliente if delivery_info else "N/A",
+                "customerPhone": delivery_info.telefono_cliente if delivery_info else "N/A",
+                "customerAddress": delivery_info.direccion_cliente if delivery_info else "N/A",
+                "items": detalles_lista,
+                "subtotal": float(pedido.monto_total) / 1.18,
+                "tax": float(pedido.monto_total) - (float(pedido.monto_total) / 1.18),
+                "discount": 0,
+                "total": float(pedido.monto_total),
+                "paymentMethod": pago.metodo_pago.value,
+                "status": "completed",
+                "createdAt": pago.fecha_pago.strftime("%Y-%m-%d %H:%M") if pago.fecha_pago else pedido.fecha_creacion.strftime("%Y-%m-%d %H:%M"),
+                "plataforma": delivery_info.plataforma.value if delivery_info else "N/A"
+            })
+
+        return resultado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ✅ ENDPOINT NUEVO: Procesar pago delivery
+@router.post("/procesar-pago-delivery/")
+def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session = Depends(get_db)):
+    try:
+        # Verificar que el pedido existe y es delivery
+        pedido = db.query(models.Pedidos).join(models.Pedidos_Delivery).filter(
+            models.Pedidos.id == pago_data.pedido_id,
+            models.Pedidos.tipo_pedido == models.TipoPedidoEnum.delivery
+        ).first()
+
+        if not pedido:
+            raise HTTPException(status_code=404, detail="Pedido delivery no encontrado")
+
+        # Verificar que no tenga un pago completado
+        pago_existente = db.query(models.Pagos).filter(
+            models.Pagos.pedido_id == pago_data.pedido_id,
+            models.Pagos.estado == models.EstadoPagoEnum.pagado
+        ).first()
+
+        if pago_existente:
+            raise HTTPException(status_code=400, detail="El pedido ya tiene un pago completado")
+
+        # Crear el pago
+        nuevo_pago = models.Pagos(
+            pedido_id=pago_data.pedido_id,
+            monto=pedido.monto_total,
+            metodo_pago=pago_data.metodo_pago,
+            estado=models.EstadoPagoEnum.pagado,
+            fecha_pago=datetime.now(),
+            referencia_pago=pago_data.referencia_pago
+        )
+        db.add(nuevo_pago)
+
+        # Cambiar estado del pedido a 'Completado'
+        pedido.estado = models.EstadoPedidoEnum.completado
+
+        db.commit()
+        db.refresh(nuevo_pago)
+
+        # Obtener información para la respuesta
+        delivery_info = db.query(models.Pedidos_Delivery).filter(
+            models.Pedidos_Delivery.pedido_id == pedido.id
+        ).first()
+
+        return {
+            "mensaje": "Pago procesado exitosamente",
+            "pago_id": nuevo_pago.id,
+            "datos_cliente": {
+                "nombre": delivery_info.nombre_cliente,
+                "telefono": delivery_info.telefono_cliente,
+                "direccion": delivery_info.direccion_cliente,
+                "plataforma": delivery_info.plataforma,
+            }
+        }
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e)) 

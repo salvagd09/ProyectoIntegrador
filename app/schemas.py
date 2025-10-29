@@ -304,7 +304,10 @@ class LoteBase(BaseModel):
 # Esquema para crear un nuevo lote
 class LoteCreate(LoteBase):
     pass
-
+class ProcesarPagoDelivery(BaseModel):
+    pedido_id: int
+    metodo_pago: str
+    referencia_pago: Optional[str] = None
 # Esquema de respuesta detallado de un lote
 class LoteResponse(LoteBase):
     """Esquema de respuesta detallado de un lote"""

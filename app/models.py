@@ -32,8 +32,8 @@ class EstadoItemPedidoEnum(str, Enum):
     pendiente = "pendiente"
     en_preparacion = "en_preparacion"
     listo = "listo"
-    servido = "Servido"
-    entregado = "Entregado"
+    servido = "servido"
+    entregado = "entregado"
 
 class EstadoMesaEnum(str, Enum):
     libre = "libre"

@@ -359,7 +359,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
     <div className="pedidos-container">
       <div className="pedidos-topbar">
         <h2>Gestión de Pedidos 🐟</h2>
-        {rol == 4 && (
+        {rol == 1 && (
           <button className="btn-crear" onClick={() => setShowModal(true)}>
             ➕ Crear Pedido
           </button>
@@ -408,7 +408,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                     {obtenerTextoBoton(p.estado,p.tipo_pedido)}
                   </button>
                 )}
-                {rol == 4 &&(<><button
+                {rol == 1 &&(<><button
                   className="btn btn-warning m-1"
                   onClick={() => {
                     abrirModalEditar(p);
@@ -499,7 +499,7 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                   </small>
                   <strong>S/ {p.monto_total}</strong>
                 </div>
-                {rol==4 &&(<button
+                {rol==1 &&(<button
                   className={"btn-estado m-2"}
                   onClick={() => cambiarEstadoNombre(p.id, p.estado)}
                 >

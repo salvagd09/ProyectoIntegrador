@@ -257,7 +257,7 @@ function Insumos() {
                 <th>Descripción</th>
                 <th>Valor Total</th>
                 <th>¿Es perecible?</th>
-                {rol === "admin" && <th width="200">Acciones</th>}
+                {rol === "admin" && <th width="200">Acción</th>}
               </tr>
             </thead>
             <tbody>
@@ -286,12 +286,12 @@ function Insumos() {
                     {rol === "admin" && (
                       <td>
                         <div className="d-flex gap-2">
-                          <Button variant="outline-primary" size="sm" onClick={() => { setInsumoEditando(insumo); setShowModal(true); }}>
+                          <Button variant="outline-primary w-100" size="sm" onClick={() => { setInsumoEditando(insumo); setShowModal(true); }}>
                             ✏️ Editar
                           </Button>
-                          <Button variant="outline-danger" size="sm" onClick={() => eliminarInsumo(insumo.id)}>
+                          {/*<Button variant="outline-danger" size="sm" onClick={() => eliminarInsumo(insumo.id)}>
                             🗑️ Eliminar
-                          </Button>
+                          </Button>*/}
                         </div>
                       </td>
                     )}

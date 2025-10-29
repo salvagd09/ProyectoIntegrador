@@ -30,9 +30,9 @@ def descontar_insumos_merma(merma_id: int, db: Session):
     for receta in recetas:
         cantidad = receta.cantidad_requerida * merma.cantidad
         if receta.ingredientes_id in insumos_necesarios:
-            insumos_necesarios[receta.ingredientes_id] += cantidad
+            insumos_necesarios[receta.ingrediente_id] += cantidad
         else:
-            insumos_necesarios[receta.ingredientes_id] = cantidad
+            insumos_necesarios[receta.ingrediente_id] = cantidad
     
     # 3. Verificar y descontar con row locking
     for insumo_id, cantidad in insumos_necesarios.items():
@@ -89,7 +89,7 @@ def crear_insumo(insumo: schemas.AInsumo, db: Session = Depends(get_db)):
             nombre=insumo.nombre,
             descripcion=insumo.categoria,  # categoria -> descripcion
             cantidad_actual=insumo.cantidad,
-            precio=insumo.precio_unitario,
+            precio_unitario=insumo.precio,
             unidad_de_medida=insumo.unidad,
             stock_minimo=insumo.minimo,
             es_perecible=insumo.perecible
@@ -137,7 +137,7 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
         db_ingrediente.nombre = insumo.nombre
         db_ingrediente.descripcion = insumo.categoria
         db_ingrediente.cantidad_actual = insumo.cantidad
-        db_ingrediente.precio = insumo.precio_unitario
+        db_ingrediente.precio_unitario = insumo.precio
         db_ingrediente.unidad_de_medida = insumo.unidad
         db_ingrediente.stock_minimo = insumo.minimo
         db_ingrediente.es_perecible = insumo.perecible
@@ -236,7 +236,7 @@ def registrar_movimiento(movimiento_data: dict, db: Session = Depends(get_db)):
 @router.post("/rMerma")
 def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
     try:
-        # ✅ Verificar que el platillo existe
+        #  Verifica que el platillo existe
         platillo = db.query(models.Platillo).filter(
             models.Platillo.id == data.platillo_id
         ).first()
@@ -249,7 +249,7 @@ def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
         
         print(f"✅ Platillo encontrado: {platillo.nombre}")
         
-        # ✅ Verificar que el platillo tiene recetas
+        #Verifica que el platillo tiene recetas
         recetas = db.query(models.Recetas).filter(
             models.Recetas.producto_id == data.platillo_id
         ).all()

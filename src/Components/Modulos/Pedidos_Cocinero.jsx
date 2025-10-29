@@ -37,8 +37,7 @@ export default function Pedidos_Cocinero() {
           headers: { "Content-Type": "application/json" },
         }
       );
-       const data = await response.json();
-  
+      const data=await response.json();
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Error al cambiar el estado");

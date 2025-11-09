@@ -148,6 +148,14 @@ class AMesas(BaseModel):
     capacidad: int
     estado: Optional[str]="Libre"
 
+class MesaUpdate(BaseModel):
+    numero: Optional[str] = None
+    capacidad: Optional[int] = None
+    estado: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        
 # -------------- Schema para categorias -------------- #
 class CategoriaBase(BaseModel):
     nombre: str

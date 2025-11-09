@@ -29,7 +29,7 @@ function Configuracion() {
   return (
     <Container className="py-5" style={{ backgroundColor: 'var(--color-bg)', minHeight: '90vh' }}>
         <h2 
-            className="text-center mb-5 fs-2" 
+            className="text-center mt-0 mb-5 fs-1" 
             style={titleStyle}
         >
             Ajustes de la Aplicación

@@ -131,3 +131,22 @@ span, button {
     border-color: var(--color-accent) !important;
     color: var(--color-text) !important;
 }
+
+.modal-header .btn-close {
+    /* Aplicar el filtro definido por el tema para que la X se vea correctamente */
+    filter: var(--logo-filter);
+    opacity: 0.95;
+    transition: filter 0.15s ease, opacity 0.15s ease;
+}
+
+/* Asegurar foco sin sombra fuerte */
+.modal-header .btn-close:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+/* Pequeño ajuste para cuando el diseño de la X necesita más contraste */
+.theme-dark .modal-header .btn-close,
+.theme-deep-ocean .modal-header .btn-close {
+    opacity: 1;
+}

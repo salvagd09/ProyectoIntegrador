@@ -1,10 +1,60 @@
 import { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Button } from 'react-bootstrap';
+
+import styles from './PedidosAplicativo.module.css';
 import '../Modulos/CSS/Pedidos_Aplicativo.css';
+
+const formatText = (text) => {
+    if (!text) return '';
+    return text.replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
 
 function Pedidos_Aplicativo() {
   const [pedidos, setPedidos] = useState([]);
   const [estadisticas, setEstadisticas] = useState({});
   const [cargando, setCargando] = useState(true);
+  // Estilos
+  const headerStyle = { 
+    color: 'var(--color-title)', 
+    fontFamily: 'var(--font-basic)'
+  };
+    
+  const moduleBg = { 
+    backgroundColor: 'var(--color-bg)', 
+    color: 'var(--color-text)' 
+  };
+  
+  const cardBg = { 
+    backgroundColor: 'var(--color-card)', 
+    color: 'var(--color-text)', 
+    border: `1px solid var(--color-muted)` 
+  };
+  
+  const itemBg = { 
+    backgroundColor: 'var(--color-bg)', 
+    color: 'var(--color-text)' 
+  };
+  
+  const btnPrimary = {
+    backgroundColor: 'var(--color-accent)', 
+    borderColor: 'var(--color-accent)', 
+    color: 'white' 
+  };
+  
+  const btnCancel = { 
+    backgroundColor: 'var(--color-btn-delete)', 
+    borderColor: 'var(--color-btn-delete)', 
+    color: 'white' 
+  };
+  
+  const btnReady = { 
+    backgroundColor: 'var(--color-secondary)', 
+    borderColor: 'var(--color-secondary)', 
+    color: 'var(--color-title)' 
+  };
 
   // Obtener pedidos de delivery
   const obtenerPedidos = async () => {
@@ -72,229 +122,291 @@ function Pedidos_Aplicativo() {
   }, []);
 
   if (cargando) {
-    return (
-      <div className="p-6 flex justify-center items-center h-64">
-        <div className="text-lg">Cargando pedidos de delivery...</div>
-      </div>
-    );
+    return <div className="text-center py-5" style={moduleBg}>Cargando pedidos...</div>;
   }
 
   // Calcular contadores - TODAS LAS VARIABLES SE USAN
-  const pedidosPendientes = pedidos.filter(p => p.pedido.estado === 'Pendiente').length;
-  const pedidosPreparacion = pedidos.filter(p => p.pedido.estado === 'En preparacion').length;
-  const pedidosListos = pedidos.filter(p => p.pedido.estado === 'Listo').length;
-  const pedidosEntregados = pedidos.filter(p => p.pedido.estado === 'Entregado').length;
+  const pedidosPendientes = pedidos.filter(p => p.pedido.estado === 'pendiente').length;
+  const pedidosPreparacion = pedidos.filter(p => p.pedido.estado === 'en_preparacion').length;
+  const pedidosListos = pedidos.filter(p => p.pedido.estado === 'listo').length;
+  const pedidosEntregados = pedidos.filter(p => p.pedido.estado === 'entregado').length;
 
-  return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">🍔 Pedidos por Aplicativo</h1>
-        <p className="text-gray-600">Gestión de pedidos desde Rappi, Uber Eats y PedidosYa</p>
-      </div>
+  const pedidosDelivery = pedidos.filter(p => p.pedido.tipo_pedido === 'delivery');
+  const pedidosRecojo = pedidos.filter(p => p.pedido.tipo_pedido === 'recojo_local');
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow border border-blue-200">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase">Total Hoy</h3>
-          <p className="text-2xl font-bold text-blue-600">{estadisticas.total_pedidos || 0}</p>
-          <p className="text-xs text-gray-500">pedidos delivery</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow border border-yellow-200">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase">Pendientes</h3>
-          <p className="text-2xl font-bold text-yellow-600">{pedidosPendientes}</p>
-          <p className="text-xs text-gray-500">por atender</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow border border-orange-200">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase">En Cocina</h3>
-          <p className="text-2xl font-bold text-orange-600">{pedidosPreparacion}</p>
-          <p className="text-xs text-gray-500">en preparación</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow border border-green-200">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase">Listos</h3>
-          <p className="text-2xl font-bold text-green-600">{pedidosListos}</p>
-          <p className="text-xs text-gray-500">para entregar</p>
-        </div>
-      </div>
+  const getBadgeStyle = (plataforma) => {
+    // Mapeo temático para plataformas
+    if (plataforma === 'rappi') return { backgroundColor: '#ed673aff', color: 'white' };
+    if (plataforma === 'uber_Eats') return { backgroundColor: '#4CAF50', color: 'white' };
+    return { backgroundColor: 'var(--color-accent)', color: 'white' };
+  };
 
-      {/* Estadísticas adicionales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow border border-purple-200">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase">Ingresos Hoy</h3>
-          <p className="text-2xl font-bold text-purple-600">S/ {estadisticas.monto_total || '0.00'}</p>
-          <p className="text-xs text-gray-500">total delivery</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-600 uppercase">Entregados</h3>
-          <p className="text-2xl font-bold text-gray-600">{pedidosEntregados}</p>
-          <p className="text-xs text-gray-500">completados hoy</p>
-        </div>
-      </div>
+  const getStatusStyle = (estado) => {
+    if (estado === 'pendiente') return { backgroundColor: 'var(--color-btn-delete)', color: 'var(--color-title)' };
+    if (estado === 'en_preparacion') return { backgroundColor: 'var(--color-btn)', color: 'white' };
+    if (estado === 'listo') return { backgroundColor: 'var(--color-secondary)', color: 'var(--color-title)' };
+    return { backgroundColor: 'var(--color-muted)', color: 'white' };
+  };
 
-      {/* Lista de pedidos */}
-      <div className="bg-white rounded-lg shadow border">
-        <div className="p-4 border-b bg-gray-50">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-800">
-              📋 Pedidos Activos ({pedidos.length})
-            </h2>
-            <button 
-              onClick={() => {
-                setCargando(true);
-                Promise.all([obtenerPedidos(), obtenerEstadisticas()]).finally(() => setCargando(false));
-              }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm flex items-center gap-2"
-            >
-              🔄 Actualizar
-            </button>
-          </div>
-        </div>
+  const PedidoCard = ({ pedido, detalles, pago }) => {
+    // Calculamos el tiempo transcurrido en minutos desde la creación del pedido
+    const creationTime = new Date(pedido.fecha_creacion).getTime();
+    const currentTime = new Date().getTime();
+    const minutesElapsed = Math.floor((currentTime - creationTime) / 60000);
+        
+    let priorityStyle = {};
+    if (pedido.estado === 'pendiente' && minutesElapsed >= 5) {
+        priorityStyle = { border: `3px solid var(--color-btn-delete)`, animation: `${styles.pulseEffect} 2s infinite` };
+    } else if (pedido.estado === 'pendiente' && minutesElapsed >= 2) {
+        // Pedido pendiente por más de 2 minutos: ALERTA MEDIA
+        priorityStyle = { border: `3px solid var(--color-btn)` };
+    }
 
-        {pedidos.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <div className="text-6xl mb-4">🍕</div>
-            <p className="text-lg">No hay pedidos de delivery activos</p>
-            <p className="text-sm">Los nuevos pedidos aparecerán aquí automáticamente</p>
-          </div>
-        ) : (
-          <div className="divide-y">
-            {pedidos.map(({ pedido, detalles, pago }) => (
-              <div key={pedido.id} className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                        pedido.plataforma === 'Rappi' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                        pedido.plataforma === 'Uber Eats' ? 'bg-green-100 text-green-800 border border-green-200' :
-                        'bg-blue-100 text-blue-800 border border-blue-200'
-                      }`}>
-                        {pedido.plataforma}
-                      </span>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                        pedido.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                        pedido.estado === 'En preparacion' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
-                        pedido.estado === 'Listo' ? 'bg-green-100 text-green-800 border border-green-200' :
-                        pedido.estado === 'Entregado' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                        'bg-gray-100 text-gray-800 border border-gray-200'
-                      }`}>
-                        {pedido.estado}
-                      </span>
-                      {pedido.codigo_pedido_externo && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs border rounded">
-                          #{pedido.codigo_pedido_externo}
-                        </span>
-                      )}
+      return (
+        <Card className={styles.pedidoCard} style={{...cardBg, ...priorityStyle}}>
+            <Card.Body className="p-3">
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                    <div className="flex-1">
+                        <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                            {/* Plataforma Badge */}
+                            <span className={styles.badgeBase} style={getBadgeStyle(pedido.plataforma)}>
+                                {formatText(pedido.plataforma)}
+                            </span>
+                            {/* Estado Badge */}
+                            <span className={styles.badgeBase} style={getStatusStyle(pedido.estado)}>
+                                {formatText(pedido.estado)}
+                            </span>
+                            {/* Código Externo */}
+                            {pedido.codigo_pedido_externo && (
+                                <span className={styles.badgeCode}>
+                                    #{pedido.codigo_pedido_externo}
+                                </span>
+                            )}
+                        </div>
+                          
+                        <h3 className="font-bold text-lg" style={{color: 'var(--color-title)'}}>{pedido.nombre_cliente}</h3>
+                        <p 
+                            className="text-sm" 
+                            style={{color: 'var(--color-muted)'}}
+                        > 
+                            <i className="fa-solid fa-location-dot me-1"></i>
+                        {pedido.direccion_cliente}</p>
+                        <p 
+                            className="text-sm" 
+                            style={{color: 'var(--color-muted)'}}
+                        > 
+                            <i className="fa-solid fa-phone me-1"></i>
+                        {pedido.telefono_cliente}</p>
                     </div>
-                    
-                    <h3 className="font-bold text-gray-800 text-lg">{pedido.nombre_cliente}</h3>
-                    <p className="text-gray-600 text-sm">📍 {pedido.direccion_cliente}</p>
-                    <p className="text-gray-500 text-sm">📞 {pedido.telefono_cliente}</p>
-                  </div>
-                  
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-gray-800">S/ {pedido.monto_total}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(pedido.fecha_creacion).toLocaleTimeString('es-PE', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
-                    <p className="text-xs text-gray-400 capitalize">
-                      {pago?.metodo_pago} • {pago?.estado}
-                    </p>
-                  </div>
+                      
+                    {/* Monto y Hora */}
+                    <div className="text-right">
+                        <p className="text-xl font-bold" style={{color: 'var(--color-accent)'}}>S/ {pedido.monto_total}</p>
+                        <p className="text-sm" style={{color: 'var(--color-muted)'}}>
+                            {new Date(pedido.fecha_creacion).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p className="text-xs" style={{color: 'var(--color-muted)'}}>
+                            {pago?.metodo_pago} • {pago?.estado}
+                        </p>
+                    </div>
                 </div>
-                
+                  
                 {/* Items del pedido */}
-                <div className="mt-3 space-y-2 bg-gray-50 p-3 rounded">
-                  {detalles.map(detalle => (
-                    <div key={detalle.id} className="flex justify-between items-center text-sm">
-                      <div>
-                        <span className="font-medium">
-                          {detalle.cantidad}x {detalle.producto_nombre}
-                        </span>
-                        {detalle.notas && (
-                          <span className="text-gray-500 text-xs block mt-1">🗒️ {detalle.notas}</span>
-                        )}
-                      </div>
-                      <span className="text-gray-600 font-medium">
-                        S/ {(detalle.precio_unitario * detalle.cantidad).toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
+                <div className={styles.itemsList} style={itemBg}>
+                    {detalles.map(detalle => (
+                        <div key={detalle.id} className="d-flex justify-content-between align-items-center text-sm">
+                            <div>
+                                <span className="font-medium">
+                                    {detalle.cantidad}x {detalle.producto_nombre}
+                                </span>
+                                {detalle.notas && (
+                                    <span className="text-xs d-block mt-1" style={{color: 'var(--color-muted)'}}> {detalle.notas}</span>
+                                )}
+                            </div>
+                            <span className="font-medium" style={{color: 'var(--color-text)'}}>
+                                S/ {(detalle.precio_unitario * detalle.cantidad).toFixed(2)}
+                            </span>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Botones de acción */}
-                <div className="mt-3 flex gap-2 flex-wrap">
-                  {pedido.estado === 'Pendiente' && (
-                    <>
-                      <button 
-                        onClick={() => actualizarEstado(pedido.id, 'En preparacion')}
-                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded text-sm font-medium flex items-center gap-2"
-                      >
-                        🍳 Iniciar Preparación
-                      </button>
-                      <button 
-                        onClick={() => actualizarEstado(pedido.id, 'Cancelado')}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium flex items-center gap-2"
-                      >
-                        ❌ Cancelar Pedido
-                      </button>
-                    </>
-                  )}
-                  
-                  {pedido.estado === 'En preparacion' && (
-                    <button 
-                      onClick={() => actualizarEstado(pedido.id, 'Listo')}
-                      className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded text-sm font-medium flex items-center gap-2"
-                    >
-                      ✅ Marcar como Listo
-                    </button>
-                  )}
-                  
-                  {pedido.estado === 'Listo' && (
-                    <button 
-                      onClick={() => actualizarEstado(pedido.id, 'Entregado')}
-                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium flex items-center gap-2"
-                    >
-                      🚗 Marcar Entregado
-                    </button>
-                  )}
+                <div className="mt-3 d-flex gap-2 flex-wrap">
+                    {pedido.estado === 'pendiente' && (
+                        <>
+                            <Button style={btnPrimary} size="sm" onClick={() => actualizarEstado(pedido.id, 'en_preparacion')}>
+                                <i className="fa-solid fa-utensils me-1"></i> Iniciar Preparación
+                            </Button>
+                            <Button style={btnCancel} size="sm" onClick={() => actualizarEstado(pedido.id, 'cancelado')}>
+                                <i className="fa-solid fa-xmark me-1"></i> Cancelar
+                            </Button>
+                        </>
+                    )}
+                      
+                    {pedido.estado === 'en_preparacion' && (
+                        <Button style={btnReady} size="sm" onClick={() => actualizarEstado(pedido.id, 'listo')}>
+                            <i className="fa-solid fa-check me-1"></i> Marcar como Listo
+                        </Button>
+                    )}
+                      
+                    {pedido.estado === 'listo' && (
+                        <Button style={btnPrimary} size="sm" onClick={() => actualizarEstado(pedido.id, 'entregado')}>
+                              <i className="fa-solid fa-truck me-1"></i> Marcar Entregado
+                        </Button>
+                    )}
 
-                  {pedido.estado === 'Entregado' && (
-                    <span className="px-3 py-2 bg-gray-100 text-gray-600 rounded text-sm">
-                      ✅ Pedido Completado
-                    </span>
-                  )}
-
-                  {pedido.estado === 'Cancelado' && (
-                    <span className="px-3 py-2 bg-red-100 text-red-600 rounded text-sm">
-                      ❌ Pedido Cancelado
-                    </span>
-                  )}
+                    {(pedido.estado === 'entregado' || pedido.estado === 'cancelado') && (
+                        <span 
+                            className={styles.completedStatus} 
+                            style={{backgroundColor: getStatusStyle(pedido.estado).backgroundColor}}
+                        >
+                            <i className={`fa-solid me-1 ${pedido.estado === 'entregado' ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+                        {pedido.estado === 'entregado' ? 'Completado' : 'Cancelado'}
+                        </span>
+                    )}
                 </div>
-              </div>
-            ))}
+            </Card.Body>
+        </Card>
+      );
+    };
+
+  return (
+    <Container fluid style={moduleBg} className="py-2">
+        {/* Header del Módulo */}
+        <div className="mb-4">
+            <h1 className="text-3xl font-bold" style={headerStyle}> <i className="fa-solid fa-mobile-screen-button me-2"></i>Pedidos por Aplicativo</h1>
+            <p style={{color: 'var(--color-muted)'}}>Monitoreo y gestión de pedidos de delivery y recojo</p>
+        </div>
+
+        {/* Fila de Estadísticas Generales */}
+        <Row xs={1} md={2} lg={4} className="g-4 mb-4">
+            <Col>
+                <Card 
+                    style={{...cardBg, border: `1px solid var(--color-accent)`}} 
+                    className={styles.statCard}>
+                        <Card.Body>
+                            <h3 style={{color: 'var(--color-muted)'}}>Total Hoy</h3>
+                            <p style={{color: 'var(--color-title)'}} className="fs-3 fw-bold">{estadisticas.total_pedidos || 0}</p>
+                        </Card.Body>
+                </Card>
+            </Col>
+            <Col>
+                <Card 
+                    style={{...cardBg, border: `1px solid var(--color-btn-delete)`}} 
+                    className={styles.statCard}>
+                      <Card.Body>
+                        <h3 style={{color: 'var(--color-muted)'}}>Pendientes</h3>
+                        <p style={{color: 'var(--color-btn-delete)'}} className="fs-3 fw-bold">{pedidosPendientes}</p>
+                      </Card.Body>
+                </Card>
+            </Col>
+            <Col>
+                <Card 
+                    style={{...cardBg, border: `1px solid var(--color-btn)`}} 
+                    className={styles.statCard}>
+                      <Card.Body>
+                        <h3 style={{color: 'var(--color-muted)'}}>En Cocina</h3>
+                        <p style={{color: 'var(--color-btn)'}} className="fs-3 fw-bold">{pedidosPreparacion}</p>
+                      </Card.Body>
+                </Card>
+            </Col>
+            <Col>
+                <Card 
+                    style={{...cardBg, border: `1px solid var(--color-secondary)`}} 
+                    className={styles.statCard}>
+                      <Card.Body>
+                        <h3 style={{color: 'var(--color-muted)'}}>Listos</h3>
+                        <p style={{color: 'var(--color-secondary)'}} className="fs-3 fw-bold">{pedidosListos}</p>
+                      </Card.Body>
+                </Card>
+            </Col>
+        </Row>
+
+        {/* Monto e Ingresos (Estadísticas Adicionales) */}
+        <Row xs={1} md={2} className="g-4 mb-4">
+            <Col>
+                <Card 
+                    style={{...cardBg, border: `1px solid var(--color-accent)`}} 
+                    className={styles.statCard}>
+                      <Card.Body>
+                        <h3 style={{color: 'var(--color-muted)'}}>Ingresos Hoy</h3>
+                        <p style={{color: 'var(--color-title)'}} className="fs-3 fw-bold">S/ {estadisticas.monto_total || '0.00'}</p>
+                      </Card.Body>
+                </Card>
+            </Col>
+            <Col>
+                <Card 
+                    style={{...cardBg, border: `1px solid var(--color-muted)`}} 
+                    className={styles.statCard}>
+                      <Card.Body>
+                        <h3 style={{color: 'var(--color-muted)'}}>Entregados</h3>
+                        <p style={{color: 'var(--color-title)'}} className="fs-3 fw-bold">{pedidosEntregados}</p>
+                      </Card.Body>
+                </Card>
+            </Col>
+        </Row>
+
+        {/* Lista de Pedidos Dividida por Tipo */}
+        <Row className="g-4">
+            {/* Columna de Delivery */}
+            <Col md={6}>
+                <div className={styles.orderListContainer}>
+                    <h2 
+                        className="h4 fw-bold mb-3" 
+                        style={{color: 'var(--color-title)'}}
+                    > 
+                        <i className="fa-solid fa-motorcycle me-2"></i> Pedidos de Delivery ({pedidosDelivery.length})
+                    </h2>
+                    {pedidosDelivery.length === 0 ? (
+                        <p style={{color: 'var(--color-muted)'}}>No hay pedidos de delivery activos</p>
+                    ) : (
+                        <div className={styles.orderGrid}>
+                            {pedidosDelivery.map(({ pedido, detalles, pago }) => (
+                                <PedidoCard key={pedido.id} pedido={pedido} detalles={detalles} pago={pago} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </Col>
+
+            {/* Columna de Recojo */}
+            <Col md={6}>
+                <div className={styles.orderListContainer}>
+                    <h2 
+                        className="h4 fw-bold mb-3" 
+                        style={{color: 'var(--color-title)'}}
+                    >
+                        <i className="fa-solid fa-bag-shopping me-2"></i> Pedidos de Recojo ({pedidosRecojo.length})
+                    </h2>
+                    {pedidosRecojo.length === 0 ? (
+                        <p style={{color: 'var(--color-muted)'}}>No hay pedidos de recojo activos</p>
+                    ) : (
+                        <div className={styles.orderGrid}>
+                            {pedidosRecojo.map(({ pedido, detalles, pago }) => (
+                                <PedidoCard key={pedido.id} pedido={pedido} detalles={detalles} pago={pago} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </Col>
+        </Row>
+        
+        {/* Plataformas activas */}
+        {estadisticas.pedidos_por_plataforma && Object.keys(estadisticas.pedidos_por_plataforma).length > 0 && (
+          <div className="mt-6 bg-white p-4 rounded-lg shadow border">
+            <h3 className="text-lg font-semibold mb-3"> Distribución por Plataforma Hoy</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {Object.entries(estadisticas.pedidos_por_plataforma).map(([plataforma, data]) => (
+                <div key={plataforma} className="text-center p-4 border-2 border-gray-100 rounded-lg hover:shadow-md transition-shadow">
+                  <p className="font-bold text-gray-700">{plataforma}</p>
+                  <p className="text-2xl font-bold text-blue-600 my-2">{data.cantidad}</p>
+                  <p className="text-sm text-gray-600">{data.cantidad === 1 ? 'pedido' : 'pedidos'}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
-      </div>
-
-      {/* Plataformas activas */}
-      {estadisticas.pedidos_por_plataforma && Object.keys(estadisticas.pedidos_por_plataforma).length > 0 && (
-        <div className="mt-6 bg-white p-4 rounded-lg shadow border">
-          <h3 className="text-lg font-semibold mb-3">📊 Distribución por Plataforma Hoy</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {Object.entries(estadisticas.pedidos_por_plataforma).map(([plataforma, data]) => (
-              <div key={plataforma} className="text-center p-4 border-2 border-gray-100 rounded-lg hover:shadow-md transition-shadow">
-                <p className="font-bold text-gray-700">{plataforma}</p>
-                <p className="text-2xl font-bold text-blue-600 my-2">{data.cantidad}</p>
-                <p className="text-sm text-gray-600">{data.cantidad === 1 ? 'pedido' : 'pedidos'}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+        </Container>
   );
 }
 

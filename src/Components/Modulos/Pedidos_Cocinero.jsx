@@ -1,19 +1,26 @@
 import { useState,useEffect} from "react";
 import "./tarjetasPedidos.css";
-
 export default function Pedidos_Cocinero() {
   const [pedidos, setPedidos] = useState([]);
-  const [pedidosCerrados, setPedidosCerrados] = useState([]); // ← IDs de pedidos cerrados
+  const [pedidosCerrados, setPedidosCerrados] = useState([]);// ← IDs de pedidos cerrados
+  const [empleadoId,setEmpleadoId]=useState(null)
     // Función para cerrar una tarjeta
     const cerrarTarjeta = (pedidoId) => {
       setPedidosCerrados([...pedidosCerrados, pedidoId]);
     };
-    useEffect(()=> {
-      fetch("http://127.0.0.1:8000/pedidosF/pedidosM")
-        .then((res) => res.json())
-        .then((data) => setPedidos(data))
-        .catch((err) => console.error(err));
-    }, [])
+    useEffect(() => {
+    // Cargar el ID del empleado desde localStorage
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      const user = JSON.parse(userData);
+      setEmpleadoId(user.id);
+    }
+    // Cargar pedidos
+    fetch("http://127.0.0.1:8000/pedidosF/pedidosM")
+      .then((res) => res.json())
+      .then((data) => setPedidos(data))
+      .catch((err) => console.error(err));
+    }, []);
     const obtenerTextoBoton = (estadoP) => {
     const textos = {
       "pendiente": "Marcar como en preparación",
@@ -35,12 +42,12 @@ export default function Pedidos_Cocinero() {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
+          body:JSON.stringify({empleado:empleadoId})
         }
       );
-      const data=await response.json();
+      const data = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Error al cambiar el estado");
+        throw new Error(data.detail || "Error al cambiar el estado");
       }
       // Actualizar la vista de las tarjetas
       setPedidos((prevPedidos) =>

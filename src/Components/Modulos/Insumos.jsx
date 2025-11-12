@@ -32,6 +32,7 @@ function Insumos() {
   const [showModalMerma,setShowModalMerma]=useState(false);
   const [registroMerma,setRegistroMerma]=useState([]);
   const [showModalMovimientos,setShowModalMovimientos]=useState(false);
+  const [empleadoId,setEmpleadoId]=useState(null);
   // Cargar datos de la base de datos
   const cargarInsumos = async () => {
     setLoading(true);
@@ -48,6 +49,11 @@ function Insumos() {
   };
   useEffect(() => {
     cargarInsumos();
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      const user = JSON.parse(userData);
+      setEmpleadoId(user.id);
+    }
   }, []);
   // Crear insumo
   const agregarInsumo = async (nuevoInsumo) => {
@@ -99,6 +105,7 @@ function Insumos() {
             cantidad: insumoActualizado.diferencia,
             numero_lote: null,
             fecha_vencimiento: null,
+            empleado_id: empleadoId 
           }),
         });
       }
@@ -117,14 +124,34 @@ function Insumos() {
     }
   };
   const manejarEnvioMerma=async(nuevaMerma)=>{
+    try {
     const respuesta=await fetch(`${API_BASE_URL}/api/inventario/rMerma`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(nuevaMerma)
     })
     const datoR=await respuesta.json()
-    alert(datoR.mensaje)
-    setShowModalMerma(false) 
+     if (!respuesta.ok) {
+      console.error('❌ Error completo:', datoR);
+      alert(`Error: ${JSON.stringify(datoR.detail, null, 2)}`);
+    } else {
+      // ✅ Mostrar ingredientes descontados si existen
+      if (datoR.ingredientes_descontados) {
+        const ingredientesInfo = datoR.ingredientes_descontados
+          .map(ing => `• ${ing.ingrediente}: ${ing.cantidad} ${ing.unidad}`)
+          .join('\n');
+        
+        alert(`${datoR.mensaje}\n\nIngredientes descontados:\n${ingredientesInfo}`);
+      } else {
+        alert(datoR.mensaje);
+      }
+    }
+    await cargarInsumos();
+    setShowModalMerma(false)
+    }catch (error) {
+      console.error('❌ Error de red:', error);
+      alert('Error de conexión al servidor');
+  }
   }
   // Filtrar insumos
   const categorias = ["Todas", ...new Set(insumos.map(insumo => insumo.categoria))];
@@ -319,7 +346,7 @@ function Insumos() {
             <Modal.Title>Área de registro de mermas 🗑️</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <FormMermas merma={registroMerma} onGuardar={manejarEnvioMerma} onCancelar={()=>{setShowModalMerma(false),setRegistroMerma(null)}} />
+            <FormMermas empleadoId={empleadoId} merma={registroMerma} onGuardar={manejarEnvioMerma} onCancelar={()=>{setShowModalMerma(false),setRegistroMerma(null)}} />
           </Modal.Body>
       </Modal>
       <Modal show={showModal} onHide={() => { setShowModal(false); setInsumoEditando(null); }} centered>
@@ -327,7 +354,7 @@ function Insumos() {
           <Modal.Title>{insumoEditando ? "✏️ Editar Insumo" : "➕ Agregar Nuevo Insumo"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-            <FormInsumo insumo={insumoEditando} onGuardar={manejarGuardarInsumo} onCancelar={() => { setShowModal(false); setInsumoEditando(null); }} />
+            <FormInsumo empleadoId={empleadoId} insumo={insumoEditando} onGuardar={manejarGuardarInsumo} onCancelar={() => { setShowModal(false); setInsumoEditando(null); }} />
         </Modal.Body>
       </Modal>
       <Modal show={showModalMovimientos} onHide={()=>{setShowModalMovimientos(false)}} centered  dialogClassName="modal-ancho">
@@ -341,13 +368,14 @@ function Insumos() {
     </Container>
   );
 }
-function FormMermas({merma,onGuardar,onCancelar}){
+function FormMermas({merma,empleadoId,onGuardar,onCancelar}){
   const [formInfo,setformInfo]=useState({
      platillo_id:merma?.platillo_id||"",
      cantidad:merma?.cantidad|| "",
      motivo:merma?.motivo|| ""
   })
   const [platillos,setPlatillos]=useState([])
+
   useEffect(()=> {
       fetch("http://127.0.0.1:8000/pedidosF/platillos")
         .then((res) => res.json())
@@ -363,7 +391,8 @@ function FormMermas({merma,onGuardar,onCancelar}){
    const datosLimpios = {
     platillo_id: Number(formInfo.platillo_id),
     cantidad: Number(formInfo.cantidad),
-    motivo: formInfo.motivo.trim()
+    motivo: formInfo.motivo.trim(),
+    empleado_id: empleadoId || null
   };  
   onGuardar(datosLimpios);
   }
@@ -391,7 +420,7 @@ function FormMermas({merma,onGuardar,onCancelar}){
   </>)
   }
  
-function FormInsumo({ insumo, onGuardar, onCancelar }) {
+function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
   const [formData, setFormData] = useState({
     nombre: insumo?.nombre || "",
     cantidad: insumo?.cantidad_actual || "",
@@ -410,12 +439,17 @@ function FormInsumo({ insumo, onGuardar, onCancelar }) {
     const cantidadNueva = parseFloat(formData.cantidad);
     const cantidadOriginal = parseFloat(insumo?.cantidad_actual || 0);
     const diferencia = cantidadNueva - cantidadOriginal;
+     if (!empleadoId) {
+      alert('Error: No se pudo identificar al empleado. Por favor, vuelva a iniciar sesión.');
+      return;
+    }
     onGuardar({
       ...formData,
       cantidad: parseFloat(formData.cantidad),
       precio: parseFloat(formData.precio),
       minimo: parseFloat(formData.minimo),
-      diferencia:diferencia
+      diferencia:diferencia,
+      empleado_id: empleadoId || null
     });
   };
 
@@ -506,6 +540,17 @@ function FormInsumo({ insumo, onGuardar, onCancelar }) {
   );
 }
 function HistorialMovimientos(){
+  const formatearFecha = (fechaISO) => {
+  const fecha = new Date(fechaISO);
+  // Sirve para pasar a la fecha local
+  return fecha.toLocaleString('es-PE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
     const [historial,setHistorial]=useState([])
     const mostrarMovimientos=async()=>{
     try{
@@ -528,6 +573,7 @@ function HistorialMovimientos(){
         <tr>
         <th>Numero de lote</th>
         <th>Nombre del empleado</th>
+         <th>Tipo de movimiento</th>
         <th>Nombre del ingrediente</th>
         <th>Fecha de realizacion</th>
         </tr>
@@ -537,8 +583,9 @@ function HistorialMovimientos(){
         return(<tr key={historia.id}>
           <td>{historia.id}</td>
           <td>{historia.nombre_empleado}</td>
+          <td>{historia.tipo_movimiento}</td>
           <td>{historia.nombre_ingrediente}</td>
-          <td>{historia.fecha_hora}</td>
+          <td>{formatearFecha(historia.fecha_hora)}</td>
         </tr>)
       })}
       </tbody>

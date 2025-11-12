@@ -8,7 +8,7 @@ from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria, serializar_db_object
 
-EMPLEADO_ID_SISTEMA = 7 
+
 
 router = APIRouter(
     prefix="/inventario_L",
@@ -21,13 +21,17 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
     """
     Registra un nuevo lote de ingredientes (Entrada de Stock) y lo marca como AJUSTE
     """
-    ingrediente_db = db.query(models.Ingrediente).filter(models.Ingrediente.id == lote_data.ingrediente_id).first()
-
-    # Verificar si el ingrediente existe
-    if not ingrediente_db:
-        raise HTTPException(status_code=404, detail=f"Ingrediente ID {lote_data.ingrediente_id} no encontrado")
+    EMPLEADO_ID_SISTEMA = 7
     
-    # Crear el nuevo lote
+    ingrediente_db = db.query(models.Ingrediente).filter(
+        models.Ingrediente.id == lote_data.ingrediente_id
+    ).first()
+    
+    if not ingrediente_db:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Ingrediente ID {lote_data.ingrediente_id} no encontrado"
+        )
     nuevo_lote = models.Lotes_Inventarios(
         ingrediente_id=lote_data.ingrediente_id,
         proveedor_id=lote_data.proveedor_id,
@@ -38,6 +42,7 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
     )
     db.add(nuevo_lote)
     db.flush() 
+    empleado_id_final = lote_data.empleado_id or EMPLEADO_ID_SISTEMA
 
     # Registrar el movimiento de ajuste por ingreso de lote
     movimiento = models.Movimientos_Inventario(
@@ -45,7 +50,7 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         tipo_movimiento=models.TipoMovimientoEnum.ajuste,
         cantidad=lote_data.cantidad,
         motivo="Ingreso por compra de nuevo lote",
-        empleado_id=EMPLEADO_ID_SISTEMA,
+        empleado_id=empleado_id_final,
         referencia=f"Lote {nuevo_lote.numero_lote or nuevo_lote.id}"
     )
     db.add(movimiento)
@@ -54,29 +59,42 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
     db.refresh(nuevo_lote)
 
     # Cargar relaciones para la respuesta
-    lote_cargado = db.query(models.Lotes_Inventarios).filter(models.Lotes_Inventarios.id == nuevo_lote.id).options(
+    lote_cargado = db.query(models.Lotes_Inventarios).filter(
+        models.Lotes_Inventarios.id == nuevo_lote.id
+    ).options(
         selectinload(models.Lotes_Inventarios.ingrediente),
-        selectinload(models.Lotes_Inventarios.proveedoresLI)).first()
+        selectinload(models.Lotes_Inventarios.proveedoresLI)
+    ).first()
     
-    # Pre-cargar datos para la auditoría (evitando acceder a None)
-    ingrediente_nombre = lote_cargado.ingrediente.nombre if lote_cargado.ingrediente else "N/A" # type: ignore
-    ingrediente_unidad = lote_cargado.ingrediente.unidad_de_medida if lote_cargado.ingrediente else "unidad" # type: ignore
+    # Pre-cargar datos para la auditoría
+    ingrediente_nombre = lote_cargado.ingrediente.nombre if lote_cargado.ingrediente else "N/A"
+    ingrediente_unidad = lote_cargado.ingrediente.unidad_de_medida if lote_cargado.ingrediente else "unidad"
     
     valores_nuevos = serializar_db_object(lote_cargado)
     registrar_auditoria(
         db, 
         "CREAR", 
-        f"Lote {lote_cargado.numero_lote or nuevo_lote.id} de {lote_data.cantidad} {ingrediente_unidad} de {ingrediente_nombre} ingresado", # type: ignore
+        f"Lote {lote_cargado.numero_lote or nuevo_lote.id}",  # ✅ Acortado
         nombre_tabla="lotes_inventario",
-        registro_id=lote_cargado.id, # type: ignore
+        registro_id=lote_cargado.id,
         valores_nuevos=valores_nuevos,
-        empleado_id=EMPLEADO_ID_SISTEMA 
+        empleado_id=empleado_id_final,
     )
 
-    response = schemas.LoteResponse.model_validate(lote_cargado)
-
-    response.nombre_ingrediente = lote_cargado.ingrediente.nombre if lote_cargado.ingrediente else "N/A" # type: ignore
-    response.nombre_proveedor = lote_cargado.proveedoresLI.nombre if lote_cargado.proveedoresLI else None # type: ignore
+    # ✅ Construir respuesta manualmente con todos los campos
+    response = schemas.LoteResponse(
+        id=lote_cargado.id,
+        ingrediente_id=lote_cargado.ingrediente_id,
+        proveedor_id=lote_cargado.proveedor_id,
+        cantidad=lote_cargado.cantidad,
+        stock_actual=lote_cargado.stock_actual,
+        fecha_vencimiento=lote_cargado.fecha_vencimiento,
+        fecha_ingreso=lote_cargado.fecha_ingreso,
+        numero_lote=lote_cargado.numero_lote,
+        nombre_ingrediente=lote_cargado.ingrediente.nombre if lote_cargado.ingrediente else "N/A",
+        nombre_proveedor=lote_cargado.proveedoresLI.nombre if lote_cargado.proveedoresLI else None,
+        empleado_id=empleado_id_final  # ✅ Agregar manualmente
+    )
 
     return response
 
@@ -152,11 +170,14 @@ def registrar_salida_stock(
     cantidad_a_consumir: Decimal, 
     tipo_movimiento: models.TipoMovimientoEnum = Query(models.TipoMovimientoEnum.consumo, description="Tipo de movimiento: 'consumo', 'merma', o 'ajuste'"),
     referencia_salida: Optional[str] = None,
+    empleado_id: Optional[int] = Query(None, description="ID del empleado que registra el movimiento"),
+    auto_commit: bool = True, 
     db: Session = Depends(get_db)
 ):
     """
     Registra una salida de stock usando la lógica FIFO
     """
+    EMPLEADO_ID_SISTEMA = 7 
     # Validar cantidad
     cantidad_requerida = Decimal(str(cantidad_a_consumir)) # Convertir a Decimal de forma segura
     cantidad_restante = cantidad_requerida
@@ -203,7 +224,7 @@ def registrar_salida_stock(
             tipo_movimiento=tipo_movimiento,
             cantidad=cantidad_consumida_lote,
             motivo=motivo_movimiento,
-            empleado_id=EMPLEADO_ID_SISTEMA,
+            empleado_id=empleado_id or EMPLEADO_ID_SISTEMA,
             referencia=referencia_salida or f"Lote ID {lote.id}"
         )
         db.add(movimiento)
@@ -221,16 +242,15 @@ def registrar_salida_stock(
     # Preparar la respuesta
     registrar_auditoria(
         db, 
-        tipo_movimiento.value.upper(), # 'CONSUMO', 'MERMA', 'AJUSTE'
-        f"Salida total de {total_consumido_float:.3f} {ingrediente_unidad} de {ingrediente_nombre}. Ref: {referencia_salida or 'N/A'}",
+        tipo_movimiento.value.upper(),  # Solo el tipo: "CONSUMO", "MERMA", "AJUSTE"
+        f"{total_consumido_float:.2f} {ingrediente_unidad} - {ingrediente_nombre[:30]}",  # ✅ Mensaje más corto
         nombre_tabla="movimientos_inventario",
-        # Aquí no hay un único registro_id, se puede dejar NULL o usar el ID del primer movimiento
         valores_nuevos={
             "cantidad_total": total_consumido_float, 
             "tipo": tipo_movimiento.value, 
             "referencia": referencia_salida
         },
-        empleado_id=EMPLEADO_ID_SISTEMA 
+        empleado_id=empleado_id or EMPLEADO_ID_SISTEMA
     )
     # Preparar las respuestas
     respuestas = []
@@ -246,7 +266,7 @@ def registrar_salida_stock(
 @router.get("/movimientos/historial", response_model=List[schemas.MovimientoInventarioResponse])
 def listar_historial_movimientos(
     ingrediente_id: Optional[int] = None, 
-    tipo: Optional[models.TipoMovimientoEnum] = None,
+    tipo_movimiento: Optional[models.TipoMovimientoEnum] = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -262,8 +282,8 @@ def listar_historial_movimientos(
     if ingrediente_id:
         query = query.join(models.Lotes_Inventarios).filter(models.Lotes_Inventarios.ingrediente_id == ingrediente_id)
         
-    if tipo:
-        query = query.filter(models.Movimientos_Inventario.tipo_movimiento == tipo)
+    if tipo_movimiento:
+        query = query.filter(models.Movimientos_Inventario.tipo_movimiento == tipo_movimiento)
 
     # Limitar resultados para evitar sobrecarga
     movimientos = query.limit(100).all()
@@ -279,7 +299,6 @@ def listar_historial_movimientos(
         
         nombre_ingrediente = mov.LotesMI.ingrediente.nombre if mov.LotesMI and mov.LotesMI.ingrediente else "N/A"
         empleado = mov.empleadosMI
-
         if empleado:
             apellido = empleado.apellido if empleado.apellido else "" 
             nombre_empleado = f"{empleado.nombre} {apellido}".strip()

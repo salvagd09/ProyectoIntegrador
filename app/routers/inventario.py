@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from app.routers.inventario_L import registrar_salida_stock
+from typing import List,Optional
 from .. import models, database, schemas
 
 router = APIRouter(prefix="/api/inventario", tags=["inventario"])
@@ -11,7 +12,7 @@ def get_db():
         yield db
     finally:
         db.close()
-def descontar_insumos_merma(merma_id: int, db: Session):
+def descontar_insumos_merma(merma_id: int,empleado_id: Optional[int], db: Session):
     # 1. Obtener detalles de la merma
     merma = db.query(models.Mermas).filter(
         models.Mermas.id == merma_id
@@ -25,7 +26,6 @@ def descontar_insumos_merma(merma_id: int, db: Session):
     recetas = db.query(models.Recetas).filter(
         models.Recetas.producto_id == merma.platillo_id
     ).all()
-    
     insumos_necesarios = {}
     for receta in recetas:
         cantidad = receta.cantidad_requerida * merma.cantidad
@@ -33,7 +33,9 @@ def descontar_insumos_merma(merma_id: int, db: Session):
             insumos_necesarios[receta.ingrediente_id] += cantidad
         else:
             insumos_necesarios[receta.ingrediente_id] = cantidad
-    
+    movimientos_realizados = []
+    EMPLEADO_ID_SISTEMA = 7
+    empleado_final = empleado_id if empleado_id else EMPLEADO_ID_SISTEMA
     # 3. Verificar y descontar con row locking
     for insumo_id, cantidad in insumos_necesarios.items():
         insumo = db.query(models.Ingrediente).filter(
@@ -45,15 +47,36 @@ def descontar_insumos_merma(merma_id: int, db: Session):
                 status_code=404,
                 detail=f"Ingrediente {insumo_id} no encontrado"
             )
-        
         if insumo.cantidad_actual < cantidad:
             raise HTTPException(
                 status_code=400,
                 detail=f"Stock insuficiente de {insumo.nombre}. "
                        f"Disponible: {insumo.cantidad_actual}, Necesario: {cantidad}"
             )
-        
         insumo.cantidad_actual -= cantidad
+        try:
+            movimientos = registrar_salida_stock(
+                ingrediente_id=insumo_id,
+                cantidad_a_consumir=cantidad,
+                tipo_movimiento=models.TipoMovimientoEnum.merma,
+                referencia_salida=f"Merma #{merma_id} - Platillo: {merma.platillo_id}",
+                empleado_id=empleado_final,  # ✅ Usar el empleado final (con fallback)
+                db=db
+            )
+            movimientos_realizados.append({
+                "ingrediente": insumo.nombre,
+                "cantidad": float(cantidad),
+                "unidad": insumo.unidad_de_medida,
+                "movimientos": len(movimientos) if isinstance(movimientos, list) else 1
+            })
+            
+        except HTTPException as e:
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=f"Error descontando {insumo.nombre}: {e.detail}"
+            )
+    
+    return movimientos_realizados
 # GET /api/inventario/ - Obtener todo el inventario
 @router.get("/")
 def Mostrar_inventario(db: Session = Depends(get_db)):
@@ -272,15 +295,22 @@ def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
         db.flush()
         
         # Descontar insumos
-        descontar_insumos_merma(nueva_merma.id, db)
+        movimientos_realizados = descontar_insumos_merma(
+            nueva_merma.id, 
+            data.empleado_id,  
+            db
+        )
         
         # Commit
         db.commit()
         db.refresh(nueva_merma)
         
         return {
-            "mensaje": f"Merma registrada correctamente para {platillo.nombre}",
-            "merma_id": nueva_merma.id
+             "mensaje": f"Merma registrada correctamente para {platillo.nombre}",
+            "merma_id": nueva_merma.id,
+            "platillo_nombre": platillo.nombre,
+            "cantidad": nueva_merma.cantidad,
+            "ingredientes_descontados": movimientos_realizados
         }
     except HTTPException:
         db.rollback()

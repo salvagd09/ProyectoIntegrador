@@ -539,57 +539,155 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
     </Form>
   );
 }
-function HistorialMovimientos(){
-  const formatearFecha = (fechaISO) => {
-  const fecha = new Date(fechaISO);
-  // Sirve para pasar a la fecha local
-  return fecha.toLocaleString('es-PE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-    const [historial,setHistorial]=useState([])
-    const mostrarMovimientos=async()=>{
-    try{
-      const respuesta=await fetch(`${API_BASE_URL}/inventario_L/movimientos/historial`);
-      if(!respuesta.ok) throw new Error("Error al carga historial de inventario");
-      const datos=await respuesta.json()
-      setHistorial(datos)
-    }catch(err){
-      setError(err.message)
-    }finally{
+function HistorialMovimientos() {
+  const [ingredientes, setIngredientes] = useState([]);
+  const [historial, setHistorial] = useState([]);
+  const [ingredienteSeleccionado, setIngredienteSeleccionado] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const cargarIngredientes = async () => {
+    try {
+      const respuesta = await fetch(`${API_BASE_URL}/inventario_L/ingredientes-con-lotes`);
+      if (!respuesta.ok) throw new Error("Error al cargar ingredientes");
+      const datos = await respuesta.json();
+      setIngredientes(datos);
+    } catch (err) {
+      console.error("Error:", err);
     }
-  }
-    useEffect(()=>{
+  };
+
+  const formatearFecha = (fechaISO) => {
+    const fecha = new Date(fechaISO);
+    return fecha.toLocaleString('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const mostrarMovimientos = async (ingredienteId = null) => {
+    setLoading(true);
+    try {
+      const url = ingredienteId 
+        ? `${API_BASE_URL}/inventario_L/lotes/ingrediente/?ingrediente_id=${ingredienteId}`
+        : `${API_BASE_URL}/inventario_L/movimientos/historial`;
+      const respuesta = await fetch(url);
+
+      if (respuesta.status === 404) {
+        setHistorial([]);
+        return;
+      }
+      
+      // ✅ Verificar si la respuesta es OK
+      if (!respuesta.ok) {
+        throw new Error("Error al cargar historial");
+      }
+      
+      const datos = await respuesta.json();
+      setHistorial(datos);
+      
+    } catch (err) {
+      console.error("Error al cargar el historial:", err);
+      setHistorial([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtrarPorIngredientes = (ingredienteId) => {
+    setIngredienteSeleccionado(ingredienteId);
+    
+    if (!ingredienteId || ingredienteId === "") {
+      mostrarMovimientos();
+    } else {
+      mostrarMovimientos(parseInt(ingredienteId));
+    }
+  };
+
+  useEffect(() => {
+    cargarIngredientes();
     mostrarMovimientos();
-  },[])
-  
-  return(<>
-    <Table striped bordered hover className="w-100">
-      <thead>
-        <tr>
-        <th>Numero de lote</th>
-        <th>Nombre del empleado</th>
-         <th>Tipo de movimiento</th>
-        <th>Nombre del ingrediente</th>
-        <th>Fecha de realizacion</th>
-        </tr>
-      </thead>
-      <tbody>
-      {historial.map((historia)=>{
-        return(<tr key={historia.id}>
-          <td>{historia.id}</td>
-          <td>{historia.nombre_empleado}</td>
-          <td>{historia.tipo_movimiento}</td>
-          <td>{historia.nombre_ingrediente}</td>
-          <td>{formatearFecha(historia.fecha_hora)}</td>
-        </tr>)
-      })}
-      </tbody>
-    </Table>
-  </>)
+  }, []);
+
+  return (
+    <>
+      <Form className="mb-3">
+        <Form.Group>
+          <Form.Label>Filtrar por ingrediente:</Form.Label>
+          <Form.Select 
+            value={ingredienteSeleccionado} 
+            onChange={(e) => filtrarPorIngredientes(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">-- Todos los ingredientes --</option>
+            {ingredientes.map((ingrediente) => (
+              <option key={ingrediente.id} value={ingrediente.id}>
+                {ingrediente.nombre}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+      </Form>
+
+      {loading && (
+        <Alert variant="info" className="mb-3">
+          Cargando movimientos...
+        </Alert>
+      )}
+
+      {!loading && ingredienteSeleccionado && (
+        <Alert variant="info" className="mb-3">
+          Mostrando {historial.length} movimiento(s) de{' '}
+          {ingredientes.find(i => i.id === parseInt(ingredienteSeleccionado))?.nombre}
+        </Alert>
+      )}
+
+      <Table striped bordered hover className="w-100">
+        <thead>
+          <tr>
+            <th>Lote #</th>
+            <th>Empleado</th>
+            <th>Tipo</th>
+            <th>Ingrediente</th>
+            <th>Cantidad</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          {historial.length === 0 && !loading ? (
+            <tr>
+              <td colSpan="6" className="text-center text-muted py-3">
+                {ingredienteSeleccionado 
+                  ? "No hay movimientos para este ingrediente"
+                  : "No hay movimientos registrados"
+                }
+              </td>
+            </tr>
+          ) : (
+            historial.map((historia) => (
+              <tr key={historia.id}>
+                <td>{historia.id}</td>
+                <td>{historia.nombre_empleado}</td>
+                <td>
+                  <Badge bg={
+                    historia.tipo_movimiento === 'consumo' ? 'warning' :
+                    historia.tipo_movimiento === 'merma' ? 'danger' :
+                    'info'
+                  }>
+                    {historia.tipo_movimiento}
+                  </Badge>
+                </td>
+                <td>{historia.nombre_ingrediente}</td>
+                <td>{parseFloat(historia.cantidad).toFixed(2)}</td>
+                <td>{formatearFecha(historia.fecha_hora)}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </Table>
+    </>
+  );
 }
 export default Insumos;

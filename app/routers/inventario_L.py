@@ -129,7 +129,38 @@ def listar_stock_agregado(db: Session = Depends(get_db)):
         unidad_medida=row.unidad_medida,
         stock_total=row.stock_total 
     ) for row in stock_agregado]
-
+#Para que el botón tenga solo productos que han sufrido de movimientos
+@router.get("/ingredientes-con-lotes", response_model=List[schemas.IngredienteSimple])
+def listar_ingredientes_con_lotes(db: Session = Depends(get_db)):
+    """
+    Lista todos los ingredientes que tienen al menos un lote activo.
+    Útil para poblar el dropdown de filtros.
+    """
+    # Subconsulta para obtener IDs de ingredientes con lotes activos
+    ingredientes_con_lotes = db.query(models.Ingrediente).join(
+        models.Lotes_Inventarios,
+        models.Lotes_Inventarios.ingrediente_id == models.Ingrediente.id
+    ).filter(
+        models.Lotes_Inventarios.stock_actual > Decimal('0')
+    ).distinct().order_by(
+        models.Ingrediente.nombre.asc()
+    ).all()
+    
+    if not ingredientes_con_lotes:
+        raise HTTPException(
+            status_code=404, 
+            detail="No hay ingredientes con lotes activos"
+        )
+    
+    # Retornar lista simple de ingredientes
+    return [
+        {
+            "id": ing.id,
+            "nombre": ing.nombre,
+            "unidad_medida": ing.unidad_de_medida
+        }
+        for ing in ingredientes_con_lotes
+    ]
 # Listar lotes activos por ingrediente
 @router.get("/lotes/ingrediente/{ingrediente_id}", response_model=List[schemas.LoteResponse])
 def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_db)):
@@ -162,7 +193,6 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
         resultados.append(response)
         
     return resultados
-
 # Registrar una salida de stock
 @router.post("/salida/{ingrediente_id}", response_model=List[schemas.MovimientoInventarioResponse], status_code=status.HTTP_200_OK)
 def registrar_salida_stock(
@@ -287,7 +317,8 @@ def listar_historial_movimientos(
 
     # Limitar resultados para evitar sobrecarga
     movimientos = query.limit(100).all()
-    
+    if ingrediente_id is not None:
+        query = query.filter(models.Ingrediente.id == ingrediente_id)
     # Verificar si se encontraron movimientos
     if not movimientos:
         raise HTTPException(status_code=404, detail="No se encontraron movimientos con los criterios especificados")

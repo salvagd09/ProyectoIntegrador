@@ -8,7 +8,7 @@ from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria, serializar_db_object
 
-EMPLEADO_ID_SISTEMA = 1 
+EMPLEADO_ID_SISTEMA = 7 
 
 router = APIRouter(
     prefix="/inventario_L",

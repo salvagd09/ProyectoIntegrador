@@ -305,10 +305,8 @@ class LoteBase(BaseModel):
     ingrediente_id: int
     proveedor_id: Optional[int] = None
     cantidad: Decimal = Field(..., gt=0, description="Cantidad total ingresada en este lote")
-    
     fecha_vencimiento: Optional[date] = None
     numero_lote: Optional[str] = Field(None, max_length=100)
-
 # Esquema para crear un nuevo lote
 class LoteCreate(LoteBase):
     pass

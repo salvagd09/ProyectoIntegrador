@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
-
+import "../Modulos/CSS/Insumos.css";
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 function Insumos() {
@@ -31,13 +31,13 @@ function Insumos() {
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todas");
   const [showModalMerma,setShowModalMerma]=useState(false);
   const [registroMerma,setRegistroMerma]=useState([]);
+  const [showModalMovimientos,setShowModalMovimientos]=useState(false);
   // Cargar datos de la base de datos
   const cargarInsumos = async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/inventario/`);
       if (!response.ok) throw new Error("Error cargando inventario");
-      
       const data = await response.json();
       setInsumos(data);
     } catch (err) {
@@ -49,7 +49,6 @@ function Insumos() {
   useEffect(() => {
     cargarInsumos();
   }, []);
-
   // Crear insumo
   const agregarInsumo = async (nuevoInsumo) => {
     const datosParaBackend = {
@@ -83,29 +82,32 @@ function Insumos() {
       unidad: insumoActualizado.unidad,
       perecible: insumoActualizado.perecible
     };
-
-    await fetch(`${API_BASE_URL}/api/inventario/${insumoActualizado.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datosParaBackend)
-    });
-
-    await cargarInsumos();
-    setShowModal(false);
-    setInsumoEditando(null);
-  };
-
-  // Eliminar insumo
-  const eliminarInsumo = async (id) => {
-    if (!window.confirm("¿Está seguro de eliminar este insumo?")) return;
-    
-    await fetch(`${API_BASE_URL}/api/inventario/${id}`, {
-      method: 'DELETE'
-    });
-
-    await cargarInsumos();
-  };
-
+    try {
+      await fetch(`${API_BASE_URL}/api/inventario/${insumoActualizado.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosParaBackend)
+      });
+      // 🟢 2. Registrar lote si hay aumento de stock
+      if (insumoActualizado.diferencia > 0) {
+        await fetch(`${API_BASE_URL}/inventario_L/lote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ingrediente_id: insumoActualizado.id,
+            proveedor_id: null,
+            cantidad: insumoActualizado.diferencia,
+            numero_lote: null,
+            fecha_vencimiento: null,
+          }),
+        });
+      }
+      await cargarInsumos();
+      setShowModal(false);
+      setInsumoEditando(null);
+  } catch (error) {
+      console.error("Error al actualizar insumo o crear lote:", error);
+  }}
   // Manejar guardar insumo
   const manejarGuardarInsumo = async (datos) => {
     if (insumoEditando) {
@@ -228,10 +230,12 @@ function Insumos() {
               </Form.Select>
             </Col>
             <Col md={5} className="text-end">
-              {rol === "admin" && (
+              {rol === "admin" && (<>
                 <Button variant="primary" onClick={() => { setInsumoEditando(null); setShowModal(true); }} className="px-4">
                   ➕ Agregar Insumo
                 </Button>
+                <Button vatiant="secondary" onClick={()=>{setShowModalMovimientos(true)}} className="m-2">Ver movimientos</Button>
+                </>
               )}
               {rol === "cocina" && (
                 <Button variant="secondary" onClick={() => { setRegistroMerma(null); setShowModalMerma(true); }} className="px-4">
@@ -289,9 +293,6 @@ function Insumos() {
                           <Button variant="outline-primary w-100" size="sm" onClick={() => { setInsumoEditando(insumo); setShowModal(true); }}>
                             ✏️ Editar
                           </Button>
-                          {/*<Button variant="outline-danger" size="sm" onClick={() => eliminarInsumo(insumo.id)}>
-                            🗑️ Eliminar
-                          </Button>*/}
                         </div>
                       </td>
                     )}
@@ -328,6 +329,14 @@ function Insumos() {
         <Modal.Body>
             <FormInsumo insumo={insumoEditando} onGuardar={manejarGuardarInsumo} onCancelar={() => { setShowModal(false); setInsumoEditando(null); }} />
         </Modal.Body>
+      </Modal>
+      <Modal show={showModalMovimientos} onHide={()=>{setShowModalMovimientos(false)}} centered  dialogClassName="modal-ancho">
+          <Modal.Header closeButton>
+            <Modal.Title>Historial de movimientos</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+               <HistorialMovimientos />
+          </Modal.Body>
       </Modal>
     </Container>
   );
@@ -398,11 +407,15 @@ function FormInsumo({ insumo, onGuardar, onCancelar }) {
 
   const manejarEnvio = (e) => {
     e.preventDefault();
+    const cantidadNueva = parseFloat(formData.cantidad);
+    const cantidadOriginal = parseFloat(insumo?.cantidad_actual || 0);
+    const diferencia = cantidadNueva - cantidadOriginal;
     onGuardar({
       ...formData,
       cantidad: parseFloat(formData.cantidad),
       precio: parseFloat(formData.precio),
       minimo: parseFloat(formData.minimo),
+      diferencia:diferencia
     });
   };
 
@@ -492,5 +505,44 @@ function FormInsumo({ insumo, onGuardar, onCancelar }) {
     </Form>
   );
 }
-
+function HistorialMovimientos(){
+    const [historial,setHistorial]=useState([])
+    const mostrarMovimientos=async()=>{
+    try{
+      const respuesta=await fetch(`${API_BASE_URL}/inventario_L/movimientos/historial`);
+      if(!respuesta.ok) throw new Error("Error al carga historial de inventario");
+      const datos=await respuesta.json()
+      setHistorial(datos)
+    }catch(err){
+      setError(err.message)
+    }finally{
+    }
+  }
+    useEffect(()=>{
+    mostrarMovimientos();
+  },[])
+  
+  return(<>
+    <Table striped bordered hover className="w-100">
+      <thead>
+        <tr>
+        <th>Numero de lote</th>
+        <th>Nombre del empleado</th>
+        <th>Nombre del ingrediente</th>
+        <th>Fecha de realizacion</th>
+        </tr>
+      </thead>
+      <tbody>
+      {historial.map((historia)=>{
+        return(<tr key={historia.id}>
+          <td>{historia.id}</td>
+          <td>{historia.nombre_empleado}</td>
+          <td>{historia.nombre_ingrediente}</td>
+          <td>{historia.fecha_hora}</td>
+        </tr>)
+      })}
+      </tbody>
+    </Table>
+  </>)
+}
 export default Insumos;

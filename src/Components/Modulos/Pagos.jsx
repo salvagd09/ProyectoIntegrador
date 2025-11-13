@@ -37,16 +37,27 @@ const PaymentManager = () => {
   // Estados para pedidos locales
   const [orderData, setOrderData] = useState({
     orderId: `PED-${Date.now().toString().slice(-3)}`,
-    type: 'local',
     customerName: '',
     customerEmail: '',
     customerPhone: '',
-    customerAddress: '',
     tableNumber: '',
     discount: 0
   });
 
   const [orderItems, setOrderItems] = useState([
+    { id: '1', name: '', quantity: 1, price: 0 }
+  ]);
+
+  // Estados para pedidos DELIVERY
+  const [deliveryOrderData, setDeliveryOrderData] = useState({
+    orderId: `DEL-${Date.now().toString().slice(-3)}`,
+    customerName: '',
+    customerPhone: '',
+    customerAddress: '',
+    discount: 0
+  });
+
+  const [deliveryOrderItems, setDeliveryOrderItems] = useState([
     { id: '1', name: '', quantity: 1, price: 0 }
   ]);
 
@@ -125,6 +136,38 @@ const PaymentManager = () => {
     }
   };
 
+  // ========== FUNCIONES DELIVERY ITEMS ==========
+
+  const calculateDeliveryTotals = () => {
+    const subtotal = deliveryOrderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const tax = subtotal * 0.18;
+    const total = subtotal + tax - deliveryOrderData.discount;
+    return { subtotal, tax, total };
+  };
+
+  const { subtotal: deliverySubtotal, tax: deliveryTax, total: deliveryTotal } = calculateDeliveryTotals();
+
+  const addDeliveryOrderItem = () => {
+    setDeliveryOrderItems(prev => [...prev, {
+      id: Date.now().toString(),
+      name: '',
+      quantity: 1,
+      price: 0
+    }]);
+  };
+
+  const updateDeliveryOrderItem = (id, field, value) => {
+    setDeliveryOrderItems(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const removeDeliveryOrderItem = (id) => {
+    if (deliveryOrderItems.length > 1) {
+      setDeliveryOrderItems(prev => prev.filter(item => item.id !== id));
+    }
+  };
+
   // ========== FUNCIONES DE PAGO ==========
 
   const calculateChange = (received) => {
@@ -132,6 +175,8 @@ const PaymentManager = () => {
     
     if (modalMode === 'delivery' && selectedPedido) {
       amount = selectedPedido.pedido.monto_total;
+    } else if (modalMode === 'delivery') {
+      amount = deliveryTotal;
     } else {
       amount = total;
     }
@@ -140,20 +185,19 @@ const PaymentManager = () => {
     setCashData({ received, change: Math.max(0, change) });
   };
 
-  // 🔹 NUEVA FUNCIÓN: Generar Link de Pago
+  // 🔹 NUEVA FUNCIÓN: Generar Link de Pago (SOLO PARA LOCAL)
   const generarLinkPago = async () => {
     setLinkPago({ loading: true, paymentUrl: null, qrUrl: null, linkId: null, verificando: false });
     
     try {
       const monto = getTotalAmount();
-      const email = modalMode === 'local' ? orderData.customerEmail : 
-                   selectedPedido?.delivery_info?.email || 'cliente@restaurante.com';
+      const email = orderData.customerEmail;
       
       const response = await fetch("http://127.0.0.1:8000/api/pagos/generar-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pedido_id: modalMode === 'local' ? parseInt(orderData.orderId.split('-')[1]) : selectedPedido.pedido.id,
+          pedido_id: parseInt(orderData.orderId.split('-')[1]),
           monto: monto,
           email_cliente: email
         })
@@ -183,7 +227,7 @@ const PaymentManager = () => {
     }
   };
 
-  // 🔄 NUEVA FUNCIÓN: Verificar Pago Automáticamente
+  // 🔄 NUEVA FUNCIÓN: Verificar Pago Automáticamente (SOLO PARA LOCAL)
   const iniciarVerificacionAutomatica = (linkId) => {
     const verificar = async () => {
       if (!linkPago.verificando) return;
@@ -230,7 +274,7 @@ const PaymentManager = () => {
       return;
     }
 
-    if (paymentMethod === 'digital' && !culqiData.success) {
+    if (modalMode === 'local' && paymentMethod === 'digital' && !culqiData.success) {
       alert('⚠️ El pago digital no se ha completado');
       return;
     }
@@ -240,9 +284,13 @@ const PaymentManager = () => {
   };
 
   const getTotalAmount = () => {
-    return modalMode === 'delivery' && selectedPedido 
-      ? selectedPedido.pedido.monto_total 
-      : total;
+    if (modalMode === 'delivery' && selectedPedido) {
+      return selectedPedido.pedido.monto_total;
+    } else if (modalMode === 'delivery') {
+      return deliveryTotal;
+    } else {
+      return total;
+    }
   };
 
   // 🔹 CREAR TARJETA EN EL SISTEMA DE PAGOS
@@ -255,11 +303,10 @@ const PaymentManager = () => {
         paymentData = {
           id: Date.now().toString(),
           orderId: orderData.orderId,
-          type: orderData.type,
+          type: 'local',
           customerName: orderData.customerName,
           customerEmail: orderData.customerEmail,
           customerPhone: orderData.customerPhone,
-          customerAddress: orderData.customerAddress,
           tableNumber: orderData.tableNumber,
           items: orderItems.filter(item => item.name && item.price > 0),
           subtotal,
@@ -274,50 +321,45 @@ const PaymentManager = () => {
           createdAt: new Date().toLocaleString('es-PE')
         };
       } else {
-        // Para pago delivery
-        const pagoData = {
-          pedido_id: selectedPedido.pedido.id,
-          metodo_pago: getPaymentMethodText(),
-          referencia_pago: cargoId || `REF-${Date.now()}`
-        };
-
-        // Procesar pago en backend
-        const response = await fetch('http://localhost:8000/pedidosF/procesar-pago-delivery/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(pagoData),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || 'Error al procesar pago delivery');
+        // ✅ CORRECCIÓN: Para pago delivery - SOLO REGISTRO LOCAL
+        console.log("🎯 Registrando pago delivery localmente...");
+        
+        // Calcular subtotal e IGV correctamente
+        let subtotalCalculado, taxCalculado, totalCalculado;
+        
+        if (selectedPedido) {
+          // Si hay pedido seleccionado de la lista
+          subtotalCalculado = selectedPedido.pedido.monto_total / 1.18;
+          taxCalculado = selectedPedido.pedido.monto_total - subtotalCalculado;
+          totalCalculado = selectedPedido.pedido.monto_total;
+        } else {
+          // Si es desde formulario
+          subtotalCalculado = deliverySubtotal;
+          taxCalculado = deliveryTax;
+          totalCalculado = deliveryTotal;
         }
-
-        const resultado = await response.json();
         
         paymentData = {
-          id: resultado.pago_id,
-          orderId: `DEL-${selectedPedido.pedido.id}`,
+          id: Date.now().toString(),
+          orderId: selectedPedido ? `DEL-${selectedPedido.pedido.id}` : deliveryOrderData.orderId,
           type: 'delivery',
-          customerName: resultado.datos_cliente.nombre,
-          customerPhone: resultado.datos_cliente.telefono,
-          customerAddress: resultado.datos_cliente.direccion,
-          items: selectedPedido.detalles,
-          subtotal: selectedPedido.pedido.monto_total / 1.18,
-          tax: selectedPedido.pedido.monto_total * 0.18,
+          customerName: selectedPedido ? selectedPedido.delivery_info.nombre_cliente : deliveryOrderData.customerName,
+          customerPhone: selectedPedido ? selectedPedido.delivery_info.telefono_cliente : deliveryOrderData.customerPhone,
+          customerAddress: selectedPedido ? selectedPedido.delivery_info.direccion_cliente : deliveryOrderData.customerAddress,
+          items: selectedPedido ? selectedPedido.detalles : deliveryOrderItems.filter(item => item.name && item.price > 0),
+          subtotal: subtotalCalculado,
+          tax: taxCalculado,
           discount: 0,
-          total: selectedPedido.pedido.monto_total,
+          total: totalCalculado,
           paymentMethod: paymentMethod,
           cashReceived: paymentMethod === 'cash' ? cashData.received : undefined,
           changeAmount: paymentMethod === 'cash' ? cashData.change : undefined,
-          cargoId: cargoId,
           status: 'completed',
           createdAt: new Date().toLocaleString('es-PE'),
-          plataforma: resultado.datos_cliente.plataforma
+          plataforma: selectedPedido ? selectedPedido.delivery_info.plataforma : 'Directo'
         };
 
-        // Actualizar lista de pedidos pendientes
-        obtenerPedidosDeliveryPendientes();
+        console.log('✅ Pago delivery registrado localmente:', paymentData);
       }
 
       // Agregar la tarjeta al sistema de pagos
@@ -333,7 +375,10 @@ const PaymentManager = () => {
   };
 
   const getPaymentMethodText = () => {
-    return paymentMethod === 'cash' ? 'Efectivo' : 'Pago Digital';
+    if (paymentMethod === 'cash') return 'Efectivo';
+    if (paymentMethod === 'card') return 'Tarjeta';
+    if (paymentMethod === 'digital') return 'Billetera Digital';
+    return 'Efectivo';
   };
 
   // ========== RESET Y UTILIDADES ==========
@@ -341,15 +386,21 @@ const PaymentManager = () => {
   const resetForm = () => {
     setOrderData({
       orderId: `PED-${Date.now().toString().slice(-3)}`,
-      type: 'local',
       customerName: '',
       customerEmail: '',
       customerPhone: '',
-      customerAddress: '',
       tableNumber: '',
       discount: 0
     });
     setOrderItems([{ id: '1', name: '', quantity: 1, price: 0 }]);
+    setDeliveryOrderData({
+      orderId: `DEL-${Date.now().toString().slice(-3)}`,
+      customerName: '',
+      customerPhone: '',
+      customerAddress: '',
+      discount: 0
+    });
+    setDeliveryOrderItems([{ id: '1', name: '', quantity: 1, price: 0 }]);
     setCashData({ received: 0, change: 0 });
     setCulqiData({ processing: false, success: false, cargoId: null });
     setLinkPago({ loading: false, paymentUrl: null, qrUrl: null, linkId: null, verificando: false });
@@ -409,6 +460,7 @@ const PaymentManager = () => {
               setModalMode('delivery');
               setShowModal(true);
               setCurrentStep(1);
+              setSelectedPedido(null);
             }}
           >
             <i className="fas fa-truck me-2"></i>
@@ -495,8 +547,8 @@ const PaymentManager = () => {
             <div className="modal-content">
               <div className="modal-header bg-primary text-white">
                 <h5 className="modal-title fw-bold">
-                  {currentStep === 1 && modalMode === 'local' && '📝 REGISTRAR PEDIDO LOCAL'}
-                  {currentStep === 1 && modalMode === 'delivery' && '🛵 SELECCIONAR PEDIDO DELIVERY'}
+                  {currentStep === 1 && modalMode === 'local' && '🏠 REGISTRAR PEDIDO LOCAL'}
+                  {currentStep === 1 && modalMode === 'delivery' && '🛵 REGISTRAR PEDIDO DELIVERY'}
                   {currentStep === 2 && '💳 PROCESAR PAGO'}
                   {currentStep === 3 && '✅ PAGO COMPLETADO'}
                 </h5>
@@ -508,27 +560,10 @@ const PaymentManager = () => {
               </div>
 
               <div className="modal-body">
-                {/* Paso 1: Dependiendo del modo */}
+                {/* Paso 1: FORMULARIO LOCAL - SOLO CAMPOS PARA LOCAL */}
                 {currentStep === 1 && modalMode === 'local' && (
                   <div className="row">
                     <div className="col-12 mb-4">
-                      <h6 className="fw-bold text-dark mb-3">TIPO DE PEDIDO</h6>
-                      <div className="btn-group w-100" role="group">
-                        <button
-                          type="button"
-                          className={`btn ${orderData.type === 'local' ? 'btn-primary fw-bold' : 'btn-outline-primary'}`}
-                          onClick={() => setOrderData(prev => ({ ...prev, type: 'local' }))}
-                        >
-                          🏠 EN LOCAL
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn ${orderData.type === 'delivery' ? 'btn-success fw-bold' : 'btn-outline-success'}`}
-                          onClick={() => setOrderData(prev => ({ ...prev, type: 'delivery' }))}
-                        >
-                          🛵 DELIVERY
-                        </button>
-                      </div>
                     </div>
 
                     <div className="col-md-6 mb-3">
@@ -553,41 +588,27 @@ const PaymentManager = () => {
                       />
                     </div>
 
-                    {orderData.type === 'local' ? (
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label fw-bold text-dark">NÚMERO DE MESA</label>
-                        <input
-                          type="text"
-                          className="form-control border-dark"
-                          value={orderData.tableNumber}
-                          onChange={(e) => setOrderData(prev => ({ ...prev, tableNumber: e.target.value }))}
-                          placeholder="Ej: 5"
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label fw-bold text-dark">TELÉFONO *</label>
-                          <input
-                            type="tel"
-                            className="form-control border-dark"
-                            value={orderData.customerPhone}
-                            onChange={(e) => setOrderData(prev => ({ ...prev, customerPhone: e.target.value }))}
-                            placeholder="+51 987 654 321"
-                          />
-                        </div>
-                        <div className="col-12 mb-3">
-                          <label className="form-label fw-bold text-dark">DIRECCIÓN DE ENTREGA *</label>
-                          <input
-                            type="text"
-                            className="form-control border-dark"
-                            value={orderData.customerAddress}
-                            onChange={(e) => setOrderData(prev => ({ ...prev, customerAddress: e.target.value }))}
-                            placeholder="Dirección completa"
-                          />
-                        </div>
-                      </>
-                    )}
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold text-dark">NÚMERO DE MESA *</label>
+                      <input
+                        type="text"
+                        className="form-control border-dark"
+                        value={orderData.tableNumber}
+                        onChange={(e) => setOrderData(prev => ({ ...prev, tableNumber: e.target.value }))}
+                        placeholder="Ej: 5"
+                      />
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold text-dark">TELÉFONO</label>
+                      <input
+                        type="tel"
+                        className="form-control border-dark"
+                        value={orderData.customerPhone}
+                        onChange={(e) => setOrderData(prev => ({ ...prev, customerPhone: e.target.value }))}
+                        placeholder="+51 987 654 321"
+                      />
+                    </div>
 
                     <div className="col-12 mb-4">
                       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -691,105 +712,164 @@ const PaymentManager = () => {
                   </div>
                 )}
 
-                {currentStep === 1 && modalMode === 'delivery' && (
+                {/* PASO 1 - FORMULARIO DELIVERY */}
+                {modalMode === 'delivery' && currentStep === 1 && (
                   <div className="row">
-                    <div className="col-12">
-                      <h6 className="fw-bold text-dark mb-3">PEDIDOS DELIVERY PENDIENTES DE PAGO</h6>
+                    <div className="col-12 mb-4">
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold text-dark">NOMBRE DEL CLIENTE *</label>
+                      <input
+                        type="text"
+                        className="form-control border-dark"
+                        value={deliveryOrderData.customerName}
+                        onChange={(e) => setDeliveryOrderData(prev => ({ ...prev, customerName: e.target.value }))}
+                        placeholder="Ingrese nombre completo"
+                      />
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold text-dark">TELÉFONO *</label>
+                      <input
+                        type="tel"
+                        className="form-control border-dark"
+                        value={deliveryOrderData.customerPhone}
+                        onChange={(e) => setDeliveryOrderData(prev => ({ ...prev, customerPhone: e.target.value }))}
+                        placeholder="+51 987 654 321"
+                      />
+                    </div>
+
+                    <div className="col-12 mb-3">
+                      <label className="form-label fw-bold text-dark">DIRECCIÓN DE ENTREGA *</label>
+                      <input
+                        type="text"
+                        className="form-control border-dark"
+                        value={deliveryOrderData.customerAddress}
+                        onChange={(e) => setDeliveryOrderData(prev => ({ ...prev, customerAddress: e.target.value }))}
+                        placeholder="Dirección completa para la entrega"
+                      />
+                    </div>
+
+                    <div className="col-12 mb-4">
+                      <div className="d-flex justify-content-between align-items-center mb-3">
+                        <label className="form-label mb-0 fw-bold text-dark">ITEMS DEL PEDIDO</label>
+                        <button 
+                          type="button" 
+                          className="btn btn-sm btn-primary fw-bold"
+                          onClick={addDeliveryOrderItem}
+                        >
+                          <i className="fas fa-plus me-1"></i>AGREGAR ITEM
+                        </button>
+                      </div>
                       
-                      {pedidosDeliveryPendientes.length === 0 ? (
-                        <div className="alert alert-info text-center">
-                          <i className="fas fa-info-circle me-2"></i>
-                          No hay pedidos delivery pendientes de pago
+                      {deliveryOrderItems.map((item, index) => (
+                        <div key={item.id} className="row g-2 mb-2 align-items-center">
+                          <div className="col-5">
+                            <input
+                              type="text"
+                              className="form-control form-control-sm border-dark"
+                              value={item.name}
+                              onChange={(e) => updateDeliveryOrderItem(item.id, 'name', e.target.value)}
+                              placeholder={`Producto ${index + 1}`}
+                            />
+                          </div>
+                          <div className="col-2">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm border-dark"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateDeliveryOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                            />
+                          </div>
+                          <div className="col-3">
+                            <input
+                              type="number"
+                              className="form-control form-control-sm border-dark"
+                              min="0"
+                              step="0.01"
+                              value={item.price}
+                              onChange={(e) => updateDeliveryOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="col-1 text-center small fw-bold text-primary">
+                            S/ {(item.price * item.quantity).toFixed(2)}
+                          </div>
+                          <div className="col-1">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => removeDeliveryOrderItem(item.id)}
+                              disabled={deliveryOrderItems.length === 1}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="row">
-                          {pedidosDeliveryPendientes.map((pedido) => (
-                            <div key={pedido.pedido.id} className="col-md-6 mb-3">
-                              <div 
-                                className={`card cursor-pointer ${selectedPedido?.pedido.id === pedido.pedido.id ? 'border-primary bg-light' : 'border-dark'}`}
-                                onClick={() => setSelectedPedido(pedido)}
-                                style={{ cursor: 'pointer' }}
-                              >
-                                <div className="card-body">
-                                  <div className="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 className="card-title fw-bold text-dark">
-                                      Pedido #{pedido.pedido.id}
-                                    </h6>
-                                    <span className="badge bg-warning text-dark">PENDIENTE</span>
-                                  </div>
-                                  
-                                  <p className="card-text small text-dark mb-2">
-                                    <i className="fas fa-user me-1"></i>
-                                    <strong>{pedido.delivery_info.nombre_cliente}</strong>
-                                  </p>
-                                  
-                                  <p className="card-text small text-dark mb-2">
-                                    <i className="fas fa-map-marker-alt me-1"></i>
-                                    {pedido.delivery_info.direccion_cliente}
-                                  </p>
-                                  
-                                  <p className="card-text small text-dark mb-2">
-                                    <i className="fas fa-phone me-1"></i>
-                                    {pedido.delivery_info.telefono_cliente}
-                                  </p>
+                      ))}
+                    </div>
 
-                                  <div className="mt-3">
-                                    <small className="text-muted">Productos:</small>
-                                    {pedido.detalles.slice(0, 2).map((detalle, idx) => (
-                                      <div key={idx} className="small text-dark">
-                                        • {detalle.cantidad}x {detalle.nombre_producto}
-                                      </div>
-                                    ))}
-                                    {pedido.detalles.length > 2 && (
-                                      <div className="small text-muted">
-                                        ...y {pedido.detalles.length - 2} más
-                                      </div>
-                                    )}
-                                  </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold text-dark">DESCUENTO (S/)</label>
+                      <input
+                        type="number"
+                        className="form-control border-dark"
+                        min="0"
+                        step="0.01"
+                        value={deliveryOrderData.discount}
+                        onChange={(e) => setDeliveryOrderData(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
+                        placeholder="0.00"
+                      />
+                    </div>
 
-                                  <div className="d-flex justify-content-between align-items-center mt-3">
-                                    <span className="badge bg-secondary">
-                                      {pedido.delivery_info.plataforma}
-                                    </span>
-                                    <strong className="h5 mb-0 text-primary">
-                                      S/ {pedido.pedido.monto_total.toFixed(2)}
-                                    </strong>
-                                  </div>
-                                </div>
-                              </div>
+                    <div className="col-md-6 mb-3">
+                      <div className="card border-dark">
+                        <div className="card-body">
+                          <h6 className="card-title fw-bold text-dark">RESUMEN DEL PEDIDO</h6>
+                          <div className="d-flex justify-content-between small fw-bold text-dark">
+                            <span>Subtotal:</span>
+                            <span>S/ {deliverySubtotal.toFixed(2)}</span>
+                          </div>
+                          <div className="d-flex justify-content-between small fw-bold text-dark">
+                            <span>IGV (18%):</span>
+                            <span>S/ {deliveryTax.toFixed(2)}</span>
+                          </div>
+                          {deliveryOrderData.discount > 0 && (
+                            <div className="d-flex justify-content-between small fw-bold text-success">
+                              <span>Descuento:</span>
+                              <span>- S/ {deliveryOrderData.discount.toFixed(2)}</span>
                             </div>
-                          ))}
+                          )}
+                          <hr className="my-2 border-dark" />
+                          <div className="d-flex justify-content-between fw-bold fs-5 text-primary">
+                            <span>TOTAL:</span>
+                            <span>S/ {deliveryTotal.toFixed(2)}</span>
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Paso 2: Método de Pago - SOLO 2 OPCIONES */}
-                {currentStep === 2 && (
+                {/* Paso 2: Método de Pago - VERSIÓN LOCAL (Con QR) */}
+                {currentStep === 2 && modalMode === 'local' && (
                   <div className="row">
                     <div className="col-12 mb-4">
                       <div className="alert alert-dark text-center border-0">
                         <h4 className="mb-0 fw-bold">
                           TOTAL A PAGAR: S/ {getTotalAmount().toFixed(2)}
                         </h4>
-                        {modalMode === 'delivery' && selectedPedido && (
-                          <small className="text-muted">
-                            Cliente: {selectedPedido.delivery_info.nombre_cliente}
-                          </small>
-                        )}
-                        {modalMode === 'local' && (
-                          <small className="text-muted">
-                            Cliente: {orderData.customerName}
-                          </small>
-                        )}
+                        <small className="text-muted">
+                          Cliente: {orderData.customerName}
+                        </small>
                       </div>
                     </div>
 
                     <div className="col-12 mb-4">
                       <h6 className="fw-bold text-dark mb-3">SELECCIONE MÉTODO DE PAGO</h6>
                       <div className="row g-2">
-                        {/* SOLO 2 MÉTODOS DE PAGO */}
                         <div className="col-md-6">
                           <button
                             className={`btn w-100 fw-bold ${paymentMethod === 'cash' ? 'btn-success' : 'btn-outline-success'}`}
@@ -811,8 +891,8 @@ const PaymentManager = () => {
                       </div>
                     </div>
 
-                    {/* Efectivo */}
-                    {paymentMethod === 'cash' && (
+                    {/* Efectivo - Para Local */}
+                    {paymentMethod === 'cash' && modalMode === 'local' && (
                       <div className="col-12">
                         <label className="form-label fw-bold text-dark">MONTO RECIBIDO (S/)</label>
                         <input
@@ -840,8 +920,8 @@ const PaymentManager = () => {
                       </div>
                     )}
 
-                    {/* Pago Digital con LINK DE PAGO */}
-                    {paymentMethod === 'digital' && (
+                    {/* Pago Digital con LINK DE PAGO - SOLO PARA LOCAL */}
+                    {paymentMethod === 'digital' && modalMode === 'local' && (
                       <div className="col-12">
                         <div className="card border-primary">
                           <div className="card-body text-center">
@@ -954,6 +1034,112 @@ const PaymentManager = () => {
                   </div>
                 )}
 
+                {/* Paso 2: Método de Pago - VERSIÓN DELIVERY (Sin QR) */}
+                {currentStep === 2 && modalMode === 'delivery' && (
+                  <div className="row">
+                    <div className="col-12 mb-4">
+                      <div className="alert alert-dark text-center border-0">
+                        <h4 className="mb-0 fw-bold">
+                          TOTAL A PAGAR: S/ {getTotalAmount().toFixed(2)}
+                        </h4>
+                        {selectedPedido && (
+                          <small className="text-muted">
+                            Cliente: {selectedPedido.delivery_info.nombre_cliente}
+                          </small>
+                        )}
+                        {!selectedPedido && (
+                          <small className="text-muted">
+                            Cliente: {deliveryOrderData.customerName}
+                          </small>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="col-12 mb-4">
+                      <h6 className="fw-bold text-dark mb-3">SELECCIONE MÉTODO DE PAGO</h6>
+                      <div className="row g-2">
+                        {/* 3 MÉTODOS DE PAGO PARA DELIVERY */}
+                        <div className="col-md-4">
+                          <button
+                            className={`btn w-100 fw-bold ${paymentMethod === 'cash' ? 'btn-success' : 'btn-outline-success'}`}
+                            onClick={() => setPaymentMethod('cash')}
+                          >
+                            <i className="fas fa-money-bill-wave me-2"></i>
+                            EFECTIVO
+                          </button>
+                        </div>
+                        <div className="col-md-4">
+                          <button
+                            className={`btn w-100 fw-bold ${paymentMethod === 'card' ? 'btn-primary' : 'btn-outline-primary'}`}
+                            onClick={() => setPaymentMethod('card')}
+                          >
+                            <i className="fas fa-credit-card me-2"></i>
+                            TARJETA
+                          </button>
+                        </div>
+                        <div className="col-md-4">
+                          <button
+                            className={`btn w-100 fw-bold ${paymentMethod === 'digital' ? 'btn-info' : 'btn-outline-info'}`}
+                            onClick={() => setPaymentMethod('digital')}
+                          >
+                            <i className="fas fa-mobile-alt me-2"></i>
+                            BILLETERA DIGITAL
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Efectivo - Solo para Delivery */}
+                    {paymentMethod === 'cash' && modalMode === 'delivery' && (
+                      <div className="col-12">
+                        <label className="form-label fw-bold text-dark">MONTO RECIBIDO (S/)</label>
+                        <input
+                          type="number"
+                          className="form-control form-control-lg border-dark fw-bold"
+                          min="0"
+                          step="0.01"
+                          value={cashData.received}
+                          onChange={(e) => calculateChange(parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                        />
+                        {cashData.received > 0 && (
+                          <div className={`mt-3 p-3 rounded fw-bold ${cashData.change >= 0 ? 'bg-success text-white' : 'bg-danger text-white'}`}>
+                            <div className="d-flex justify-content-between align-items-center">
+                              <span className="fs-5">CAMBIO A ENTREGAR:</span>
+                              <span className="h3 mb-0">S/ {cashData.change.toFixed(2)}</span>
+                            </div>
+                            {cashData.change < 0 && (
+                              <div className="mt-2">
+                                <small>FALTAN: S/ {Math.abs(cashData.change).toFixed(2)}</small>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Tarjeta - Solo para Delivery */}
+                    {paymentMethod === 'card' && modalMode === 'delivery' && (
+                      <div className="col-12">
+                        <div className="alert alert-info">
+                          <h6 className="fw-bold">💳 Pago con Tarjeta</h6>
+                          <p className="mb-0">El pago se procesará con tarjeta de crédito/débito.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Billetera Digital - Solo para Delivery */}
+                    {paymentMethod === 'digital' && modalMode === 'delivery' && (
+                      <div className="col-12">
+                        <div className="alert alert-info">
+                          <h6 className="fw-bold">📱 Pago con Billetera Digital</h6>
+                          <p className="mb-0">El pago se procesará mediante Yape, Plin, o similar.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Paso 3: Confirmación */}
                 {currentStep === 3 && payments[0] && (
                   <div className="row">
@@ -967,7 +1153,7 @@ const PaymentManager = () => {
                       <div className="card border-dark">
                         <div className="card-body">
                           <div className="text-center border-bottom pb-3 mb-3">
-                            <h4 className="fw-bold text-dark">CEVICHERÍA "EL PUERTO"</h4>
+                            <h4 className="fw-bold text-dark">Cevicheria el Puerto"</h4>
                             <p className="text-dark small">
                               Av. Principal 123, Lima<br />
                               RUC: 20123456789
@@ -991,7 +1177,9 @@ const PaymentManager = () => {
                               <strong className="text-dark">MÉTODO:</strong><br />
                               <span className="fw-bold text-success">
                                 {paymentMethod === 'cash' && 'EFECTIVO'}
-                                {paymentMethod === 'digital' && 'PAGO DIGITAL'}
+                                {paymentMethod === 'card' && 'TARJETA'}
+                                {paymentMethod === 'digital' && modalMode === 'local' && 'PAGO DIGITAL'}
+                                {paymentMethod === 'digital' && modalMode === 'delivery' && 'BILLETERA DIGITAL'}
                               </span>
                             </div>
                           </div>
@@ -1093,9 +1281,15 @@ const PaymentManager = () => {
                         (modalMode === 'local' && (
                           !orderData.customerName || 
                           !orderData.customerEmail ||
+                          !orderData.tableNumber ||
                           orderItems.every(item => !item.name || item.price <= 0)
                         )) ||
-                        (modalMode === 'delivery' && !selectedPedido)
+                        (modalMode === 'delivery' && (
+                          !deliveryOrderData.customerName || 
+                          !deliveryOrderData.customerPhone ||
+                          !deliveryOrderData.customerAddress ||
+                          deliveryOrderItems.every(item => !item.name || item.price <= 0)
+                        ))
                       }
                     >
                       CONTINUAR AL PAGO
@@ -1113,7 +1307,7 @@ const PaymentManager = () => {
                       onClick={() => processPayment()}
                       disabled={
                         (paymentMethod === 'cash' && cashData.received < getTotalAmount()) ||
-                        (paymentMethod === 'digital' && !culqiData.success)
+                        (modalMode === 'local' && paymentMethod === 'digital' && !culqiData.success)
                       }
                     >
                       CONFIRMAR PAGO
@@ -1164,10 +1358,13 @@ const PaymentManager = () => {
                       </p>
                       <div className="d-flex justify-content-between align-items-center mt-3">
                         <span className={`badge fw-bold ${
-                          payment.paymentMethod === 'cash' ? 'bg-success' : 'bg-primary'
+                          payment.paymentMethod === 'cash' ? 'bg-success' : 
+                          payment.paymentMethod === 'card' ? 'bg-primary' : 'bg-info'
                         }`}>
                           {payment.paymentMethod === 'cash' && 'EFECTIVO'}
-                          {payment.paymentMethod === 'digital' && 'PAGO DIGITAL'}
+                          {payment.paymentMethod === 'card' && 'TARJETA'}
+                          {payment.paymentMethod === 'digital' && payment.type === 'local' && 'PAGO DIGITAL'}
+                          {payment.paymentMethod === 'digital' && payment.type === 'delivery' && 'BILLETERA DIGITAL'}
                         </span>
                         <strong className="h5 mb-0 text-dark">S/ {payment.total.toFixed(2)}</strong>
                       </div>

@@ -305,10 +305,8 @@ class LoteBase(BaseModel):
     ingrediente_id: int
     proveedor_id: Optional[int] = None
     cantidad: Decimal = Field(..., gt=0, description="Cantidad total ingresada en este lote")
-    
     fecha_vencimiento: Optional[date] = None
     numero_lote: Optional[str] = Field(None, max_length=100)
-
 # Esquema para crear un nuevo lote
 class LoteCreate(LoteBase):
     pass
@@ -322,10 +320,9 @@ class LoteResponse(LoteBase):
     id: int
     stock_actual: Decimal = Field(..., description="Cantidad restante del lote")
     fecha_ingreso: datetime
-    
+    empleado_id: Optional[int] = None
     nombre_ingrediente: Optional[str] = None
     nombre_proveedor: Optional[str] = None
-    
     class Config:
         from_attributes = True
 
@@ -349,7 +346,7 @@ class MovimientoInventarioResponse(MovimientoInventarioBase):
     """Esquema de respuesta detallado de un movimiento."""
     id: int
     fecha_hora: datetime
-    
+    tipo_movimiento:str
     # Campos de relación para la respuesta
     nombre_ingrediente: Optional[str] = None # Se obtiene del Lote
     nombre_empleado: Optional[str] = None
@@ -490,6 +487,7 @@ class PedidoEditarSolicitud(BaseModel):
 class RegistarMerma(BaseModel):
     platillo_id:int
     cantidad:int
+    empleado_id: Optional[int] = None  
     motivo:str
     
 #Para pago de delivery

@@ -2,6 +2,7 @@ from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session,joinedload
 from typing import List
 from datetime import datetime
+from app.routers.inventario_L import registrar_salida_stock
 from .. import models, database,schemas
 router=APIRouter(prefix="/pedidosF",tags=["pedidosF"])
 def get_db():
@@ -17,7 +18,7 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
         detalles = db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == pedido_id
         ).all()
-        
+        EMPLEADO_ID_SISTEMA = 7
         # 2. Calcular insumos necesarios (ACUMULANDO correctamente)
         insumos_necesarios = {}
         for detalle in detalles:
@@ -52,11 +53,17 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
                 )
             
             # ✅ Descontar correctamente
-            insumo.cantidad_actual -=float(insumo.cantidad)
-        
-        # ✅ Commit para guardar cambios
-        db.commit()
-        
+            insumo.cantidad_actual -= cantidad_float
+            # ✅ AGREGAR empleado_id al llamado
+            registrar_salida_stock(
+                ingrediente_id=insumo_id,
+                cantidad_a_consumir=cantidad,
+                tipo_movimiento=models.TipoMovimientoEnum.consumo,
+                referencia_salida=f"Preparacion del platillo del pedido {pedido_id}",
+                empleado_id=EMPLEADO_ID_SISTEMA,
+                auto_commit=False,   
+                db=db
+            )
     except HTTPException:
         db.rollback()  # ✅ Rollback en caso de error
         raise

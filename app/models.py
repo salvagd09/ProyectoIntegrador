@@ -429,7 +429,7 @@ class Movimientos_Inventario(Base):
         return f"<MovimientoInventario(id={self.id}, tipo='{self.tipo_movimiento.value}')>"
 
 class Mermas(Base):
-    __tablename__="registrarMermas"
+    __tablename__="registrarmermas"
     id=Column(Integer,primary_key=True,index=True)
     platillo_id=Column(Integer,ForeignKey("productos.id"),nullable=False)
     cantidad=Column(Integer)

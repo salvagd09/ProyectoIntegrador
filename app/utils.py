@@ -28,7 +28,7 @@ def registrar_auditoria(
         registro_id=registro_id,
         valores_antiguos=valores_antiguos,
         valores_nuevos=valores_nuevos,
-        empleado_id=empleado_id or 1
+        empleado_id=empleado_id
     )
     
     db.add(nuevo_registro)

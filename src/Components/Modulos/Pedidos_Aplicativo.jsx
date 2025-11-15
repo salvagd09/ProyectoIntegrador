@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 
 import styles from './PedidosAplicativo.module.css';
-import '../Modulos/CSS/Pedidos_Aplicativo.css';
 
 const formatText = (text) => {
     if (!text) return '';

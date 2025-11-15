@@ -1,7 +1,7 @@
 import { useState } from "react";
 import comida from "../assets/comida.png";
 import { useNavigate, Link } from "react-router-dom";
-import { Button, Form, Card, Modal, Dropdown, DropdownButton, Row, Col } from 'react-bootstrap';
+import { Button, Form, Card, Modal } from 'react-bootstrap';
 
 function App() {
   const [nombreUsuario, setNombreUsuario] = useState("");
@@ -127,7 +127,7 @@ function App() {
               style={cardStyle}
           >
           <Card.Body>
-              <h2 className="mb-4 display-6 text-center" style={titleStyle}>
+              <h2 className="mb-4 display-6 text-center fw-bold" style={titleStyle}>
                   Iniciar Sesión (Admin/Caja)
               </h2>
               <Form onSubmit={handleLoginPassword}>

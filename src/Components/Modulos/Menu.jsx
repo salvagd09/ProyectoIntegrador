@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Container, Button, Card, Row, Col, Form, InputGroup, Modal } from 'react-bootstrap';
 import styles from '../Modulos/Menu.module.css';
+import ImageUploader from '../Modulos/ImageUploader';
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -515,6 +516,11 @@ export default Menu;
 const ModalFormPlatillo = ({ show, onClose, modalType, form, categorias, handleChange, guardarPlatillo, headerStyle, cardStyle, inputStyle, btnPrimary, btnSecondary }) => {
     const isEditing = modalType === 'editar';
     
+    const handleImageUploadSuccess = (url) => {
+        // Actualiza el form state con la URL obtenida de Cloudinary
+        handleChange({ target: { id: 'imagen_url', value: url } });
+    }
+
     return show && (
         <div className={`${styles.modalOverlay}`}>
                 <div className={styles.modalContent} style={{...cardStyle}}>
@@ -611,15 +617,11 @@ const ModalFormPlatillo = ({ show, onClose, modalType, form, categorias, handleC
                             </Row>
 
                             {/* URL de Imagen */}
-                            <div className="mb-4">
-                                <label className={styles.formLabel}>URL de Imagen</label>
-                                <InputGroup>
-                                    <input type="text" className="form-control" style={inputStyle} id="imagen_url" value={form.imagen_url} onChange={handleChange} placeholder="https://..." />
-                                    <Button variant="outline-secondary" style={{borderColor: 'var(--color-muted)', color: 'var(--color-muted)'}} title="Simular Subida">
-                                        <i className="fa-solid fa-cloud-arrow-up"></i>
-                                    </Button>
-                                </InputGroup>
-                            </div>
+                            <ImageUploader
+                                onUploadSuccess={handleImageUploadSuccess}
+                                currentImageUrl={form.imagen_url}
+                                inputStyle={inputStyle}
+                            />
 
                             {/* Botones */}
                             <div className={styles.modalFooter}>

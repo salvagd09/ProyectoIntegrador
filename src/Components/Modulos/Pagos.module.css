@@ -1,0 +1,137 @@
+/* GENERAL */
+.statsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.statCol {
+    flex: 1 1 200px;
+    min-width: 200px;
+}
+
+.statCard {
+    height: 100%;
+    position: relative;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    color: white !important;
+    overflow: hidden;
+}
+
+/* Icono en la esquina */
+.statCard i {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    opacity: 0.2;
+}
+
+/* Lista de Pagos*/
+.paymentCard {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.paymentBadge {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 4px;
+    color: white !important; 
+}
+
+/* MODAL */
+.modalOverlay {
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7); /* Fondo más oscuro para enfoque */
+    z-index: 2500;
+}
+
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+.modalContent {
+    position: relative;
+    width: 90%; 
+    max-width: 850px; /* Ancho para pasos de formulario */
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 1060;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid;
+}
+
+.modalBody {
+    padding: 1.5rem;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-top: 1px solid;
+}
+
+.modalBody input,
+.modalBody select,
+.modalBody textarea {
+    background-color: var(--color-bg) !important;
+    color: var(--color-text) !important;
+    border-color: var(--color-muted) !important;
+}
+
+.modalHeader .btn-close {
+    filter: var(--logo-filter);
+    opacity: 1; 
+}
+
+.itemGridHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: var(--color-title);
+    padding: 0.5rem 0;
+    border-bottom: 2px solid var(--color-muted);
+}
+
+.itemGridRow {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--color-muted);
+}
+.itemGridRow input {
+    background-color: var(--color-card) !important;
+    border-color: var(--color-muted) !important;
+}
+
+.totalsCard {
+    background-color: var(--color-bg) !important;
+    border: 1px solid var(--color-accent) !important;
+}
+.totalsCard hr {
+    border-color: var(--color-muted) !important;
+}

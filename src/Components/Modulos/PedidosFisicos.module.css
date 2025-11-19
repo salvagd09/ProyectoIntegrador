@@ -1,0 +1,153 @@
+.pedidosGridColumnas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 1rem;
+    align-items: start;
+}
+
+.columna {
+    padding: 0.5rem;
+}
+
+.columnaTitulo {
+    font-family: var(--font-title);
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-muted);
+}
+
+.pedidoCard {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.cardHeader {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Borde claro para temas oscuros */
+}
+
+.itemRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0 !important;
+    border-bottom: 1px dashed var(--color-muted) !important;
+    font-size: 0.95rem;
+}
+
+.pedidoFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    font-weight: 500;
+}
+
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+}
+
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+.modalContentSmall {
+    position: relative;
+    width: 90%; 
+    max-width: 550px; 
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1060;
+}
+
+.modalContentWide {
+    position: relative;
+    width: 90%; 
+    max-width: 900px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1060;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid;
+}
+
+.modalBody {
+    padding: 1.5rem;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-top: 1px solid;
+}
+
+.statsGrid .statCard {
+    height: 100%;
+    transition: transform 0.2s;
+}
+.statsGrid .statCard:hover {
+    transform: translateY(-2px);
+}
+
+.themedTable {
+    width: 100%;
+    margin-top: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Estilo de las celdas y filas de la tabla */
+.themedTable th,
+.themedTable td {
+    padding: 1.2rem 1rem !important; 
+    vertical-align: middle; 
+    text-align: center;
+    border-color: var(--color-muted) !important;
+}
+
+/* Encabezados de columna */
+.themedTable th {
+    font-weight: 700;
+    text-transform: uppercase;
+    background-color: var(--color-btn-delete);
+    color: var(--color-text);
+}
+
+.themedTable td {
+    background-color: var(--color-table);
+}
+
+/* Asegurar el color de fondo y texto de las filas */
+.themedTable tbody tr {
+    background-color: var(--color-card) !important;
+    color: var(--color-text) !important;
+    transition: background-color 0.2s;
+}
+
+.themedTable tbody tr:hover {
+    background-color: var(--color-bg) !important;
+}

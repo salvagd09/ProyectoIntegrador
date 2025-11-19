@@ -34,11 +34,9 @@ const ROL_MAP = {
 function Admin() {
     const navigate = useNavigate();
     const ubicacion = useLocation();
-
     // Constante para abrir/cerrar sidebar
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
     const [userData, setUserData] = useState({
         id: null,
         nombre: "",
@@ -48,10 +46,8 @@ function Admin() {
         email: "",
         activo: true,
     });
-
     // Constante para fecha
     const [currentDate, setCurrentDate] = useState("");
-
     useEffect(() => {
         // Cargar fecha actual
         const date = new Date();
@@ -60,7 +56,6 @@ function Admin() {
 
         loadUserData();
     }, []); 
-
     const loadUserData = () => {
         const savedUserData = localStorage.getItem('userData');
         if (savedUserData) {
@@ -85,45 +80,35 @@ function Admin() {
         borderColor: 'var(--color-accent)',
         borderRight: '1px solid var(--color-muted)',
     };
-
     const headerStyle = {
         backgroundColor: 'var(--color-header)',
         color: 'var(--color-text)',
     };
-
     const logoTitleStyle = {
         color: 'var(--color-title)',
         fontFamily: 'var(--font-title)',
         fontSize: '1.8rem'
     };
-
     const linkStyle = {
         color: 'var(--color-text)',
     };
-
     const getRoleName = (id) => ROL_MAP[id] || "Desconocido";
-
     const retroceder = () => {
         localStorage.removeItem('userData');
         localStorage.removeItem('userRole');
         localStorage.removeItem('isAuthenticated');
         navigate("/Login");
     };
-
     const estaActivo = (ruta) => {
         return ubicacion.pathname === ruta ? styles.activeLink : styles.navLinkBase;
     };
-
     const sidebarWidth = isSidebarOpen ? '325px' : '90px';
-
     const headerStyleCalculated = {
         ...headerStyle,
         left: sidebarWidth,
         width: `calc(100% - ${sidebarWidth})`,
     };
-
     const headerWidth = `calc(100% - ${sidebarWidth})`;
-
     return (
         <div className={styles.layout}>
             {/* Sidebar */}
@@ -133,7 +118,6 @@ function Admin() {
                 style={{ ...sidebarStyle, width: sidebarWidth }}
                 data-open={isSidebarOpen}
             >
-                
             {/* Logo y título de la página */}
             <div className="d-flex align-items-center justify-content-center pt-4 pb-4 border-bottom" style={{borderColor: 'var(--color-muted)'}}>
                 <a href="#" className="d-flex align-items-center text-decoration-none" style={{color: 'var(--color-title)'}}>
@@ -145,7 +129,6 @@ function Admin() {
                 {isSidebarOpen && <h3 className="m-0" style={logoTitleStyle}>GestaFood</h3>}
                 </a>
             </div>
-
             {/* Módulos de la página */}
             <div className={styles.modulesContainer}>
                 <ul className={`nav nav-pills flex-column mb-auto align-content-center`}>
@@ -165,7 +148,6 @@ function Admin() {
                         </Link>
                     </li>
                     <li className="my-2 border-bottom" style={{borderColor: 'var(--color-muted)'}}></li>
-
                     <li>
                         <Link to="/admin/Menu" className={`nav-link ${estaActivo("/admin/Menu")}`} style={linkStyle}>
                             <i className="fa-solid fa-utensils me-2"></i>{isSidebarOpen && "Menú"}
@@ -182,7 +164,6 @@ function Admin() {
                         </Link>
                     </li>
                     <li className="my-2 border-bottom" style={{borderColor: 'var(--color-muted)'}}></li>
-                    
                     <li>
                         <Link to="/admin/Metricas" className={`nav-link ${estaActivo("/admin/Metricas")}`} style={linkStyle}>
                             <i className="bi bi-bar-chart me-2"></i>{isSidebarOpen && "Métricas"}
@@ -200,7 +181,6 @@ function Admin() {
                     </li>
             </ul>
             </div>
-
             {/* Perfil de usuario */}
             <div className={`${styles.profileContainer}`} style={{borderColor: 'var(--color-muted)'}}>
                 <div className={`d-flex flex-column align-items-center ${isSidebarOpen ? '' : 'justify-content-center'}`}>
@@ -239,10 +219,8 @@ function Admin() {
                         {isSidebarOpen && "Cerrar Sesión"}
                     </button>
                 </div>
-                
             </div>
         </aside>
-
           {/* Parte principal */}
             <div className={styles.main} style={{ width: headerWidth}}>
             {/* Header */}
@@ -262,7 +240,6 @@ function Admin() {
                         {currentDate}
                     </div>
                 </div>
-
                 {/* Bloque de acciones */}
                 <div className="header-inner d-flex align-items-center gap-2 ms-auto">
                     {/* Notificaciones */}
@@ -277,7 +254,6 @@ function Admin() {
                         </button>
                     </div>
                 <div className="vr mx-auto" style={{borderColor: 'var(--color-muted)'}}></div>
-
                 {/* Avatar */}
                 <div className="action">
                     <img
@@ -289,7 +265,6 @@ function Admin() {
                 </div>
             </div>
             </header>
-                
           {/* Contenido principal de las rutas */}
             <main className={styles.appContent}>
                 <div className="p-4 flex-grow-1">

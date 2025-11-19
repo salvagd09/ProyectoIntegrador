@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-
 export default function CulqiTester({ 
   total, 
   pedidoId,
@@ -9,7 +8,6 @@ export default function CulqiTester({
 }) {
   const [loading, setLoading] = useState(false);
   const [culqiLoaded, setCulqiLoaded] = useState(false);
-
   useEffect(() => {
     // Cargar el script de Culqi solo una vez
     const existingScript = document.getElementById("culqi-script");
@@ -32,7 +30,6 @@ export default function CulqiTester({
     } else {
       setCulqiLoaded(true);
     }
-
     // Callback global de Culqi (token u orden)
     window.culqi = async function () {
       // Manejar errores de Culqi
@@ -45,13 +42,11 @@ export default function CulqiTester({
         }
         return;
       }
-
       // Manejar token exitoso
       if (window.Culqi.token) {
         const token = window.Culqi.token.id;
         console.log("💳 Token recibido:", token);
         setLoading(true);
-
         try {
           // Enviar token al backend para procesar el pago
           const response = await fetch("http://127.0.0.1:8000/api/pagos/procesar-tarjeta", {
@@ -63,9 +58,7 @@ export default function CulqiTester({
               email: email
             }),
           });
-
           const data = await response.json();
-
           if (response.ok && data.success) {
             console.log("✅ Pago procesado exitosamente:", data);
             if (onPaymentSuccess) {

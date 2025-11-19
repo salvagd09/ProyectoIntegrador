@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
-
 import styles from './PedidosAplicativo.module.css';
-import '../Modulos/CSS/Pedidos_Aplicativo.css';
-
 const formatText = (text) => {
     if (!text) return '';
     return text.replace(/_/g, ' ')
@@ -11,7 +8,6 @@ const formatText = (text) => {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 };
-
 function Pedidos_Aplicativo() {
   const [pedidos, setPedidos] = useState([]);
   const [estadisticas, setEstadisticas] = useState({});
@@ -21,41 +17,34 @@ function Pedidos_Aplicativo() {
     color: 'var(--color-title)', 
     fontFamily: 'var(--font-basic)'
   };
-    
   const moduleBg = { 
     backgroundColor: 'var(--color-bg)', 
     color: 'var(--color-text)' 
   };
-  
   const cardBg = { 
     backgroundColor: 'var(--color-card)', 
     color: 'var(--color-text)', 
     border: `1px solid var(--color-muted)` 
   };
-  
   const itemBg = { 
     backgroundColor: 'var(--color-bg)', 
     color: 'var(--color-text)' 
   };
-  
   const btnPrimary = {
     backgroundColor: 'var(--color-accent)', 
     borderColor: 'var(--color-accent)', 
     color: 'white' 
   };
-  
   const btnCancel = { 
     backgroundColor: 'var(--color-btn-delete)', 
     borderColor: 'var(--color-btn-delete)', 
     color: 'white' 
   };
-  
   const btnReady = { 
     backgroundColor: 'var(--color-secondary)', 
     borderColor: 'var(--color-secondary)', 
     color: 'var(--color-title)' 
   };
-
   // Obtener pedidos de delivery
   const obtenerPedidos = async () => {
     try {
@@ -68,7 +57,6 @@ function Pedidos_Aplicativo() {
       alert('Error al cargar pedidos');
     }
   };
-
   // Obtener estadísticas
   const obtenerEstadisticas = async () => {
     try {
@@ -80,11 +68,9 @@ function Pedidos_Aplicativo() {
       console.error('Error:', error);
     }
   };
-
   // Actualizar estado del pedido
   const actualizarEstado = async (pedidoId, nuevoEstado) => {
     if (!confirm(`¿Cambiar estado a "${nuevoEstado}"?`)) return;
-    
     try {
       const response = await fetch(`http://localhost:8000/delivery/pedidos/${pedidoId}/estado`, {
         method: 'PATCH',
@@ -93,7 +79,6 @@ function Pedidos_Aplicativo() {
         },
         body: JSON.stringify({ estado: nuevoEstado }),
       });
-
       if (response.ok) {
         obtenerPedidos();
         obtenerEstadisticas();
@@ -106,7 +91,6 @@ function Pedidos_Aplicativo() {
       alert('Error al actualizar estado');
     }
   };
-
   // Cargar datos iniciales
   useEffect(() => {
     const cargarDatos = async () => {
@@ -115,45 +99,37 @@ function Pedidos_Aplicativo() {
       setCargando(false);
     };
     cargarDatos();
-
     // Actualizar cada 30 segundos
     const intervalo = setInterval(cargarDatos, 30000);
     return () => clearInterval(intervalo);
   }, []);
-
   if (cargando) {
     return <div className="text-center py-5" style={moduleBg}>Cargando pedidos...</div>;
   }
-
   // Calcular contadores - TODAS LAS VARIABLES SE USAN
   const pedidosPendientes = pedidos.filter(p => p.pedido.estado === 'pendiente').length;
   const pedidosPreparacion = pedidos.filter(p => p.pedido.estado === 'en_preparacion').length;
   const pedidosListos = pedidos.filter(p => p.pedido.estado === 'listo').length;
   const pedidosEntregados = pedidos.filter(p => p.pedido.estado === 'entregado').length;
-
   const pedidosDelivery = pedidos.filter(p => p.pedido.tipo_pedido === 'delivery');
   const pedidosRecojo = pedidos.filter(p => p.pedido.tipo_pedido === 'recojo_local');
-
   const getBadgeStyle = (plataforma) => {
     // Mapeo temático para plataformas
     if (plataforma === 'rappi') return { backgroundColor: '#ed673aff', color: 'white' };
     if (plataforma === 'uber_Eats') return { backgroundColor: '#4CAF50', color: 'white' };
     return { backgroundColor: 'var(--color-accent)', color: 'white' };
   };
-
   const getStatusStyle = (estado) => {
     if (estado === 'pendiente') return { backgroundColor: 'var(--color-btn-delete)', color: 'var(--color-title)' };
     if (estado === 'en_preparacion') return { backgroundColor: 'var(--color-btn)', color: 'white' };
     if (estado === 'listo') return { backgroundColor: 'var(--color-secondary)', color: 'var(--color-title)' };
     return { backgroundColor: 'var(--color-muted)', color: 'white' };
   };
-
   const PedidoCard = ({ pedido, detalles, pago }) => {
     // Calculamos el tiempo transcurrido en minutos desde la creación del pedido
     const creationTime = new Date(pedido.fecha_creacion).getTime();
     const currentTime = new Date().getTime();
-    const minutesElapsed = Math.floor((currentTime - creationTime) / 60000);
-        
+    const minutesElapsed = Math.floor((currentTime - creationTime) / 60000); 
     let priorityStyle = {};
     if (pedido.estado === 'pendiente' && minutesElapsed >= 5) {
         priorityStyle = { border: `3px solid var(--color-btn-delete)`, animation: `${styles.pulseEffect} 2s infinite` };
@@ -161,7 +137,6 @@ function Pedidos_Aplicativo() {
         // Pedido pendiente por más de 2 minutos: ALERTA MEDIA
         priorityStyle = { border: `3px solid var(--color-btn)` };
     }
-
       return (
         <Card className={styles.pedidoCard} style={{...cardBg, ...priorityStyle}}>
             <Card.Body className="p-3">
@@ -182,8 +157,7 @@ function Pedidos_Aplicativo() {
                                     #{pedido.codigo_pedido_externo}
                                 </span>
                             )}
-                        </div>
-                          
+                        </div>  
                         <h3 className="font-bold text-lg" style={{color: 'var(--color-title)'}}>{pedido.nombre_cliente}</h3>
                         <p 
                             className="text-sm" 
@@ -198,7 +172,6 @@ function Pedidos_Aplicativo() {
                             <i className="fa-solid fa-phone me-1"></i>
                         {pedido.telefono_cliente}</p>
                     </div>
-                      
                     {/* Monto y Hora */}
                     <div className="text-right">
                         <p className="text-xl font-bold" style={{color: 'var(--color-accent)'}}>S/ {pedido.monto_total}</p>
@@ -209,8 +182,7 @@ function Pedidos_Aplicativo() {
                             {pago?.metodo_pago} • {pago?.estado}
                         </p>
                     </div>
-                </div>
-                  
+                </div>           
                 {/* Items del pedido */}
                 <div className={styles.itemsList} style={itemBg}>
                     {detalles.map(detalle => (
@@ -229,7 +201,6 @@ function Pedidos_Aplicativo() {
                         </div>
                     ))}
                 </div>
-
                 {/* Botones de acción */}
                 <div className="mt-3 d-flex gap-2 flex-wrap">
                     {pedido.estado === 'pendiente' && (
@@ -241,20 +212,17 @@ function Pedidos_Aplicativo() {
                                 <i className="fa-solid fa-xmark me-1"></i> Cancelar
                             </Button>
                         </>
-                    )}
-                      
+                    )}  
                     {pedido.estado === 'en_preparacion' && (
                         <Button style={btnReady} size="sm" onClick={() => actualizarEstado(pedido.id, 'listo')}>
                             <i className="fa-solid fa-check me-1"></i> Marcar como Listo
                         </Button>
-                    )}
-                      
+                    )}  
                     {pedido.estado === 'listo' && (
                         <Button style={btnPrimary} size="sm" onClick={() => actualizarEstado(pedido.id, 'entregado')}>
                               <i className="fa-solid fa-truck me-1"></i> Marcar Entregado
                         </Button>
                     )}
-
                     {(pedido.estado === 'entregado' || pedido.estado === 'cancelado') && (
                         <span 
                             className={styles.completedStatus} 
@@ -269,7 +237,6 @@ function Pedidos_Aplicativo() {
         </Card>
       );
     };
-
   return (
     <Container fluid style={moduleBg} className="py-2">
         {/* Header del Módulo */}
@@ -277,7 +244,6 @@ function Pedidos_Aplicativo() {
             <h1 className="text-3xl font-bold" style={headerStyle}> <i className="fa-solid fa-mobile-screen-button me-2"></i>Pedidos por Aplicativo</h1>
             <p style={{color: 'var(--color-muted)'}}>Monitoreo y gestión de pedidos de delivery y recojo</p>
         </div>
-
         {/* Fila de Estadísticas Generales */}
         <Row xs={1} md={2} lg={4} className="g-4 mb-4">
             <Col>
@@ -321,7 +287,6 @@ function Pedidos_Aplicativo() {
                 </Card>
             </Col>
         </Row>
-
         {/* Monto e Ingresos (Estadísticas Adicionales) */}
         <Row xs={1} md={2} className="g-4 mb-4">
             <Col>
@@ -345,7 +310,6 @@ function Pedidos_Aplicativo() {
                 </Card>
             </Col>
         </Row>
-
         {/* Lista de Pedidos Dividida por Tipo */}
         <Row className="g-4">
             {/* Columna de Delivery */}
@@ -368,7 +332,6 @@ function Pedidos_Aplicativo() {
                     )}
                 </div>
             </Col>
-
             {/* Columna de Recojo */}
             <Col md={6}>
                 <div className={styles.orderListContainer}>
@@ -389,8 +352,7 @@ function Pedidos_Aplicativo() {
                     )}
                 </div>
             </Col>
-        </Row>
-        
+        </Row>     
         {/* Plataformas activas */}
         {estadisticas.pedidos_por_plataforma && Object.keys(estadisticas.pedidos_por_plataforma).length > 0 && (
           <div className="mt-6 bg-white p-4 rounded-lg shadow border">

@@ -14,13 +14,11 @@ import {
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../Modulos/CSS/Insumos.css";
 const API_BASE_URL = "http://127.0.0.1:8000";
-
 function Insumos() {
   const obtenerRol = () => {
     const path = window.location.pathname;
     return path.includes("/cocina/") ? "cocina" : "admin";
   };
-  
   const [rol] = useState(obtenerRol());
   const [insumos, setInsumos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -76,7 +74,6 @@ function Insumos() {
     await cargarInsumos();
     setShowModal(false);
   };
-
   // Editar insumo
   const editarInsumo = async (insumoActualizado) => {
     const datosParaBackend = {
@@ -159,14 +156,12 @@ function Insumos() {
     (categoriaFiltro === "Todas" || insumo.categoria === categoriaFiltro) &&
     insumo.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
-
   // Calcular totales
   const totalInsumos = insumos.length;
   const valorTotal = insumos.reduce((total, i) => total + i.cantidad_actual * i.precio, 0);
   const stockBajo = insumos.filter(i => i.cantidad_actual <= i.minimo).length;
   const categoriasActivas = new Set(insumos.map(i => i.categoria)).size;
   const insumosBajos = insumos.filter(i => i.cantidad_actual <= i.minimo);
-
   return (
     <Container fluid className="py-4">
       <Row className="mb-4">
@@ -181,10 +176,8 @@ function Insumos() {
           </div>
         </Col>
       </Row>
-
       {loading && <Alert variant="info">Cargando inventario...</Alert>}
       {error && <Alert variant="danger">Error: {error}</Alert>}
-
       {insumosBajos.length > 0 && (
         <Alert variant="warning" className="mb-4">
           <Alert.Heading>⚠️ Alerta de Stock Bajo</Alert.Heading>
@@ -200,7 +193,6 @@ function Insumos() {
           )}
         </Alert>
       )}
-
       <Row className="mb-4">
         <Col md={3} className="mb-3">
           <Card className="h-100 border-0 shadow-sm">
@@ -239,7 +231,6 @@ function Insumos() {
           </Card>
         </Col>
       </Row>
-
       <Card className="mb-4 border-0 shadow-sm">
         <Card.Body>
           <Row>
@@ -273,7 +264,6 @@ function Insumos() {
           </Row>
         </Card.Body>
       </Card>
-
       <Card className="border-0 shadow-sm">
         <Card.Header className="bg-white border-0">
           <h5 className="mb-0">📋 Lista de Insumos</h5>
@@ -328,7 +318,6 @@ function Insumos() {
               })}
             </tbody>
           </Table>
-
           {insumosFiltrados.length === 0 && !loading && (
             <div className="text-center py-5">
               <div className="text-muted">📭 No se encontraron insumos</div>
@@ -419,7 +408,6 @@ function FormMermas({merma,empleadoId,onGuardar,onCancelar}){
   
   </>)
   }
- 
 function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
   const [formData, setFormData] = useState({
     nombre: insumo?.nombre || "",
@@ -430,10 +418,8 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
     minimo: insumo?.minimo || 0,
     perecible: insumo?.perecible ?? false,
   });
-
   const categorias = ["Pescados", "Mariscos", "Frutas", "Verduras", "Tubérculos", "Granos", "Condimentos", "Hierbas", "Otros"];
   const unidades = ["kg", "gr", "litro", "unidad", "hojas", "paquete", "caja"];
-
   const manejarEnvio = (e) => {
     e.preventDefault();
     const cantidadNueva = parseFloat(formData.cantidad);
@@ -452,7 +438,6 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
       empleado_id: empleadoId || null
     });
   };
-
   return (
     <Form onSubmit={manejarEnvio}>
       <Form.Group className="mb-3">
@@ -465,7 +450,6 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
           required
         />
       </Form.Group>
-
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
@@ -492,7 +476,6 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
           </Form.Group>
         </Col>
       </Row>
-
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
@@ -516,14 +499,12 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
           </Form.Group>
         </Col>
       </Row>
-
       <Form.Group className="mb-4">
         <Form.Label>Categoría *</Form.Label>
         <Form.Select value={formData.categoria} onChange={(e) => setFormData({ ...formData, categoria: e.target.value })} required>
           {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </Form.Select>
       </Form.Group>
-
       <Form.Group className="mb-4">
         <Form.Label>¿Es perecible? *</Form.Label>
         <Form.Select value={formData.perecible ? "true" : "false"} onChange={(e) => setFormData({ ...formData, perecible: e.target.value === "true" })} required>
@@ -531,7 +512,6 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
           <option value="false">No</option>
         </Form.Select>
       </Form.Group>
-
       <div className="d-flex gap-2 justify-content-end">
         <Button variant="outline-secondary" onClick={onCancelar}>Cancelar</Button>
         <Button variant="primary" type="submit">{insumo ? "Actualizar" : "Guardar Insumo"}</Button>
@@ -544,18 +524,28 @@ function HistorialMovimientos() {
   const [historial, setHistorial] = useState([]);
   const [ingredienteSeleccionado, setIngredienteSeleccionado] = useState("");
   const [loading, setLoading] = useState(false);
-
   const cargarIngredientes = async () => {
     try {
       const respuesta = await fetch(`${API_BASE_URL}/inventario_L/ingredientes-con-lotes`);
       if (!respuesta.ok) throw new Error("Error al cargar ingredientes");
       const datos = await respuesta.json();
+      console.log("📦 Datos del backend:", datos);
+      console.log("🔢 Total ingredientes:", datos.length);
+      console.log("🆔 IDs:", datos.map(i => i.id));
+      
+      // 🔍 Buscar IDs duplicados
+      const ids = datos.map(i => i.id);
+      const duplicados = ids.filter((id, index) => ids.indexOf(id) !== index);
+      if (duplicados.length > 0) {
+        console.error("❌ IDs DUPLICADOS encontrados:", duplicados);
+      } else {
+        console.log("✅ Todos los IDs son únicos");
+      }
       setIngredientes(datos);
     } catch (err) {
       console.error("Error:", err);
     }
   };
-
   const formatearFecha = (fechaISO) => {
     const fecha = new Date(fechaISO);
     return fecha.toLocaleString('es-PE', {
@@ -566,28 +556,22 @@ function HistorialMovimientos() {
       minute: '2-digit'
     });
   };
-
-  const mostrarMovimientos = async (ingredienteId = null) => {
+  const mostrarMovimientos = async (ingrediente_id = null) => {
     setLoading(true);
     try {
-      const url = ingredienteId 
-        ? `${API_BASE_URL}/inventario_L/lotes/ingrediente/?ingrediente_id=${ingredienteId}`
+      const url = ingrediente_id 
+        ? `${API_BASE_URL}/inventario_L/movimientos/historial/?ingrediente_id=${ingrediente_id}`
         : `${API_BASE_URL}/inventario_L/movimientos/historial`;
       const respuesta = await fetch(url);
-
       if (respuesta.status === 404) {
         setHistorial([]);
         return;
-      }
-      
-      // ✅ Verificar si la respuesta es OK
+      } 
       if (!respuesta.ok) {
         throw new Error("Error al cargar historial");
-      }
-      
+      }  
       const datos = await respuesta.json();
       setHistorial(datos);
-      
     } catch (err) {
       console.error("Error al cargar el historial:", err);
       setHistorial([]);
@@ -595,55 +579,52 @@ function HistorialMovimientos() {
       setLoading(false);
     }
   };
-
-  const filtrarPorIngredientes = (ingredienteId) => {
-    setIngredienteSeleccionado(ingredienteId);
+  const filtrarPorIngredientes = (ingrediente_id) => {
+    setIngredienteSeleccionado(ingrediente_id);
     
-    if (!ingredienteId || ingredienteId === "") {
+    if (!ingrediente_id || ingrediente_id === "") {
       mostrarMovimientos();
     } else {
-      mostrarMovimientos(parseInt(ingredienteId));
+      mostrarMovimientos(parseInt(ingrediente_id));
     }
   };
-
   useEffect(() => {
     cargarIngredientes();
     mostrarMovimientos();
+    console.log("IDs de ingredientes:", ingredientes.map(i => i.id));
   }, []);
-
   return (
     <>
+    <div>
       <Form className="mb-3">
         <Form.Group>
           <Form.Label>Filtrar por ingrediente:</Form.Label>
-          <Form.Select 
-            value={ingredienteSeleccionado} 
-            onChange={(e) => filtrarPorIngredientes(e.target.value)}
-            disabled={loading}
-          >
-            <option value="">-- Todos los ingredientes --</option>
-            {ingredientes.map((ingrediente) => (
-              <option key={ingrediente.id} value={ingrediente.id}>
-                {ingrediente.nombre}
-              </option>
-            ))}
-          </Form.Select>
+            <select 
+                    className="form-select"
+                    value={ingredienteSeleccionado} 
+                    onChange={(e) => filtrarPorIngredientes(e.target.value)}
+                    disabled={loading}
+            >
+              <option value="">-- Todos los ingredientes --</option>
+                {ingredientes.map((ingrediente) => (
+                  <option key={ingrediente.id} value={ingrediente.id}>
+                    {ingrediente.nombre}
+                  </option>
+              ))}
+            </select>
         </Form.Group>
       </Form>
-
       {loading && (
         <Alert variant="info" className="mb-3">
           Cargando movimientos...
         </Alert>
       )}
-
       {!loading && ingredienteSeleccionado && (
         <Alert variant="info" className="mb-3">
           Mostrando {historial.length} movimiento(s) de{' '}
           {ingredientes.find(i => i.id === parseInt(ingredienteSeleccionado))?.nombre}
         </Alert>
       )}
-
       <Table striped bordered hover className="w-100">
         <thead>
           <tr>
@@ -687,6 +668,7 @@ function HistorialMovimientos() {
           )}
         </tbody>
       </Table>
+    </div>
     </>
   );
 }

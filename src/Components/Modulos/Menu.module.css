@@ -1,0 +1,289 @@
+/* Encabezado */
+.menuHeader {
+    padding: 1.6rem 1.5rem 1.5rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.menu-header h1 {
+    font-weight: 700;
+    font-size: 2.4rem;
+    color: var(--color-title);
+}
+
+.menu-header p {
+    color: var(--color-text) !important;
+    margin-bottom: 0;
+    font-size: 1.1rem;
+}
+
+.categoriasNavContainer {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    padding: 0.5rem 0;
+}
+
+.scrollBtn {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.categoriasNav {
+    display: flex;
+    overflow-x: scroll;
+    white-space: nowrap;
+    gap: 1rem;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+.categoriasNav::-webkit-scrollbar {
+    display: none;
+}
+
+.categoriaBtn {
+    border: 2px solid var(--color-accent);
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    min-width: 120px;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+
+.categoriaBtn.selected {
+    background: var(--color-accent);
+    color: #fff;
+    border-color: var(--color-title);
+}
+
+.platilloCard {
+    height: 100%;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    transition: opacity 0.3s;
+}
+
+.cardDesactivada {
+    opacity: 0.6;
+    background-color: var(--color-bg) !important;
+    border-color: var(--color-muted) !important;
+}
+
+.imageContainer {
+    width: 100%;
+    height: 250px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border-radius: 8px;
+}
+
+.cardImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    background: var(--color-muted);
+}
+
+.cardTitle {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.cardText {
+    text-align: left;
+    color: var(--color-text) !important;
+    height: 3em; /* Limita la descripción a 2 líneas */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badgeBase {
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+}
+
+/* Listado de ingredientes */
+.ingredientsList {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.ingredientsList li {
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.ingredientBadge {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+/* Fila de Botones */
+.cardBtnRow {
+    display: flex;
+    width: 100%;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.btnToggle {
+    flex: 1;
+    font-weight: 700;
+    color: white !important;
+}
+
+.cardBtnRow .btnToggle {
+    flex: 1 1 50%;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    background-color: var(--color-btn);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+}
+
+.cardBtnRow .btnEdit,
+.cardBtnRow .btnDelete {
+    flex: 1 1 25%;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    background: var(--color-secondary);
+    color: var(--color-title);
+    font-weight: 600;
+    border: none;
+}
+
+.btnEdit {
+    width: 40px;
+    padding: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Modal */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2500;
+}
+
+.modalContent {
+    background-color: var(--color-header);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 800px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    animation: modal-appear 0.3s ease-out;
+}
+
+.modalContentSmall {
+    position: relative;
+    width: 90%; 
+    max-width: 550px; 
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1060;
+}
+
+.modalHeader {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modalTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-title);
+    margin-bottom: 0;
+}
+
+.modalBody {
+    padding: 2rem;
+}
+
+.modalBody form {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.modalBody .formLabel {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--color-title);
+}
+
+.modalFooter {
+    border-top: 1px solid var(--color-muted);
+    background-color: var(--color-bg);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.formLabel {
+    color: var(--color-title);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+/* Inputs */
+.modalBody .form-control, .modalBody .form-select, .modalBody textarea {
+    background-color: var(--color-bg) !important;
+    color: var(--color-text) !important;
+    border-color: var(--color-muted) !important;
+    padding: 0.625rem;
+    border-radius: 8px;
+}
+
+.modalBody .form-control::placeholder,
+.modalBody .form-select::placeholder,
+.modalBody textarea::placeholder {
+    color: var(--color-muted-lighter) !important; 
+    opacity: 0.8; 
+}
+/* Responsive */
+@media (max-width: 768px) {
+    .modalContent {
+        width: 95%;
+        margin: 1rem;
+    }
+    .categoriasNav {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}

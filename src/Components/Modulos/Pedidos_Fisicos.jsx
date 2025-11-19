@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import "./tarjetasPedidos.css";
-
 export default function Pedidos_Fisicos() {
   const [pedidos, setPedidos] = useState([]);
   const rol = localStorage.getItem("userRole");
@@ -57,12 +56,10 @@ useEffect(() => {
       alert("Selecciona una mesa");
       return;
     }
-
     if (nuevoPedido.items.length === 0) {
       alert("Agrega al menos un platillo");
       return;
     }
-
     // Transformar datos solo al enviar
     const pedidoParaEnviar = {
       mesa_id: nuevoPedido.mesa_id,
@@ -76,7 +73,6 @@ useEffect(() => {
         precio_unitario: item.precio_unitario,
       })),
     };
-
     try {
       const response = await fetch(
         "http://127.0.0.1:8000/pedidosF/agregarPedido",
@@ -86,7 +82,6 @@ useEffect(() => {
           body: JSON.stringify(pedidoParaEnviar),
         }
       );
-
       if (response.ok) {
         alert("Pedido creado exitosamente");
         // Resetear formulario
@@ -114,27 +109,22 @@ useEffect(() => {
       alert("Selecciona un platillo y una cantidad válida");
       return;
     }
-
     const platilloSeleccionado = platillos.find(
       (p) => p.id === parseInt(itemTemp.platillo_id)
     );
-
     if (!platilloSeleccionado) {
       alert("Platillo no encontrado");
       return;
     }
-
     const yaExiste = nuevoPedido.items.find(
       (item) => item.platillo_id === parseInt(itemTemp.platillo_id)
     );
-
     if (yaExiste) {
       alert(
         "Este platillo ya fue agregado. Edita la cantidad si es necesario"
       );
       return;
     }
-
     const nuevoItem = {
       pedido_id: platilloSeleccionado.id,
       producto_id: parseInt(itemTemp.platillo_id),
@@ -142,15 +132,12 @@ useEffect(() => {
       cantidad: parseInt(itemTemp.cantidad),
       precio_unitario: platilloSeleccionado.precio,
     };
-
     setNuevoPedido({
       ...nuevoPedido,
       items: [...nuevoPedido.items, nuevoItem],
     });
-
     setItemTemp({ platillo_id: "", cantidad: 1 });
   };
-
   const actualizarCantidad = (index, nuevaCantidad) => {
     if (nuevaCantidad <= 0) return;
     const nuevosItems = [...nuevoPedido.items];
@@ -184,7 +171,6 @@ useEffect(() => {
   };
   const agregarPlatilloEditar = () => {
   if (!itemTempEditar.platillo_id) return;
-  
   const platillo = platillos.find(p => p.id === parseInt(itemTempEditar.platillo_id));
   const nuevoItem = {
     producto_id: platillo.id,
@@ -211,21 +197,20 @@ const eliminarPlatilloEditar = (index) => {
 };
 const cargarPedidos = async () => {
   // ...
-  const data = await response.json();
-  console.log("Pedido completo del backend:", data); // 🔍 Esto
+  const response= await fetch("http://localhost:8000/pedidosF/pedidosM").then(res => res.json());
+  const data = await response;
+  console.log("Pedido completo del backend:",data); 
 };
 const guardarCambiosPedido = async () => {
   if (itemsEditados.length === 0) {
     alert("El pedido debe tener al menos un platillo");
     return;
   }
-  
   try {
     // Agrupar items del mismo producto
     const itemsAgrupados = itemsEditados.reduce((acc, item) => {
       const productoId = parseInt(item.producto_id || item.platillo_id);
       const itemExistente = acc.find(i => i.producto_id === productoId);
-      
       if (itemExistente) {
         // Si ya existe, sumar la cantidad
         itemExistente.cantidad += parseInt(item.cantidad);
@@ -238,17 +223,13 @@ const guardarCambiosPedido = async () => {
           notas: item.notas || ""
         });
       }
-      
       return acc;
     }, []);
-
     const pedidoActualizado = {
       items: itemsAgrupados,
       monto_total: parseFloat(calcularTotalEditar()),
     };
-
     console.log("Datos a enviar:", pedidoActualizado);
-
     const response = await fetch(
       `http://127.0.0.1:8000/pedidosF/editar/${pedidoAEditar.id}`,
       {
@@ -257,7 +238,6 @@ const guardarCambiosPedido = async () => {
         body: JSON.stringify(pedidoActualizado),
       }
     );
-
     if (response.ok) {
       alert("Pedido actualizado correctamente");
       setShowModalE(false);
@@ -322,7 +302,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
       alert("Este pedido ya está servido y/o entregado");
       return;
     }
-
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/pedidosF/${id}/estado`,
@@ -342,7 +321,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
           pedido.id === id ? { ...pedido, estado: data.estado_nuevo } : pedido
         )
       );
-
       alert(`✅ ${data.mensaje}\nNuevo estado: ${data.estado_nuevo}`);
     } catch (error) {
       console.error("Error al cambiar estado:", error);
@@ -365,7 +343,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
           </button>
         )}
       </div>
-
       <div className="pedidos-grid-columnas">
         {/* Columna: Pendiente */}
         <div className="columna">
@@ -392,14 +369,12 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                     </li>
                   ))}
                 </ul>
-
                 <div className="pedido-footer">
                   <small>
                     Estado: <strong>{p.estado}</strong> — {p.hora}
                   </small>
                   <strong>S/ {p.monto_total}</strong>
                 </div>
-
                 {p.estado === "listo" && rol == 1 && (
                   <button
                     className={"btn-estado m-2"}
@@ -428,7 +403,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
               </div>
             ))}
         </div>
-
         {/* Columna: En preparación */}
         <div className="columna">
           <h3 className="columna-titulo">👨‍🍳 En Preparación</h3>
@@ -455,7 +429,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                     </li>
                   ))}
                 </ul>
-
                 <div className="pedido-footer">
                   <small>
                     Estado: <strong>{p.estado}</strong> — {p.hora}
@@ -465,7 +438,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
               </div>
             ))}
         </div>
-
         {/* Columna: Listo */}
         <div className="columna">
           <h3 className="columna-titulo">✅ Listo</h3>
@@ -492,7 +464,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                     </li>
                   ))}
                 </ul>
-
                 <div className="pedido-footer">
                   <small>
                     Estado: <strong>{p.estado}</strong> — {p.hora}
@@ -508,7 +479,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
               </div>
             ))}
         </div>
-
         {/* Columna: Servido y Entregado */}
         <div className="columna">
           <h3 className="columna-titulo">🍽️ Servido o Entregado</h3>
@@ -543,7 +513,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                     </li>
                   ))}
                 </ul>
-
                 <div className="pedido-footer">
                   <small>
                     Estado: <strong>{p.estado}</strong> — {p.hora}
@@ -554,7 +523,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
             ))}
         </div>
       </div>
-
       {/* MODAL CREAR PEDIDO */}
       {showModal && (
         <div className="modal-overlay">
@@ -629,7 +597,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                   </button>
                 </div>
               </div>
-
               {/* Lista de Platillos Agregados */}
               {nuevoPedido.items.length > 0 ? (
                 <>
@@ -709,7 +676,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
           </div>
         </div>
       )}
-
       {/* MODAL Cancelar */}
       {showModalB && (
         <>
@@ -749,7 +715,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
           ></div>
         </>
       )}
-
       {/* MODAL EDITAR */}
       {showModalE && pedidoAEditar && (
         <>
@@ -805,7 +770,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                       </button>
                     </div>
                   </div>
-
                   {/* Lista de items editados */}
                   {itemsEditados.length > 0 ? (
                     <div className="card">
@@ -870,7 +834,6 @@ const obtenerTextoBoton = (estadoP, tipoServicio) => {
                     </div>
                   )}
                 </div>
-
                 <div className="modal-footer">
                   <button
                     className="btn btn-secondary"

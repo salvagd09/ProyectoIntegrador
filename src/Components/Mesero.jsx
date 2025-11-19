@@ -20,15 +20,12 @@ const ROL_MAP = {
     2: "Cocinero",
     3: "Cajero",
 };
-
 function Mesero() {
   const ubicacion = useLocation();
   const navigate = useNavigate();
-
   // Constante para abrir/cerrar sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
   const [userData, setUserData] = useState({
         id: null,
         nombre: "",
@@ -40,22 +37,17 @@ function Mesero() {
     });
   // Constante para fecha actual
   const [currentDate, setCurrentDate] = useState("");
-
   useEffect(() => {
       // Cargar fecha actual
       const date = new Date();
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       setCurrentDate(date.toLocaleDateString('es-ES', options));
-
       loadUserData();
   }, []); 
-
   const loadUserData = () => {        
     const savedUserData = localStorage.getItem('userData');
-
     if (savedUserData) {
       const userDataFromStorage = JSON.parse(savedUserData);
-    
       setUserData({
         id: userDataFromStorage.id,
         nombre: userDataFromStorage.nombre,
@@ -69,7 +61,6 @@ function Mesero() {
       navigate("/Login");
     }  
   };
-
   // Estilos
   const sidebarStyle = {
     backgroundColor: 'var(--color-header)',
@@ -77,24 +68,19 @@ function Mesero() {
     borderColor: 'var(--color-accent)',
     borderRight: '1px solid var(--color-muted)',
   };
-
   const headerStyle = {
     backgroundColor: 'var(--color-header)',
     color: 'var(--color-text)',
   };
-
   const logoTitleStyle = {
     color: 'var(--color-title)',
     fontFamily: 'var(--font-title)',
     fontSize: '1.8rem'
   };
-
   const linkStyle = {
       color: 'var(--color-text)',
   };
-
   const getRoleName = (id) => ROL_MAP[id] || "Desconocido";
-
   const retroceder = () => {
         localStorage.removeItem('userData');
         localStorage.removeItem('userRole');
@@ -113,9 +99,7 @@ function Mesero() {
       left: sidebarWidth,
       width: `calc(100% - ${sidebarWidth})`,
   };
-
   const headerWidth = `calc(100% - ${sidebarWidth})`;
-
   return (
       <div className={styles.layout}>
         {/* Sidebar*/}
@@ -124,7 +108,6 @@ function Mesero() {
             className={`d-flex flex-column p-3`}  
             style={{ ...sidebarStyle, width: sidebarWidth }}
             data-open={isSidebarOpen}>
-          
           <div className="d-flex align-items-center justify-content-center pt-4 pb-4 border-bottom" style={{borderColor: 'var(--color-muted)'}}>
               <a href="#" className="d-flex align-items-center text-decoration-none" style={{color: 'var(--color-title)'}}>
                   <img
@@ -134,8 +117,7 @@ function Mesero() {
                   />
                   {isSidebarOpen && <h3 className="m-0" style={logoTitleStyle}>GestaFood</h3>}
               </a>
-          </div>
-          
+          </div> 
           <div className={styles.modulesContainer}>
               <ul className={`nav nav-pills flex-column mb-auto align-content-center`}>
                 <li className="nav-item w-100">
@@ -195,7 +177,6 @@ function Mesero() {
             </div>
           </div>
         </aside>
-
         {/*Columna derecha */}
         <div className={styles.main} style={{ width: headerWidth}}>
           <header className={styles.appHeader} style={headerStyleCalculated}>
@@ -227,7 +208,6 @@ function Mesero() {
                         </button>
                     </div>
                 <div className="vr mx-auto" style={{borderColor: 'var(--color-muted)'}}></div>
-
                 {/* Avatar */}
                 <div className="action">
                     <img
@@ -239,7 +219,6 @@ function Mesero() {
                 </div>
             </div>
           </header>
-
            {/* Contenido principal de las rutas */}
             <main className={styles.appContent}>
                 <div className="p-4 flex-grow-1">

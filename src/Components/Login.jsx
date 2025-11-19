@@ -1,7 +1,7 @@
 import { useState } from "react";
 import comida from "../assets/comida.png";
 import { useNavigate, Link } from "react-router-dom";
-import { Button, Form, Card, Modal, Dropdown, DropdownButton, Row, Col } from 'react-bootstrap';
+import { Button, Form, Card, Modal } from 'react-bootstrap';
 
 function App() {
   const [nombreUsuario, setNombreUsuario] = useState("");
@@ -36,7 +36,6 @@ function App() {
         color: 'var(--color-text)',
         borderColor: 'var(--color-accent)',
     };
-
   const getLogoFilterStyle = () => {
       const rootClass = document.documentElement.className;
       if (rootClass.includes('theme-dark') || rootClass.includes('theme-deep-ocean')) {
@@ -44,7 +43,6 @@ function App() {
       }
       return 'none';
   };
-
   const handleLoginPassword = async (e) => {
     e.preventDefault();
     try {
@@ -60,7 +58,6 @@ function App() {
       if (!res.ok) {
         throw new Error("Credenciales inválidas");
       }
-
       const data = await res.json();
       console.log(data);
       // Guardar los datos
@@ -70,12 +67,10 @@ function App() {
 
       if (data.rol_id === 4) navigate("/admin");
       else if (data.rol_id === 3) navigate("/caja");
-
     } catch (err) {
       alert(err.message);
     }
   };
-
   const handleLoginPin = async (e) => {
     e.preventDefault();
     try {
@@ -105,7 +100,6 @@ function App() {
   const toggleMostrarContrasena = () => {
     setMostrarContrasena(!mostrarContrasena);
   };
-
   return (
     <>
       <div className="min-vh-100 d-flex flex-column align-items-center py-5" style={{ backgroundColor: 'var(--color-bg)' }}>
@@ -127,7 +121,7 @@ function App() {
               style={cardStyle}
           >
           <Card.Body>
-              <h2 className="mb-4 display-6 text-center" style={titleStyle}>
+              <h2 className="mb-4 display-6 text-center fw-bold" style={titleStyle}>
                   Iniciar Sesión (Admin/Caja)
               </h2>
               <Form onSubmit={handleLoginPassword}>
@@ -143,8 +137,7 @@ function App() {
                           style={inputStyle}
                           required
                       />
-                  </Form.Group>
-                            
+                  </Form.Group>      
                   {/* Contraseña */}
                   <Form.Group className="mb-4">
                       <Form.Label htmlFor="contrasena" style={{ color: 'var(--color-text)' }}>Contraseña:</Form.Label>
@@ -175,21 +168,18 @@ function App() {
             </Form>
         </Card.Body>
     </Card>
-
     <Card 
         className="p-3 shadow mx-auto mt-4 w-75 w-md-50" 
         style={cardStyle}
     >
-        <Card.Body className="d-flex flex-column flex-md-row justify-content-center gap-3">
-                        
+        <Card.Body className="d-flex flex-column flex-md-row justify-content-center gap-3">                 
             <Button
                 onClick={() => setShowMeseroModal(true)}
                 className="fs-5"
                 style={{btnOutlineStyle, backgroundColor: 'var(--color-btn)'}}
             >            
                   <i className="fa-solid fa-bell-concierge me-2"></i> Soy Mesero
-            </Button>
-                        
+            </Button>   
             <Link 
                 to="/cocina" 
                 className="btn fs-5"

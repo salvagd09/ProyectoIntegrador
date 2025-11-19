@@ -1,15 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, selectinload, joinedload
-from sqlalchemy import func
+from sqlalchemy import func,exists
 from typing import List, Optional
 from decimal import Decimal
-
 from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria, serializar_db_object
-
-
-
 router = APIRouter(
     prefix="/inventario_L",
     tags=["Inventario_L"]
@@ -65,11 +61,9 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         selectinload(models.Lotes_Inventarios.ingrediente),
         selectinload(models.Lotes_Inventarios.proveedoresLI)
     ).first()
-    
     # Pre-cargar datos para la auditoría
     ingrediente_nombre = lote_cargado.ingrediente.nombre if lote_cargado.ingrediente else "N/A"
     ingrediente_unidad = lote_cargado.ingrediente.unidad_de_medida if lote_cargado.ingrediente else "unidad"
-    
     valores_nuevos = serializar_db_object(lote_cargado)
     registrar_auditoria(
         db, 
@@ -80,7 +74,6 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         valores_nuevos=valores_nuevos,
         empleado_id=empleado_id_final,
     )
-
     # ✅ Construir respuesta manualmente con todos los campos
     response = schemas.LoteResponse(
         id=lote_cargado.id,
@@ -95,40 +88,7 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         nombre_proveedor=lote_cargado.proveedoresLI.nombre if lote_cargado.proveedoresLI else None,
         empleado_id=empleado_id_final  # ✅ Agregar manualmente
     )
-
     return response
-
-# Listar stock total agregado por ingrediente
-@router.get("/stock/total", response_model=List[schemas.StockTotalResponse])
-def listar_stock_agregado(db: Session = Depends(get_db)):
-    """
-    Calcula y lista el stock total (sumado por todos los lotes activos) de cada ingrediente
-    """
-    # Consulta agregada para sumar el stock_actual por ingrediente
-    stock_agregado = db.query(
-        models.Ingrediente.id.label("ingrediente_id"),
-        models.Ingrediente.nombre.label("nombre_ingrediente"),
-        models.Ingrediente.unidad_de_medida.label("unidad_medida"),
-        func.sum(models.Lotes_Inventarios.stock_actual).label("stock_total")
-    ).join(models.Lotes_Inventarios, models.Lotes_Inventarios.ingrediente_id == models.Ingrediente.id).group_by(
-        models.Ingrediente.id,
-        models.Ingrediente.nombre,
-        models.Ingrediente.unidad_de_medida
-    ).filter(
-        models.Lotes_Inventarios.stock_actual > Decimal('0')
-    ).all()
-
-    # Verificar si hay stock disponible
-    if not stock_agregado:
-        raise HTTPException(status_code=404, detail="No se encontró stock activo en ningún lote.")
-    
-    # Preparar la respuesta
-    return [schemas.StockTotalResponse(
-        ingrediente_id=row.ingrediente_id,
-        nombre_ingrediente=row.nombre_ingrediente,
-        unidad_medida=row.unidad_medida,
-        stock_total=row.stock_total 
-    ) for row in stock_agregado]
 #Para que el botón tenga solo productos que han sufrido de movimientos
 @router.get("/ingredientes-con-lotes", response_model=List[schemas.IngredienteSimple])
 def listar_ingredientes_con_lotes(db: Session = Depends(get_db)):
@@ -137,7 +97,11 @@ def listar_ingredientes_con_lotes(db: Session = Depends(get_db)):
     Útil para poblar el dropdown de filtros.
     """
     # Subconsulta para obtener IDs de ingredientes con lotes activos
-    ingredientes_con_lotes = db.query(models.Ingrediente).join(
+    resultado = db.query(
+        models.Ingrediente.id,
+        models.Ingrediente.nombre,
+        models.Ingrediente.unidad_de_medida
+    ).join(
         models.Lotes_Inventarios,
         models.Lotes_Inventarios.ingrediente_id == models.Ingrediente.id
     ).filter(
@@ -145,21 +109,19 @@ def listar_ingredientes_con_lotes(db: Session = Depends(get_db)):
     ).distinct().order_by(
         models.Ingrediente.nombre.asc()
     ).all()
-    
-    if not ingredientes_con_lotes:
+    if not resultado:
         raise HTTPException(
             status_code=404, 
             detail="No hay ingredientes con lotes activos"
         )
-    
-    # Retornar lista simple de ingredientes
+    # ✅ Construir la respuesta accediendo por índice (tuplas)
     return [
-        {
-            "id": ing.id,
-            "nombre": ing.nombre,
-            "unidad_medida": ing.unidad_de_medida
-        }
-        for ing in ingredientes_con_lotes
+        schemas.IngredienteSimple(
+            id=row[0],
+            nombre=row[1],
+            unidad_medida=row[2]
+        )
+        for row in resultado
     ]
 # Listar lotes activos por ingrediente
 @router.get("/lotes/ingrediente/{ingrediente_id}", response_model=List[schemas.LoteResponse])
@@ -291,7 +253,6 @@ def registrar_salida_stock(
         respuestas.append(response)
 
     return respuestas
-
 # Listar historial de movimientos de inventario
 @router.get("/movimientos/historial", response_model=List[schemas.MovimientoInventarioResponse])
 def listar_historial_movimientos(

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import comida from "../assets/comida.png";
-
 import {
   Routes,
   Route,
@@ -8,29 +7,22 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-
 import usuario from "../assets/cocinero.png";
-
 import Pedidos_Cocinero from "./Modulos/Pedidos_Cocinero";
 import Insumos from "./Modulos/Insumos";
-
 import styles from './Admin.module.css';
-
 const ROL_MAP = {
     4: "Administrador",
     1: "Mesero",
     2: "Cocinero",
     3: "Cajero",
 };
-
 function Cocinero() {
   const navigate = useNavigate();
     const ubicacion = useLocation();
-
     // Constante para abrir/cerrar sidebar
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
     const [userData, setUserData] = useState({
         id: null,
         nombre: "",
@@ -40,19 +32,15 @@ function Cocinero() {
         email: "",
         activo: true,
     });
-
     // Constante para fecha
     const [currentDate, setCurrentDate] = useState("");
-
     useEffect(() => {
         // Cargar fecha actual
         const date = new Date();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         setCurrentDate(date.toLocaleDateString('es-ES', options));
-
         loadUserData();
     }, []); 
-
     const loadUserData = () => {
         const savedUserData = localStorage.getItem('userData');
         if (savedUserData) {
@@ -85,24 +73,19 @@ function Cocinero() {
         borderColor: 'var(--color-accent)',
         borderRight: '1px solid var(--color-muted)',
     };
-
     const headerStyle = {
         backgroundColor: 'var(--color-header)',
         color: 'var(--color-text)',
     };
-
     const logoTitleStyle = {
         color: 'var(--color-title)',
         fontFamily: 'var(--font-title)',
         fontSize: '1.8rem'
     };
-
     const linkStyle = {
         color: 'var(--color-text)',
     };
-
     const getRoleName = (id) => ROL_MAP[id] || "Desconocido";
-
     const retroceder = () => {
         const savedUserData = localStorage.getItem('userData');
         // Solo limpiar si hay una sesión activa
@@ -113,21 +96,16 @@ function Cocinero() {
         }
         navigate("/Login");
     }
-
     const estaActivo = (ruta) => {
         return ubicacion.pathname === ruta ? styles.activeLink : styles.navLinkBase;
     };
-
     const sidebarWidth = isSidebarOpen ? '325px' : '90px';
-
     const headerStyleCalculated = {
         ...headerStyle,
         left: sidebarWidth,
         width: `calc(100% - ${sidebarWidth})`,
     };
-
     const headerWidth = `calc(100% - ${sidebarWidth})`;
-
     return (
         <div className={styles.layout}>
             {/* Sidebar */}
@@ -136,8 +114,7 @@ function Cocinero() {
                 className={`d-flex flex-column p-3`} 
                 style={{ ...sidebarStyle, width: sidebarWidth }}
                 data-open={isSidebarOpen}
-            >
-                
+            >       
             {/* Logo y título de la página */}
             <div className="d-flex align-items-center justify-content-center pt-4 pb-4 border-bottom" style={{borderColor: 'var(--color-muted)'}}>
                 <a href="#" className="d-flex align-items-center text-decoration-none" style={{color: 'var(--color-title)'}}>
@@ -149,7 +126,6 @@ function Cocinero() {
                 {isSidebarOpen && <h3 className="m-0" style={logoTitleStyle}>GestaFood</h3>}
                 </a>
             </div>
-
             {/* Módulos de la página */}
             <div className={styles.modulesContainer}>
                 <ul className={`nav nav-pills flex-column mb-auto align-content-center`}>
@@ -163,10 +139,8 @@ function Cocinero() {
                             <i className="bi bi-box-seam me-2"></i>{isSidebarOpen && "Insumos"}
                         </Link>
                     </li>
-                    
                 </ul>
             </div>
-
             {/* Perfil de usuario */}
             <div className={`${styles.profileContainer}`} style={{borderColor: 'var(--color-muted)'}}>
                 <div className={`d-flex flex-column align-items-center ${isSidebarOpen ? '' : 'justify-content-center'}`}>
@@ -207,7 +181,6 @@ function Cocinero() {
                 </div>
             </div>
         </aside>
-
           {/* Parte principal */}
             <div className={styles.main} style={{ width: headerWidth}}>
             {/* Header */}
@@ -227,7 +200,6 @@ function Cocinero() {
                         {currentDate}
                     </div>
                 </div>
-
                 {/* Bloque de acciones */}
                 <div className="header-inner d-flex align-items-center gap-2 ms-auto">
                     {/* Notificaciones */}
@@ -242,7 +214,6 @@ function Cocinero() {
                         </button>
                     </div>
                 <div className="vr mx-auto" style={{borderColor: 'var(--color-muted)'}}></div>
-
                 {/* Avatar */}
                 <div className="action">
                     <img
@@ -253,8 +224,7 @@ function Cocinero() {
                     />
                 </div>
             </div>
-          </header>
-                
+          </header> 
           {/* Contenido principal de las rutas */}
             <main className={styles.appContent}>
                 <div className="p-4 flex-grow-1">

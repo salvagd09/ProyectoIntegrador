@@ -18,6 +18,7 @@ import Pedidos_Aplicativo from "./Modulos/Pedidos_Aplicativo";
 import Pedidos_Fisicos from "./Modulos/Pedidos_Fisicos";
 import Usuario from "./Modulos/Usuario";
 import Mesas from "./Modulos/Mesas";
+import Recetas from "./Modulos/Recetas";
 import comida from "../assets/comida.png";
 
 // Importar módulo de estilo
@@ -154,6 +155,11 @@ function Admin() {
                         </Link>
                     </li>
                     <li>
+                        <Link to="/admin/Recetas" className={`nav-link ${estaActivo("/admin/Recetas")}`} style={linkStyle}>
+                            <i className="fa-solid fa-bowl-food me-2"></i>{isSidebarOpen && "Recetas"}
+                        </Link>
+                    </li>
+                    <li>
                         <Link to="/admin/Insumos" className={`nav-link ${estaActivo("/admin/Insumos")}`} style={linkStyle}>
                             <i className="bi bi-box-seam me-2"></i>{isSidebarOpen && "Insumos"}
                         </Link>
@@ -272,6 +278,7 @@ function Admin() {
                         <Route path="Configuracion" element={<Configuracion />} />
                         <Route path="Metricas" element={<Metricas />} />
                         <Route path="Menu" element={<Menu />} />
+                        <Route path="Recetas" element={<Recetas />} />
                         <Route path="Mesas" element={<Mesas />} />
                         <Route path="Pedidos_Fisicos" element={<Pedidos_Fisicos />} />
                         <Route path="Pedidos_Aplicativo" element={<Pedidos_Aplicativo />} />

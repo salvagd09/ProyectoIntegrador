@@ -29,7 +29,7 @@ def descontar_insumos_merma(merma_id: int,empleado_id: Optional[int], db: Sessio
     insumos_necesarios = {}
     for receta in recetas:
         cantidad = receta.cantidad_requerida * merma.cantidad
-        if receta.ingredientes_id in insumos_necesarios:
+        if receta.ingrediente_id in insumos_necesarios:
             insumos_necesarios[receta.ingrediente_id] += cantidad
         else:
             insumos_necesarios[receta.ingrediente_id] = cantidad
@@ -53,7 +53,7 @@ def descontar_insumos_merma(merma_id: int,empleado_id: Optional[int], db: Sessio
                 detail=f"Stock insuficiente de {insumo.nombre}. "
                        f"Disponible: {insumo.cantidad_actual}, Necesario: {cantidad}"
             )
-        insumo.cantidad_actual -= cantidad
+        insumo.cantidad_actual -= float(cantidad)
         try:
             movimientos = registrar_salida_stock(
                 ingrediente_id=insumo_id,

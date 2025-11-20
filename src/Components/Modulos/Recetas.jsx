@@ -19,12 +19,6 @@ const [terminoBusqueda, setTerminoBusqueda] = useState('');
 const [showModal, setShowModal] = useState(false);
 const [modalType, setModalType] = useState(''); // 'agregar' o 'editar'
 const [productoEditando, setProductoEditando] = useState(null);
-
- // Estados para mensajes
-const [showConfirmModal, setShowConfirmModal] = useState(false);
-const [confirmAction, setConfirmAction] = useState(null);
-const [confirmMessage, setConfirmMessage] = useState("");
-
 // Estados para mensajes de éxito
 const [showSuccessModal, setShowSuccessModal] = useState(false);
 const [successMessage, setSuccessMessage] = useState("");

@@ -307,6 +307,7 @@ class LoteBase(BaseModel):
     cantidad: Decimal = Field(..., gt=0, description="Cantidad total ingresada en este lote")
     fecha_vencimiento: Optional[date] = None
     numero_lote: Optional[str] = Field(None, max_length=100)
+    empleado_id: Optional[int] = None  
 # Esquema para crear un nuevo lote
 class LoteCreate(LoteBase):
     pass
@@ -377,7 +378,9 @@ class AInsumo(BaseModel):
     perecible:Optional[bool]=False
 
 class IngredienteSimple(BaseModel):
-    nombre: str  
+    id:int
+    nombre: str
+    unidad_de_medida:str  
     class Config:
         from_attributes = True
 

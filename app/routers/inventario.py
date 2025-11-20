@@ -321,3 +321,7 @@ def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/proveedores", response_model=List[schemas.ProveedorSimple])
+def listar_proveedores(db: Session = Depends(get_db)):
+    proveedores = db.query(models.Proveedores).order_by(models.Proveedores.nombre).all()
+    return proveedores

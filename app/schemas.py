@@ -564,3 +564,8 @@ class CrearQrResponse(BaseModel):
     mensaje: str
     order_id: Optional[str] = None  # ← NUEVO
     payment_code: Optional[str] = None  # ← NUEVO
+class ProveedorSimple(BaseModel):
+    id: int
+    nombre: str
+    class Config:
+        from_attributes = True

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import styles from './PedidosAplicativo.module.css';
+import { PedidosPorConfirmar } from './Pedidos_por_confirmar.jsx';
 const formatText = (text) => {
     if (!text) return '';
     return text.replace(/_/g, ' ')
@@ -311,6 +312,7 @@ function Pedidos_Aplicativo() {
             </Col>
         </Row>
         {/* Lista de Pedidos Dividida por Tipo */}
+         <PedidosPorConfirmar />
         <Row className="g-4">
             {/* Columna de Delivery */}
             <Col md={6}>

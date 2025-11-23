@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: ./app          # ← Carpeta en TU PC
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_URL=postgresql://postgres:CKHelhFLVFGKNAaGoKHazUnmiZaWEVgZ@mainline.proxy.rlwy.net:34440/railway?sslmode=require
+  frontend:
+    build:
+      context: .              # ← Raíz de TU proyecto
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

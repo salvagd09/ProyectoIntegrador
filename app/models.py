@@ -20,6 +20,7 @@ class TipoPedidoEnum(str, Enum):
     recojo_local = "recojo_local"
 
 class EstadoPedidoEnum(str, Enum):
+    por_confirmar = "por_confirmar"
     pendiente = "pendiente"
     en_preparacion = "en_preparacion"
     listo = "listo"

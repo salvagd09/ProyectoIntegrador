@@ -31,6 +31,7 @@ function Insumos() {
   const [registroMerma,setRegistroMerma]=useState([]);
   const [showModalMovimientos,setShowModalMovimientos]=useState(false);
   const [empleadoId,setEmpleadoId]=useState(null);
+  const [insumoSeleccionadoParaLotes,setInsumoSeleccionadoParaLotes]=useState(null);
   const [showModalLotesNV,setShowModalLotesNV]=useState(false);
   // Cargar datos de la base de datos
   const cargarInsumos = async () => {
@@ -99,10 +100,10 @@ function Insumos() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ingrediente_id: insumoActualizado.id,
-            proveedor_id: null,
+            proveedor_id: insumoActualizado.proveedor_id || null,           // ✅
             cantidad: insumoActualizado.diferencia,
-            numero_lote: null,
-            fecha_vencimiento: null,
+            numero_lote: insumoActualizado.numero_lote || null,             // ✅
+            fecha_vencimiento: insumoActualizado.fecha_vencimiento || null, 
             empleado_id: empleadoId 
           }),
         });
@@ -254,7 +255,6 @@ function Insumos() {
                   ➕ Agregar Insumo
                 </Button>
                 <Button variant="secondary" onClick={()=>{setShowModalMovimientos(true)}} className="m-2">Ver movimientos</Button>
-                <Button variant="success" onClick={()=>{setShowModalLotesNV(true)}} className="m-2">Ver lotes no vencidos</Button>
                 </> 
               )}
               {rol === "cocina" && (
@@ -312,6 +312,12 @@ function Insumos() {
                           <Button variant="outline-primary w-100" size="sm" onClick={() => { setInsumoEditando(insumo); setShowModal(true); }}>
                             ✏️ Editar
                           </Button>
+                         <Button variant="success" onClick={() => {
+                              setInsumoSeleccionadoParaLotes(insumo.id);
+                              setShowModalLotesNV(true);
+                            }} className="m-2">
+                              Ver lotes no vencidos
+                            </Button>
                         </div>
                       </td>
                     )}
@@ -356,12 +362,12 @@ function Insumos() {
                <HistorialMovimientos />
           </Modal.Body>
       </Modal>
-      <Modal show={showModalLotesNV} onHide={()=>{setShowModalLotesNV(false)}} centered dialogClassName="modal-ancho">
+      <Modal show={showModalLotesNV}  onHide={()=>{  setShowModalLotesNV(false);setInsumoSeleccionadoParaLotes(null);}} centered dialogClassName="modal-ancho">
         <Modal.Header closeButton>
           <Modal.Title>Lotes aún no vencidos</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <MostrarLotesNoVencidos/>
+          <MostrarLotesNoVencidos ingredienteId={insumoSeleccionadoParaLotes}/>
         </Modal.Body>
       </Modal>
     </Container>
@@ -454,7 +460,7 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
       diferencia:diferencia,
       empleado_id: empleadoId || null,
        ...(diferencia > 0 && {
-      proveedor_id: formData.proveedor_id || null,
+      proveedor_id: formData.proveedor_id?parseInt(formData.proveedor_id) : null,
       fecha_vencimiento: formData.fecha_vencimiento || null,
       numero_lote: formData.numero_lote || null
     })
@@ -739,20 +745,62 @@ function HistorialMovimientos() {
     </>
   );
 }
-function MostrarLotesNoVencidos(){
-    return(<>
+function MostrarLotesNoVencidos({ ingredienteId }) {
+  const [lotes, setLotes] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchLotes = async () => {
+    if (!ingredienteId) return; 
+    
+    setLoading(true);
+    try {
+      const respuesta = await fetch(
+        `${API_BASE_URL}/inventario_L/lotes/ingrediente/${ingredienteId}`
+      );
+      if (respuesta.status === 404) {
+        setLotes([]);
+        return;
+      }
+      if (!respuesta.ok) throw new Error("Error al cargar lotes");
+      const datos = await respuesta.json();
+      setLotes(datos);
+    } catch (err) {
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (ingredienteId) {  
+      fetchLotes();
+    }
+  }, [ingredienteId]);
+  if (lotes.length === 0 && !loading) {
+    return <Alert>El ingrediente no presenta ningún lote activo</Alert>;
+  }
+
+  return (
     <Table striped bordered hover className="w-100">
-        <thead>
-          <tr>
-            <th>Id del Lote</th>
-            <th>Empleado</th>
-            <th>Tipo</th>
-            <th>Ingrediente</th>
-            <th>Cantidad</th>
-            <th>Fecha</th>
+      <thead>
+        <tr>
+          <th>Id del Lote</th>
+          <th>Nombre del proveedor</th>
+          <th>Cantidad de lote</th>
+          <th>Fecha de Vencimiento</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lotes.map((lote) => (
+          <tr key={lote.id}>
+            <td>{lote.id}</td>
+            <td>{lote.nombre_proveedor ?? "Sin proveedor"}</td>
+            <td>{lote.stock_actual}</td>
+            <td>{lote.fecha_vencimiento ?? "Sin fecha"}</td>
           </tr>
-        </thead>
-      </Table>
-      </>)
+        ))}
+      </tbody>
+    </Table>
+  );
 }
 export default Insumos;

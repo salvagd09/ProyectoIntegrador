@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 from sqlalchemy import func,exists
 from typing import List, Optional
 from decimal import Decimal
+from datetime import date
 from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria, serializar_db_object
@@ -62,8 +63,8 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         selectinload(models.Lotes_Inventarios.proveedoresLI)
     ).first()
     # Pre-cargar datos para la auditoría
-    ingrediente_nombre = lote_cargado.ingredientesLI.nombre if lote_cargado.ingredientesLI.nombre else "N/A"
-    ingrediente_unidad = lote_cargado.ingredientesLI.unidad_de_medida if lote_cargado.ingredientesLI.unidad_de_medida else "unidad"
+    ingrediente_nombre = lote_cargado.ingredientesLI.nombre if lote_cargado.ingredientesLI else "N/A"
+    ingrediente_unidad = lote_cargado.ingredientesLI.unidad_de_medida if lote_cargado.ingredientesLI else "unidad"
     valores_nuevos = serializar_db_object(lote_cargado)
     registrar_auditoria(
         db, 
@@ -85,7 +86,8 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         fecha_ingreso=lote_cargado.fecha_ingreso,
         numero_lote=lote_cargado.numero_lote,
         nombre_ingrediente=ingrediente_nombre if ingrediente_nombre else "N/A",
-        nombre_proveedor=ingrediente_unidad if lote_cargado.proveedoresLI else None,
+        ingrediente_unidad=ingrediente_unidad if ingrediente_unidad else "unidad",
+        nombre_proveedor=lote_cargado.proveedoresLI.nombre if lote_cargado.proveedoresLI else None,
         empleado_id=empleado_id_final  # ✅ Agregar manualmente
     )
     return response
@@ -127,16 +129,21 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
     Lista todos los lotes activos para un ingrediente específico,
     ordenados por fecha de vencimiento
     """
+    hoy = date.today()
     # Consulta los lotes activos para el ingrediente dado
     lotes_db = db.query(models.Lotes_Inventarios).filter(
         models.Lotes_Inventarios.ingrediente_id == ingrediente_id,
-        models.Lotes_Inventarios.stock_actual > Decimal('0')
+        models.Lotes_Inventarios.stock_actual > Decimal('0'),
+        #Para que no se muestren los lotes vencidos
+        (models.Lotes_Inventarios.fecha_vencimiento >= hoy) | 
+        (models.Lotes_Inventarios.fecha_vencimiento.is_(None))
     ).order_by(
         models.Lotes_Inventarios.fecha_vencimiento.asc(),
         models.Lotes_Inventarios.fecha_ingreso.asc()
     ).options(
-        selectinload(models.Lotes_Inventarios.ingrediente),
-        selectinload(models.Lotes_Inventarios.proveedoresLI)
+        selectinload(models.Lotes_Inventarios.ingredientesLI),
+        selectinload(models.Lotes_Inventarios.proveedoresLI),
+        selectinload(models.Lotes_Inventarios.LIMI)
     ).all()
     
     # Verificar si se encontraron lotes
@@ -146,11 +153,20 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
     # Preparar la respuesta
     resultados = []
     for lote in lotes_db:
-        response = schemas.LoteResponse.model_validate(lote)
-        response.nombre_ingrediente = lote.ingrediente.nombre if lote.ingrediente else None
-        response.nombre_proveedor = lote.proveedoresLI.nombre if lote.proveedoresLI else None
+        response = schemas.LoteResponse(
+            id=lote.id,
+            ingrediente_id=lote.ingrediente_id,
+            proveedor_id=lote.proveedor_id,
+            cantidad=lote.cantidad,
+            stock_actual=lote.stock_actual,
+            fecha_vencimiento=lote.fecha_vencimiento,
+            fecha_ingreso=lote.fecha_ingreso,
+            numero_lote=lote.numero_lote,
+            empleado_id=None,  # No existe en el modelo Lotes_Inventarios
+            nombre_ingrediente=lote.ingredientesLI.nombre if lote.ingredientesLI else None,
+            nombre_proveedor=lote.proveedoresLI.nombre if lote.proveedoresLI else None
+        )
         resultados.append(response)
-        
     return resultados
 # Registrar una salida de stock
 @router.post("/salida/{ingrediente_id}", response_model=List[schemas.MovimientoInventarioResponse], status_code=status.HTTP_200_OK)
@@ -292,9 +308,7 @@ def listar_historial_movimientos(
             nombre_empleado = f"{empleado.nombre} {apellido}".strip()
         else:
             nombre_empleado = "Sistema"
-
         response.nombre_ingrediente = nombre_ingrediente
         response.nombre_empleado = nombre_empleado
-
         resultados.append(response)
     return resultados

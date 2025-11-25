@@ -2,34 +2,28 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Container, Button, Card, Row, Col, Form, InputGroup, Modal } from 'react-bootstrap';
 import styles from '../Modulos/Menu.module.css';
 import ImageUploader from '../Modulos/ImageUploader';
-
 const API_BASE_URL = "http://localhost:8000";
-
 function Menu() {
   // Constantes de categorías
   const [productos, setProductos] = useState([]); // Almacena todos los productos cargados de la API
   const [categorias, setCategorias] = useState([]); // Almacena la lista de categorías con ID
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   // Cargar productos desde la API
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(''); // Para agregar o editar
   const [platilloEditando, setPlatilloEditando] = useState(null);
   const [categoriaSeleccionadaId, setCategoriaSeleccionadaId] = useState(null); // Usaremos el ID
-
   // Constante para mensajes
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // Almacena la función a ejecutar
   const [confirmMessage, setConfirmMessage] = useState("");
-
   // Constantes para mensajes de éxito
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(true);
   // Constante para la referencia del nav de categorías
   const navRef = useRef(null);
-
   const [form, setForm] = useState({
     codigo_producto: "",
     nombre: "",
@@ -39,84 +33,70 @@ function Menu() {
     imagen_url: "",
     tiempo_preparacion: ""
   });
-
   const moduleBg = { 
     backgroundColor: 'var(--color-bg)', 
     color: 'var(--color-text)' 
-  };
-    
+  }; 
   const headerStyle = { 
     backgroundColor: 'var(--color-header)', 
     color: 'var(--color-title)', 
     border: `1px solid var(--color-header)` 
   };
-  
   const cardStyle = { 
     backgroundColor: 'var(--color-card)', 
     color: 'var(--color-text)', 
     border: `2px solid var(--color-accent)` 
   };
-  
   const inputStyle = { 
     backgroundColor: 'var(--color-bg)', 
     color: 'var(--color-text)', 
     borderColor: 'var(--color-muted)' 
   };
-  
   const btnPrimary = { 
     backgroundColor: 'var(--color-btn)', 
     borderColor: 'var(--color-btn)', 
     color: 'white', 
     fontWeight: 'bold' 
   };
-  
   const btnSecondary = { 
     backgroundColor: 'var(--color-muted)', 
     borderColor: 'var(--color-muted)', 
     color: 'white'
   };
-  
   const btnWarning = { 
     backgroundColor: 'var(--color-accent)', 
     borderColor: 'var(--color-accent)', 
     color: 'white', 
     fontWeight: 'bold' 
   };
-
   const btnAccent = { 
     backgroundColor: 'var(--color-accent)', 
     borderColor: 'var(--color-accent)', 
     color: 'white', 
     fontWeight: 'bold' 
-  };
-  
+  };  
   const priceColor = { 
     color: 'var(--color-accent)', 
     fontWeight: 'bold' 
   };
-
   // Cargar datos iniciales (categorías y productos)
   const fetchDatosIniciales = useCallback(async () => {
     setLoading(true);
     setError(null);
-
     try {
       // Cargar Categorías
       const catResponse = await fetch(`${API_BASE_URL}/categorias`);
-
       if (!catResponse.ok) throw new Error("Fallo al cargar categorías");
       const catData = await catResponse.json();
       setCategorias(catData);
-
       // Cargar todos los productos
       const prodResponse = await fetch(`${API_BASE_URL}/menu/`);
       if (!prodResponse.ok) throw new Error("Fallo al cargar productos");
       const prodData = await prodResponse.json();
       setProductos(prodData);
-
       // Inicializar la categoría seleccionada con el ID de la primera categoría
       if (catData.length > 0) {
-        const firstCatId = catData[0].id.toString();
+        {/*const firstCatId = catData[0].id.toString();*/}
         setCategoriaSeleccionadaId(catData[0].id);
         setForm(prev => ({ ...prev, categoria_id: catData[0].id }));
       }
@@ -127,7 +107,6 @@ function Menu() {
       setLoading(false);
     }
   }, []);
-
   // Manejar la disponibilidad (activar/desactivar)
   const toggleDisponibilidad = (platillo, estadoActual) => {
     const action = async () => {
@@ -135,14 +114,11 @@ function Menu() {
       const endpoint = estadoActual 
         ? `${API_BASE_URL}/menu/${platillo.id}` // DELETE para desactivar
         : `${API_BASE_URL}/menu/reactivar/${platillo.id}`; // PUT para reactivar
-
       // Determinar el método HTTP
       const method = estadoActual ? 'DELETE' : 'PUT';
-
       // Realizar la solicitud
       try {
         const response = await fetch(endpoint, { method });
-
         if (response.ok || response.status === 204) {
           setSuccessMessage(`Platillo ${estadoActual ? 'desactivado' : 'activado'} correctamente`);
           setIsSuccess(true);
@@ -171,18 +147,15 @@ function Menu() {
     setConfirmAction(() => action); // Almacena la función sin ejecutarla
     setShowConfirmModal(true);
   };
-
   // Guardar platillo (agregar o editar)
   const guardarPlatillo = async () => {
     const { precio, categoria_id, imagen_url, tiempo_preparacion, ...restForm } = form;
-    
     if (!restForm.nombre || !restForm.descripcion || !precio || !categoria_id) {
       setSuccessMessage("Completa todos los campos obligatorios");
       setIsSuccess(false);
       setShowSuccessModal(true);
       return;
     }
-
     const payload = {
       ...restForm,
       precio: parseFloat(precio),
@@ -191,19 +164,16 @@ function Menu() {
       tiempo_preparacion: tiempo_preparacion ? parseInt(tiempo_preparacion) : null,
       producto_activo: true // Por defecto
     };
-
     const method = modalType === 'agregar' ? 'POST' : 'PUT';
     const url = modalType === 'agregar' 
     ? `${API_BASE_URL}/menu/`    
     : `${API_BASE_URL}/menu/${platilloEditando.id}`;
-
     try {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Error desconocido' }));
         throw new Error(errorData.detail || "Error al guardar platillo. Verifique el código del producto");
@@ -220,7 +190,6 @@ function Menu() {
       setShowSuccessModal(true);
     }
   };
-  
   // Función para desplazar categorías
   const scrollCategorias = (direction) => {
     if (navRef.current) {
@@ -228,12 +197,10 @@ function Menu() {
       navRef.current.scrollLeft += direction === 'left' ? -scrollAmount : scrollAmount;
     }
   };
-
   // Efecto para cargar datos al montar el componente
   useEffect(() => {
     fetchDatosIniciales();
   }, [fetchDatosIniciales]);
-  
   // Handlers y métodos para el modal
   // Modal de Editar
   const abrirModalEditar = (platillo) => {
@@ -250,7 +217,6 @@ function Menu() {
     });
     setShowModal(true);  
   };
-
   // Modal de Agregar
   const abrirModalAgregar = () => {
     setModalType('agregar');
@@ -266,27 +232,23 @@ function Menu() {
     });
     setShowModal(true);
   };
-
   // Cerrar Modal
   const cerrarModal = () => {
     setShowModal(false);
     setPlatilloEditando(null);
   };
-
   // Handle form changes
   const handleChange = (e) => {
     const { id, value } = e.target;
     setForm({ ...form, [id]: value });
   };
-
   // Filtra productos por la categoría ID seleccionada
   const platillosFiltrados = productos.filter(p => p.categoria_id === categoriaSeleccionadaId);
-
   // Función helper para obtener el nombre de la categoría por ID
-  const getCategoriaNombre = (id) => {
+  {/*const getCategoriaNombre = (id) => {
     const cat = categorias.find(c => c.id === id);
     return cat ? cat.nombre : 'Sin Categoría';
-  }
+  }*/}
   // Función para cerrar el modal de éxito/falla
   const cerrarSuccessModal = () => {
     setShowSuccessModal(false);
@@ -297,7 +259,6 @@ function Menu() {
   // Muestra pantalla de carga o error
   if (loading) return <div className="text-center py-5">Cargando menú... </div>;
   if (error) return <div className="text-center py-5 text-danger">Error: {error}</div>;
-
   // Construcción del componente
   return (
     <Container fluid style={moduleBg} className="py-2"> 
@@ -319,7 +280,6 @@ function Menu() {
           </div>
           <p style={{color: 'var(--color-muted)'}} className="mb-1">Administra los platillos y bebidas del restaurante</p>
         </div>
-
         {/* Navegación de categorías */}
         <div className={styles.categoriasNavContainer}>
           <button className={styles.scrollBtn} onClick={() => scrollCategorias('left')}>
@@ -345,7 +305,6 @@ function Menu() {
             <i className="fa-solid fa-chevron-right" style={{color: 'var(--color-title)'}}></i>
         </button>
       </div>
-
         {/* Lista de platillos filtrados */}
         <Row>
           {platillosFiltrados.length === 0 && (
@@ -405,7 +364,6 @@ function Menu() {
                     <h5 style={priceColor}>S/ {platillo.precio.toFixed(2)}</h5>
                     <p className="small mb-0" style={{color: 'var(--color-muted)'}}>Cód: {platillo.codigo_producto}</p>
                   </div>
-
                   <div className={styles.cardBtnRow}>
                     {/* Botón de Activar/Desactivar */}
                     <button
@@ -429,7 +387,6 @@ function Menu() {
             </Col>
           ))}
         </Row>
-
         {/* Modal de Agregar y Editar */}
         {showModal && (
           <ModalFormPlatillo 
@@ -510,9 +467,7 @@ function Menu() {
     </Container>
   );
 }
-
 export default Menu;
-
 const ModalFormPlatillo = ({ show, onClose, modalType, form, categorias, handleChange, guardarPlatillo, headerStyle, cardStyle, inputStyle, btnPrimary, btnSecondary }) => {
     const isEditing = modalType === 'editar';
     
@@ -520,7 +475,6 @@ const ModalFormPlatillo = ({ show, onClose, modalType, form, categorias, handleC
         // Actualiza el form state con la URL obtenida de Cloudinary
         handleChange({ target: { id: 'imagen_url', value: url } });
     }
-
     return show && (
         <div className={`${styles.modalOverlay}`}>
                 <div className={styles.modalContent} style={{...cardStyle}}>
@@ -566,7 +520,6 @@ const ModalFormPlatillo = ({ show, onClose, modalType, form, categorias, handleC
                                     />
                                 </Col>
                             </Row>
-                            
                             {/* Descripción */}
                             <div className="mb-3">
                                 <label className={styles.formLabel}>Descripción</label>
@@ -580,7 +533,6 @@ const ModalFormPlatillo = ({ show, onClose, modalType, form, categorias, handleC
                                   >
                                 </textarea>
                             </div>
-
                             <Row>
                                 {/* Precio - Categoría - Tiempo de Preparación */}
                                 <Col md={3} className="mb-3">
@@ -615,14 +567,12 @@ const ModalFormPlatillo = ({ show, onClose, modalType, form, categorias, handleC
                                     />
                                 </Col>
                             </Row>
-
                             {/* URL de Imagen */}
                             <ImageUploader
                                 onUploadSuccess={handleImageUploadSuccess}
                                 currentImageUrl={form.imagen_url}
                                 inputStyle={inputStyle}
                             />
-
                             {/* Botones */}
                             <div className={styles.modalFooter}>
                                 <Button style={btnSecondary} onClick={onClose}>Cancelar</Button>

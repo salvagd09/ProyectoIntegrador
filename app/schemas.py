@@ -11,6 +11,7 @@ class TipoPedido(str, enum.Enum):
     RECOJO_LOCAL = "recojo_local"
 
 class EstadoPedido(str, enum.Enum):
+    POR_CONFIRMAR = "por_confirmar"
     PENDIENTE = "pendiente"
     EN_PREPARACION = "en_preparacion"
     LISTO = "listo"
@@ -20,6 +21,7 @@ class EstadoPedido(str, enum.Enum):
     CANCELADO = "cancelado"
 
 class EstadoItemPedido(str, enum.Enum):
+    POR_CONFIRMAR = "por_confirmar"
     PENDIENTE = "pendiente"
     EN_PREPARACION = "en_preparacion"
     LISTO = "listo"
@@ -306,7 +308,9 @@ class LoteBase(BaseModel):
     proveedor_id: Optional[int] = None
     cantidad: Decimal = Field(..., gt=0, description="Cantidad total ingresada en este lote")
     fecha_vencimiento: Optional[date] = None
+    ingrediente_unidad: Optional[str] = None
     numero_lote: Optional[str] = Field(None, max_length=100)
+    empleado_id: Optional[int] = None  
 # Esquema para crear un nuevo lote
 class LoteCreate(LoteBase):
     pass
@@ -377,7 +381,9 @@ class AInsumo(BaseModel):
     perecible:Optional[bool]=False
 
 class IngredienteSimple(BaseModel):
-    nombre: str  
+    id:int
+    nombre: str
+    unidad_de_medida:str  
     class Config:
         from_attributes = True
 
@@ -561,3 +567,8 @@ class CrearQrResponse(BaseModel):
     mensaje: str
     order_id: Optional[str] = None  # ← NUEVO
     payment_code: Optional[str] = None  # ← NUEVO
+class ProveedorSimple(BaseModel):
+    id: int
+    nombre: str
+    class Config:
+        from_attributes = True

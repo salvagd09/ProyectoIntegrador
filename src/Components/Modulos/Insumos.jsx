@@ -12,7 +12,6 @@ import {
   Alert,
   InputGroup,
 } from "react-bootstrap";
-import "../Modulos/CSS/Insumos.css";
 import styles from '../Modulos/Menu.module.css';
 
 const API_BASE_URL = "http://127.0.0.1:8000";

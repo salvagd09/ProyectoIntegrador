@@ -1,15 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, selectinload, joinedload
-from sqlalchemy import func
+from sqlalchemy import func,exists
 from typing import List, Optional
 from decimal import Decimal
-
-from app import models, schemas
-from app.database import get_db
-from app.utils import registrar_auditoria, serializar_db_object
-
-
-
+from datetime import date
+import models, schemas
+from database import get_db
+from utils import registrar_auditoria, serializar_db_object
 router = APIRouter(
     prefix="/inventario_L",
     tags=["Inventario_L"]
@@ -62,14 +59,12 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
     lote_cargado = db.query(models.Lotes_Inventarios).filter(
         models.Lotes_Inventarios.id == nuevo_lote.id
     ).options(
-        selectinload(models.Lotes_Inventarios.ingrediente),
+        selectinload(models.Lotes_Inventarios.ingredientesLI),
         selectinload(models.Lotes_Inventarios.proveedoresLI)
     ).first()
-    
     # Pre-cargar datos para la auditoría
-    ingrediente_nombre = lote_cargado.ingrediente.nombre if lote_cargado.ingrediente else "N/A"
-    ingrediente_unidad = lote_cargado.ingrediente.unidad_de_medida if lote_cargado.ingrediente else "unidad"
-    
+    ingrediente_nombre = lote_cargado.ingredientesLI.nombre if lote_cargado.ingredientesLI else "N/A"
+    ingrediente_unidad = lote_cargado.ingredientesLI.unidad_de_medida if lote_cargado.ingredientesLI else "unidad"
     valores_nuevos = serializar_db_object(lote_cargado)
     registrar_auditoria(
         db, 
@@ -80,7 +75,6 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         valores_nuevos=valores_nuevos,
         empleado_id=empleado_id_final,
     )
-
     # ✅ Construir respuesta manualmente con todos los campos
     response = schemas.LoteResponse(
         id=lote_cargado.id,
@@ -91,44 +85,12 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         fecha_vencimiento=lote_cargado.fecha_vencimiento,
         fecha_ingreso=lote_cargado.fecha_ingreso,
         numero_lote=lote_cargado.numero_lote,
-        nombre_ingrediente=lote_cargado.ingrediente.nombre if lote_cargado.ingrediente else "N/A",
+        nombre_ingrediente=ingrediente_nombre if ingrediente_nombre else "N/A",
+        ingrediente_unidad=ingrediente_unidad if ingrediente_unidad else "unidad",
         nombre_proveedor=lote_cargado.proveedoresLI.nombre if lote_cargado.proveedoresLI else None,
         empleado_id=empleado_id_final  # ✅ Agregar manualmente
     )
-
     return response
-
-# Listar stock total agregado por ingrediente
-@router.get("/stock/total", response_model=List[schemas.StockTotalResponse])
-def listar_stock_agregado(db: Session = Depends(get_db)):
-    """
-    Calcula y lista el stock total (sumado por todos los lotes activos) de cada ingrediente
-    """
-    # Consulta agregada para sumar el stock_actual por ingrediente
-    stock_agregado = db.query(
-        models.Ingrediente.id.label("ingrediente_id"),
-        models.Ingrediente.nombre.label("nombre_ingrediente"),
-        models.Ingrediente.unidad_de_medida.label("unidad_medida"),
-        func.sum(models.Lotes_Inventarios.stock_actual).label("stock_total")
-    ).join(models.Lotes_Inventarios, models.Lotes_Inventarios.ingrediente_id == models.Ingrediente.id).group_by(
-        models.Ingrediente.id,
-        models.Ingrediente.nombre,
-        models.Ingrediente.unidad_de_medida
-    ).filter(
-        models.Lotes_Inventarios.stock_actual > Decimal('0')
-    ).all()
-
-    # Verificar si hay stock disponible
-    if not stock_agregado:
-        raise HTTPException(status_code=404, detail="No se encontró stock activo en ningún lote.")
-    
-    # Preparar la respuesta
-    return [schemas.StockTotalResponse(
-        ingrediente_id=row.ingrediente_id,
-        nombre_ingrediente=row.nombre_ingrediente,
-        unidad_medida=row.unidad_medida,
-        stock_total=row.stock_total 
-    ) for row in stock_agregado]
 #Para que el botón tenga solo productos que han sufrido de movimientos
 @router.get("/ingredientes-con-lotes", response_model=List[schemas.IngredienteSimple])
 def listar_ingredientes_con_lotes(db: Session = Depends(get_db)):
@@ -136,30 +98,29 @@ def listar_ingredientes_con_lotes(db: Session = Depends(get_db)):
     Lista todos los ingredientes que tienen al menos un lote activo.
     Útil para poblar el dropdown de filtros.
     """
-    # Subconsulta para obtener IDs de ingredientes con lotes activos
-    ingredientes_con_lotes = db.query(models.Ingrediente).join(
-        models.Lotes_Inventarios,
-        models.Lotes_Inventarios.ingrediente_id == models.Ingrediente.id
-    ).filter(
+    # Consulta los lotes activos para el ingrediente dado
+    ids_con_lotes = db.query(models.Lotes_Inventarios.ingrediente_id).filter(
         models.Lotes_Inventarios.stock_actual > Decimal('0')
-    ).distinct().order_by(
-        models.Ingrediente.nombre.asc()
-    ).all()
-    
-    if not ingredientes_con_lotes:
+    ).distinct().all()
+    ids_lista = [id_tupla[0] for id_tupla in ids_con_lotes]
+    if not ids_lista:
         raise HTTPException(
             status_code=404, 
             detail="No hay ingredientes con lotes activos"
         )
-    
-    # Retornar lista simple de ingredientes
+    ingredientes = db.query(models.Ingrediente).filter(
+        models.Ingrediente.id.in_(ids_lista)
+    ).order_by(
+        models.Ingrediente.nombre.asc()
+    ).all()
+    # ✅ Ahora los objetos se cargan correctamente
     return [
-        {
-            "id": ing.id,
-            "nombre": ing.nombre,
-            "unidad_medida": ing.unidad_de_medida
-        }
-        for ing in ingredientes_con_lotes
+        schemas.IngredienteSimple(
+            id=ing.id,
+            nombre=ing.nombre,
+            unidad_de_medida=ing.unidad_de_medida
+        )
+        for ing in ingredientes
     ]
 # Listar lotes activos por ingrediente
 @router.get("/lotes/ingrediente/{ingrediente_id}", response_model=List[schemas.LoteResponse])
@@ -168,16 +129,21 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
     Lista todos los lotes activos para un ingrediente específico,
     ordenados por fecha de vencimiento
     """
+    hoy = date.today()
     # Consulta los lotes activos para el ingrediente dado
     lotes_db = db.query(models.Lotes_Inventarios).filter(
         models.Lotes_Inventarios.ingrediente_id == ingrediente_id,
-        models.Lotes_Inventarios.stock_actual > Decimal('0')
+        models.Lotes_Inventarios.stock_actual > Decimal('0'),
+        #Para que no se muestren los lotes vencidos
+        (models.Lotes_Inventarios.fecha_vencimiento >= hoy) | 
+        (models.Lotes_Inventarios.fecha_vencimiento.is_(None))
     ).order_by(
         models.Lotes_Inventarios.fecha_vencimiento.asc(),
         models.Lotes_Inventarios.fecha_ingreso.asc()
     ).options(
-        selectinload(models.Lotes_Inventarios.ingrediente),
-        selectinload(models.Lotes_Inventarios.proveedoresLI)
+        selectinload(models.Lotes_Inventarios.ingredientesLI),
+        selectinload(models.Lotes_Inventarios.proveedoresLI),
+        selectinload(models.Lotes_Inventarios.LIMI)
     ).all()
     
     # Verificar si se encontraron lotes
@@ -187,11 +153,20 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
     # Preparar la respuesta
     resultados = []
     for lote in lotes_db:
-        response = schemas.LoteResponse.model_validate(lote)
-        response.nombre_ingrediente = lote.ingrediente.nombre if lote.ingrediente else None
-        response.nombre_proveedor = lote.proveedoresLI.nombre if lote.proveedoresLI else None
+        response = schemas.LoteResponse(
+            id=lote.id,
+            ingrediente_id=lote.ingrediente_id,
+            proveedor_id=lote.proveedor_id,
+            cantidad=lote.cantidad,
+            stock_actual=lote.stock_actual,
+            fecha_vencimiento=lote.fecha_vencimiento,
+            fecha_ingreso=lote.fecha_ingreso,
+            numero_lote=lote.numero_lote,
+            empleado_id=None,  # No existe en el modelo Lotes_Inventarios
+            nombre_ingrediente=lote.ingredientesLI.nombre if lote.ingredientesLI else None,
+            nombre_proveedor=lote.proveedoresLI.nombre if lote.proveedoresLI else None
+        )
         resultados.append(response)
-        
     return resultados
 # Registrar una salida de stock
 @router.post("/salida/{ingrediente_id}", response_model=List[schemas.MovimientoInventarioResponse], status_code=status.HTTP_200_OK)
@@ -291,7 +266,6 @@ def registrar_salida_stock(
         respuestas.append(response)
 
     return respuestas
-
 # Listar historial de movimientos de inventario
 @router.get("/movimientos/historial", response_model=List[schemas.MovimientoInventarioResponse])
 def listar_historial_movimientos(
@@ -304,7 +278,7 @@ def listar_historial_movimientos(
     """
     # Construir la consulta base
     query = db.query(models.Movimientos_Inventario).options(
-        joinedload(models.Movimientos_Inventario.LotesMI).joinedload(models.Lotes_Inventarios.ingrediente),
+        joinedload(models.Movimientos_Inventario.LotesMI).joinedload(models.Lotes_Inventarios.ingredientesLI),  # ✅ Corregido
         joinedload(models.Movimientos_Inventario.empleadosMI)
     ).order_by(models.Movimientos_Inventario.fecha_hora.desc())
     
@@ -317,8 +291,7 @@ def listar_historial_movimientos(
 
     # Limitar resultados para evitar sobrecarga
     movimientos = query.limit(100).all()
-    if ingrediente_id is not None:
-        query = query.filter(models.Ingrediente.id == ingrediente_id)
+    
     # Verificar si se encontraron movimientos
     if not movimientos:
         raise HTTPException(status_code=404, detail="No se encontraron movimientos con los criterios especificados")
@@ -328,16 +301,14 @@ def listar_historial_movimientos(
     for mov in movimientos:
         response = schemas.MovimientoInventarioResponse.model_validate(mov)
         
-        nombre_ingrediente = mov.LotesMI.ingrediente.nombre if mov.LotesMI and mov.LotesMI.ingrediente else "N/A"
+        nombre_ingrediente = mov.LotesMI.ingredientesLI.nombre if mov.LotesMI and mov.LotesMI.ingredientesLI else "N/A"  # ✅ Corregido
         empleado = mov.empleadosMI
         if empleado:
             apellido = empleado.apellido if empleado.apellido else "" 
             nombre_empleado = f"{empleado.nombre} {apellido}".strip()
         else:
             nombre_empleado = "Sistema"
-
         response.nombre_ingrediente = nombre_ingrediente
-        response.nombre_empleado = nombre_empleado # Asignamos la variable corregida
-
+        response.nombre_empleado = nombre_empleado
         resultados.append(response)
     return resultados

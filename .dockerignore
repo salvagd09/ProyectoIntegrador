@@ -1,0 +1,11 @@
+.venv
+node_modules
+__pycache__
+*.pyc
+.git
+.gitignore
+*.md
+tests/
+test_*.py
+*_test.py
+demo_*.py

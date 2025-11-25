@@ -20,6 +20,7 @@ class TipoPedidoEnum(str, Enum):
     recojo_local = "recojo_local"
 
 class EstadoPedidoEnum(str, Enum):
+    por_confirmar = "por_confirmar"
     pendiente = "pendiente"
     en_preparacion = "en_preparacion"
     listo = "listo"
@@ -29,6 +30,7 @@ class EstadoPedidoEnum(str, Enum):
     cancelado = "cancelado"
 
 class EstadoItemPedidoEnum(str, Enum):
+    por_confirmar = "por_confirmar"
     pendiente = "pendiente"
     en_preparacion = "en_preparacion"
     listo = "listo"
@@ -156,7 +158,6 @@ class Ingrediente(Base):
     @hybrid_property
     def nombre_categoria(self):
         return self.categoria_ingrediente.nombre if self.categoria_ingrediente else None
-
     def __repr__(self):
         return f"<Ingrediente(nombre='{self.nombre}')>"
     
@@ -395,7 +396,6 @@ class Lotes_Inventarios(Base):
     numero_lote=Column(String(100))
 
     ingredientesLI=relationship("Ingrediente",back_populates="invIng")
-    ingrediente = relationship("Ingrediente", backref="lotes")
     proveedoresLI=relationship("Proveedores",back_populates="invP")
     LIMI=relationship("Movimientos_Inventario",back_populates="LotesMI")
 

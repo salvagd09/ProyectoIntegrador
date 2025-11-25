@@ -2,7 +2,9 @@ from fastapi import APIRouter,Depends,HTTPException
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from sqlalchemy import join, select
-from .. import models, database,schemas
+import database
+import schemas
+import models
 router=APIRouter(prefix="/empleados",tags=["empleados"])
 def get_db():
     db = database.SessionLocal()

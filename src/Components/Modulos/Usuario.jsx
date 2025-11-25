@@ -1,62 +1,51 @@
 import { Table, Button, Modal, Form, Container, Row, Col } from "react-bootstrap";
 import { useState, useEffect } from "react";
-
 import styles from './Usuario.module.css';
-
 // Estilos 
   const headerStyle = { 
     backgroundColor: 'var(--color-header)', 
     color: 'var(--color-title)', 
     borderColor: 'var(--color-muted)' 
   };
-
   const cardStyle = { 
     backgroundColor: 'var(--color-card)', 
     color: 'var(--color-text)', 
     borderColor: 'var(--color-muted)' 
   };
-
   const inputStyle = { 
     backgroundColor: 'var(--color-bg)', 
     color: 'var(--color-text)', 
     borderColor: 'var(--color-accent)' 
   };
-
   const tableHeaderStyle = { 
     backgroundColor: 'var(--color-header)', 
     color: 'var(--color-title)', 
     borderBottom: `2px solid var(--color-accent)`
   };  
-
   const tableRowStyle = { 
     backgroundColor: 'var(--color-card)', 
     color: 'var(--color-text)' 
   };
-
   const btnAdd = { 
     backgroundColor: 'var(--color-accent)', 
     borderColor: 'var(--color-accent)', 
     color: 'white' 
   };
-
   const btnEdit = { 
     backgroundColor: 'var(--color-btn)', 
     borderColor: 'var(--color-btn)', 
     color: 'white' 
   };
-
   const btnDelete = { 
     backgroundColor: 'var(--color-btn-delete)', 
     borderColor: 'var(--color-btn-delete)', 
     color: 'var(--color-text)' 
   };
-
   const btnSecondary = { 
     backgroundColor: 'var(--color-muted)', 
     borderColor: 'var(--color-muted)', 
     color: 'white' 
   };
-
     // Helper para inputs
   const InputComponent = ({ label, value, onChange, type = "text", maxLength, required = true, disabled = false }) => (
       <Form.Group as={Col} md="6" className="mb-3">
@@ -80,7 +69,6 @@ function Usuario() {
   const [confirmMessage, setConfirmMessage] = useState("");
   const [confirmAction, setConfirmAction] = useState(() => () => {});
   const [isSuccess, setIsSuccess] = useState(true);
-
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [nombreUsuario, setNombreUsuario] = useState("");
   const [rolUsuario, setRolUsuario] = useState("");
@@ -99,9 +87,7 @@ function Usuario() {
   const [contrasenaE, setContrasenaE] = useState("");
   const [telefonoE, setTelefonoE] = useState("");
   const [pinE, setPINE] = useState("");
-
   const rolMap = { Mozo: 1, Cocina: 2, Caja: 3, Admin: 4 };
-
   // Modal de confirmación
   const showMessageModal = (message, success = true, action = () => setShowConfirmModal(false)) => {
       setConfirmMessage(message);
@@ -109,7 +95,6 @@ function Usuario() {
       setConfirmAction(() => action);
       setShowConfirmModal(true);
   };
-
   const handleEditarUsuario = (usuario) => {
     setUsuarioSeleccionado(usuario);
     setNombreUsuarioE(usuario.nombre);
@@ -124,14 +109,12 @@ function Usuario() {
     setPINE(""); 
     setShowModalE(true);
   };
-
   useEffect(() => {
     fetch("http://127.0.0.1:8000/empleados/")
       .then((res) => res.json())
       .then((data) => setUsuarios(data))
       .catch((err) => console.log(err));
   }, []);
-
   async function AgregarUsuario() {
     const nuevoUsuario = {
       nombres: nombreUsuario,
@@ -143,19 +126,16 @@ function Usuario() {
       contrasenaUs: (rolUsuario === 4 || rolUsuario === 3) ? contrasena : null,
       PIN: rolUsuario === 1 ? pin : null,
     };
-
     if (!nombreUsuario || !apellidosUsuario || !rolUsuario || !telefono || !correoUsuario) {
         showMessageModal("Por favor, rellene todos los campos obligatorios", false);
         return;
     }
-
     try {
       const respuesta = await fetch("http://127.0.0.1:8000/empleados/agregar", {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify(nuevoUsuario),
       });
-
       if (respuesta.ok) {         
         await fetch("http://127.0.0.1:8000/empleados/")
         .then((res) => res.json())
@@ -179,10 +159,8 @@ function Usuario() {
       showMessageModal("Error de conexión o datos inválidos", false);
     }
   }
-
   async function EditarUsuario() {
     if (!usuarioSeleccionado) return;
-
     const datosActualizados = {
       nombres: nombreUsuarioE,
       apellidos: apellidosUsuarioE,
@@ -193,7 +171,6 @@ function Usuario() {
       contrasenaUs: (rolUsuarioE === 4 || rolUsuarioE === 3) ? (contrasenaE || null) : null,
       PIN: rolUsuarioE === 1 ? (pinE || null) : null,
     };
-
     try {
       const respuesta = await fetch(
         `http://127.0.0.1:8000/empleados/editar/${usuarioSeleccionado.id}`,
@@ -203,7 +180,6 @@ function Usuario() {
           body: JSON.stringify(datosActualizados),
         }
       );
-
       if (!respuesta.ok) throw new Error("No se pudo editar el usuario");
       await fetch("http://127.0.0.1:8000/empleados/")
       .then((res) => res.json())
@@ -215,7 +191,6 @@ function Usuario() {
       showMessageModal("Error de conexión o datos inválidos al editar empleado", false);
     }
   }
-
   async function EliminarUsuario(id) {
     try {
       const eliminacion = await fetch(
@@ -236,9 +211,7 @@ function Usuario() {
       showMessageModal("Error de conexión al intentar eliminar", false);
     }
   }
-
   const usuariosVisibles = usuarios;
-
   return (
     <Container className="py-2" style={{backgroundColor: 'var(--color-bg)', color: 'var(--color-text)'}}>
         {/* Encabezado y Botón de Agregar */}
@@ -250,12 +223,10 @@ function Usuario() {
             <i className="fa-solid fa-user-plus me-2"></i> Agregar Empleado
           </button>
         </div>
-
         {/* Descripción de Módulo */}
         <p className="mb-4" style={{color: 'var(--color-muted)'}}>
             Administra los datos, roles y credenciales de acceso de todo el personal (Mozos, Cocina, Caja y Administradores)
         </p>
-
         {/* Tabla de Usuarios */}
         <Table responsive hover className={styles.themedTable}>
           <thead style={tableHeaderStyle}>
@@ -307,7 +278,6 @@ function Usuario() {
               )}
           </tbody>
         </Table>
-
         {/* Modal para agregar usuario */}
         {showModalA && (
                 <>
@@ -332,7 +302,6 @@ function Usuario() {
                                         <InputComponent label="Teléfono:" value={telefono} onChange={(e) => setTelefono(e.target.value)} maxLength="9" />
                                         <InputComponent label="Correo Electrónico:" value={correoUsuario} onChange={(e) => setCorreoUsuario(e.target.value)} type="email" />
                                     </Row>
-                                    
                                     <Form.Group className="mb-3">
                                         <Form.Label style={{ color: 'var(--color-text)' }}>Selecciona el tipo de empleado:</Form.Label>
                                         <Form.Select className="w-100" style={inputStyle} value={rolUsuario} onChange={(e) => setRolUsuario(Number(e.target.value))} required>
@@ -343,7 +312,6 @@ function Usuario() {
                                             <option value="4">Admin</option>
                                         </Form.Select>
                                     </Form.Group>
-
                                     {(rolUsuario === 4 || rolUsuario === 3) && (
                                         <Row>
                                             <InputComponent label="Nombre de Cuenta:" value={username} onChange={(e) => setUsername(e.target.value)} required={false} />
@@ -364,7 +332,6 @@ function Usuario() {
                     <div className={styles.modalBackdrop} onClick={() => setShowModalA(false)}></div>
                 </>
             )}
-
         {/*Modal para editar */}
         {showModalE && (
             <>
@@ -384,7 +351,6 @@ function Usuario() {
                                     <InputComponent label="Teléfono:" value={telefonoE} onChange={(e) => setTelefonoE(e.target.value)} maxLength="9" />
                                     <InputComponent label="Correo Electrónico:" value={correoUsuarioE} onChange={(e) => setCorreoUsuarioE(e.target.value)} type="email" />
                                 </Row>
-                                
                                 <Form.Group className="mb-3">
                                     <Form.Label style={{ color: 'var(--color-text)' }}>Tipo de empleado:</Form.Label>
                                     <Form.Select className="w-100" style={inputStyle} value={rolUsuarioE} onChange={(e) => setRolUsuarioE(Number(e.target.value))} required>
@@ -415,7 +381,6 @@ function Usuario() {
                 <div className={styles.modalBackdrop} onClick={() => setShowModalE(false)}></div>
             </>
         )}
-
         {/*Modal para eliminar */}
         <Modal show={showModalB} onHide={() => setShowModalB(false)} centered>
             <Modal.Header style={headerStyle} closeButton>
@@ -433,7 +398,6 @@ function Usuario() {
                 </Button>
             </Modal.Footer>
         </Modal>
-
         {/*Modal de Alerta */}
         <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} centered>
             <Modal.Header style={headerStyle} closeButton>

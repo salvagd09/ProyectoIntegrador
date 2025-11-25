@@ -19,12 +19,6 @@ const [terminoBusqueda, setTerminoBusqueda] = useState('');
 const [showModal, setShowModal] = useState(false);
 const [modalType, setModalType] = useState(''); // 'agregar' o 'editar'
 const [productoEditando, setProductoEditando] = useState(null);
-
- // Estados para mensajes
-const [showConfirmModal, setShowConfirmModal] = useState(false);
-const [confirmAction, setConfirmAction] = useState(null);
-const [confirmMessage, setConfirmMessage] = useState("");
-
 // Estados para mensajes de éxito
 const [showSuccessModal, setShowSuccessModal] = useState(false);
 const [successMessage, setSuccessMessage] = useState("");
@@ -524,7 +518,6 @@ return (
     </Container>
 );
 }
-
 // Componente Modal para Recetas
 const ModalReceta = ({ 
     show, onClose, modalType, productoEditando, form, ingredientes,
@@ -532,7 +525,6 @@ const ModalReceta = ({
     guardarReceta, headerStyle, cardStyle, inputStyle, btnPrimary, btnSecondary 
 }) => {
     const isEditing = modalType === 'editar';
-
     return show && (
         <div className={`${styles.modalOverlay}`}>
             <div className={styles.modalContent} style={{...cardStyle, maxWidth: '700px'}}>
@@ -652,5 +644,4 @@ const ModalReceta = ({
         </div>
     );
 };
-
 export default Recetas;

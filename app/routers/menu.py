@@ -4,9 +4,9 @@ from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 
 from decimal import Decimal
-from app import models, schemas
-from app.database import get_db
-from app.utils import registrar_auditoria, serializar_db_object, transformar_producto_con_receta
+import models, schemas
+from database import get_db
+from utils import registrar_auditoria, serializar_db_object, transformar_producto_con_receta
 
 router = APIRouter(
     prefix="/menu",

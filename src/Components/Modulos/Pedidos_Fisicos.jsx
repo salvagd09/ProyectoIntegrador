@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Container, Button, Card, ListGroup, Form, Row, Col, Modal, Table } from "react-bootstrap"; 
 import styles from './PedidosFisicos.module.css';
-
 const formatText = (text) => {
     if (!text) return '';
     return text.replace(/_/g, ' ')
@@ -10,7 +9,6 @@ const formatText = (text) => {
                 .join(' ')
                 .toUpperCase(' ');
 };
-
 const formatTime = (dateString) => {
     try {
         const date = new Date(dateString);
@@ -180,7 +178,6 @@ export default function Pedidos_Fisicos() {
     // Persistir en local storage
     localStorage.setItem('pedidosArchivados', JSON.stringify(cerrado));
   };
-
   //Para cambiar el nombre de los botones que cambian el estado de pedido
   const obtenerTextoBoton = (estadoP, tipoServicio) => {
     const textos = {
@@ -200,7 +197,6 @@ export default function Pedidos_Fisicos() {
         showMessageModal("Selecciona una mesa y agrega al menos un platillo", false);
         return;
     }
-
     // Transformar datos solo al enviar
     const pedidoParaEnviar = {
       mesa_id: nuevoPedido.mesa_id,
@@ -214,7 +210,6 @@ export default function Pedidos_Fisicos() {
         precio_unitario: item.precio_unitario,
       })),
     };
-
     try {
       const response = await fetch(
         "http://127.0.0.1:8000/pedidosF/agregarPedido",
@@ -224,7 +219,6 @@ export default function Pedidos_Fisicos() {
           body: JSON.stringify(pedidoParaEnviar),
         }
       );
-
       if (response.ok) {
         showMessageModal("Pedido creado exitosamente", true);
         setShowModal(false);
@@ -271,27 +265,22 @@ export default function Pedidos_Fisicos() {
       alert("Selecciona un platillo y una cantidad válida");
       return;
     }
-
     const platilloSeleccionado = platillos.find(
       (p) => p.id === parseInt(itemTemp.platillo_id)
     );
-
     if (!platilloSeleccionado) {
       alert("Platillo no encontrado");
       return;
     }
-
     const yaExiste = nuevoPedido.items.find(
       (item) => item.platillo_id === parseInt(itemTemp.platillo_id)
     );
-
     if (yaExiste) {
       alert(
         "Este platillo ya fue agregado. Edita la cantidad si es necesario"
       );
       return;
     }
-
     const nuevoItem = {
       pedido_id: platilloSeleccionado.id,
       producto_id: parseInt(itemTemp.platillo_id),
@@ -299,15 +288,12 @@ export default function Pedidos_Fisicos() {
       cantidad: parseInt(itemTemp.cantidad),
       precio_unitario: platilloSeleccionado.precio,
     };
-
     setNuevoPedido({
       ...nuevoPedido,
       items: [...nuevoPedido.items, nuevoItem],
     });
-
     setItemTemp({ platillo_id: "", cantidad: 1 });
   };
-
   const actualizarCantidad = (index, nuevaCantidad) => {
     if (nuevaCantidad <= 0) return;
     const nuevosItems = [...nuevoPedido.items];
@@ -319,7 +305,6 @@ export default function Pedidos_Fisicos() {
     const nuevosItems = nuevoPedido.items.filter((_, i) => i !== index);
     setNuevoPedido({ ...nuevoPedido, items: nuevosItems });
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNuevoPedido({ ...nuevoPedido, [name]: value });
@@ -455,7 +440,6 @@ export default function Pedidos_Fisicos() {
       showMessageModal("Este pedido ya está completado y/o entregado", false);
       return;
     }
-
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/pedidosF/${id}/estado`,
@@ -502,7 +486,7 @@ export default function Pedidos_Fisicos() {
         setShowModalB(false);
         fetchPedidos();
     } catch (error) {
-      showMessageModal("Error al eliminar el pedido", false);
+      showMessageModal("Error al eliminar el pedido",error);
       setShowModalB(false);
     }
   }
@@ -648,7 +632,6 @@ export default function Pedidos_Fisicos() {
                     <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.pendiente.color}}>⏳ Pendiente</h3>
                     {pedidosVisibles.filter((p) => p.estado === "pendiente").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
-
                 {/* En preparación */}
                 <div className={styles.columna}>
                     <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.en_preparacion.color}}>👨‍🍳 En Preparación</h3>
@@ -1005,8 +988,7 @@ export default function Pedidos_Fisicos() {
     </Container>
   );
 }
-
-const ModalDetallePedidos = ({ show, setShow, detalleTipo, getDetalleData, headerStyle, cardStyle, btnSecondary }) => {
+export  function ModalDetallePedidos({ show, setShow, detalleTipo, getDetalleData, headerStyle, cardStyle, btnSecondary }){
     const list = getDetalleData(detalleTipo);
     const title = detalleTipo === 'cancelados' ? 'Pedidos Cancelados' : 'Pedidos Archivados';
 

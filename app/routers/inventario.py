@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.routers.inventario_L import registrar_salida_stock
+from routers.inventario_L import registrar_salida_stock
 from typing import List,Optional
-from .. import models, database, schemas
-
+import database
+import schemas
+import models
 router = APIRouter(prefix="/api/inventario", tags=["inventario"])
 
 def get_db():
@@ -29,7 +30,7 @@ def descontar_insumos_merma(merma_id: int,empleado_id: Optional[int], db: Sessio
     insumos_necesarios = {}
     for receta in recetas:
         cantidad = receta.cantidad_requerida * merma.cantidad
-        if receta.ingredientes_id in insumos_necesarios:
+        if receta.ingrediente_id in insumos_necesarios:
             insumos_necesarios[receta.ingrediente_id] += cantidad
         else:
             insumos_necesarios[receta.ingrediente_id] = cantidad
@@ -53,7 +54,7 @@ def descontar_insumos_merma(merma_id: int,empleado_id: Optional[int], db: Sessio
                 detail=f"Stock insuficiente de {insumo.nombre}. "
                        f"Disponible: {insumo.cantidad_actual}, Necesario: {cantidad}"
             )
-        insumo.cantidad_actual -= cantidad
+        insumo.cantidad_actual -= float(cantidad)
         try:
             movimientos = registrar_salida_stock(
                 ingrediente_id=insumo_id,
@@ -321,3 +322,7 @@ def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/proveedores", response_model=List[schemas.ProveedorSimple])
+def listar_proveedores(db: Session = Depends(get_db)):
+    proveedores = db.query(models.Proveedores).order_by(models.Proveedores.nombre).all()
+    return proveedores

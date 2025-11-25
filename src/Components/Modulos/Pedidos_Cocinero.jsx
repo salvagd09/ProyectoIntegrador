@@ -35,7 +35,6 @@ export default function Pedidos_Cocinero() {
       alert("Este pedido ya está servido");
       return;
     }
-  
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/pedidosF/${id}/estado`, 
@@ -66,7 +65,6 @@ export default function Pedidos_Cocinero() {
     }
   }
    const pedidosVisibles = pedidos.filter(p => !pedidosCerrados.includes(p.id));
-  
   return (
     <div className="pedidos-container">
         <div className="pedidos-topbar">
@@ -110,7 +108,6 @@ export default function Pedidos_Cocinero() {
             </div>
       ))}
     </div>
-  
     {/* Columna: En preparación */}
     <div className="columna">
       <h3 className="columna-titulo">👨‍🍳 En Preparación</h3>
@@ -147,7 +144,6 @@ export default function Pedidos_Cocinero() {
             </div>
       ))}
     </div>
-  
     {/* Columna: Listo */}
     <div className="columna">
       <h3 className="columna-titulo">✅ Listo</h3>

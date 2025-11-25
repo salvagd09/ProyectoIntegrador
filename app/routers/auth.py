@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from typing import Optional
-from .. import models, database, schemas
-
+import database
+import schemas
+import models
 router = APIRouter(prefix="/auth", tags=["Auth"])
 #Para encriptar la contraseña que se envían y coincida
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")

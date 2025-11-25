@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
 from datetime import datetime, date
-from .. import models, database, schemas
+import database
+import schemas
+import models
 
 router = APIRouter(prefix="/delivery", tags=["delivery"])
 
@@ -401,18 +403,6 @@ def confirmar_pedido_externo(pedido_id: int, db: Session = Depends(get_db)):
     ).update({"estado": "pendiente"})
     db.commit()
     return {"mensaje": "Pedido confirmado", "pedido_id": pedido_id, "estado": "pendiente"}
-@router.patch("/webhook/{pedido_id}/rechazar")
-def rechazar_pedido_externo(pedido_id: int, db: Session = Depends(get_db)):
-    """Admin rechaza el pedido"""
-    pedido = db.query(models.Pedidos).filter(
-        models.Pedidos.id == pedido_id,
-        models.Pedidos.estado == 'por_confirmar'
-    ).first()
-    if not pedido:
-        raise HTTPException(status_code=404, detail="Pedido no encontrado o ya procesado")
-    pedido.estado = 'cancelado'
-    db.commit()
-    return {"mensaje": "Pedido rechazado", "pedido_id": pedido_id, "estado": "cancelado"}
 @router.get("/webhook/pendientes")
 def listar_pedidos_por_confirmar(db: Session = Depends(get_db)):
     """Lista pedidos recibidos por webhook pendientes de confirmación"""

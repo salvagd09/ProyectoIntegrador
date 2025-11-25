@@ -6,12 +6,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
 node_modules
 dist
 dist-ssr
 *.local
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,15 +22,30 @@ dist-ssr
 *.sw?
 
 # Python virtual environment
+.venv/
+venv/
+env/
 app/venv/
 
 # Credenciales BD
 .env
-.env.*
+.env.local
+.env.development
+.env.production
 
 # Ignorar archivos Python
 __pycache__/
-__pycache__
 *.pyc
 *.pyo
 *.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist/
+build/
+demo_exposicion.py
+demo_*.py
+*.tmp
+*.bak
+*.cache

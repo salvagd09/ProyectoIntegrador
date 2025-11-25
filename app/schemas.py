@@ -21,6 +21,7 @@ class EstadoPedido(str, enum.Enum):
     CANCELADO = "cancelado"
 
 class EstadoItemPedido(str, enum.Enum):
+    POR_CONFIRMAR = "por_confirmar"
     PENDIENTE = "pendiente"
     EN_PREPARACION = "en_preparacion"
     LISTO = "listo"

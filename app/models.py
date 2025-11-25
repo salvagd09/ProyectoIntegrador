@@ -30,6 +30,7 @@ class EstadoPedidoEnum(str, Enum):
     cancelado = "cancelado"
 
 class EstadoItemPedidoEnum(str, Enum):
+    por_confirmar = "por_confirmar"
     pendiente = "pendiente"
     en_preparacion = "en_preparacion"
     listo = "listo"

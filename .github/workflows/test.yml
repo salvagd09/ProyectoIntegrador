@@ -1,0 +1,27 @@
+name: Tests de Webhook
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+jobs:
+  test-webhook:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 📥 Checkout código
+      uses: actions/checkout@v3
+    - name: 🐍 Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - name: 📦 Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests sqlalchemy psycopg2-binary python-dotenv
+    - name: 🔍 Test de conexión a BD
+      env:
+        DB_URL: ${{ secrets.DB_URL }}
+      run: |
+        python tests/test_connection.py
+    - name:  Tests completados
+      run: echo " Todos los tests pasaron correctamente"

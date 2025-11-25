@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
-from app import models
+import models
 from enum import Enum
 from datetime import datetime, date
 from decimal import Decimal 
-from app import schemas
+import schemas
 
 # Función registrar auditoría
 def registrar_auditoria(

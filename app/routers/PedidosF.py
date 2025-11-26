@@ -3,8 +3,7 @@ from sqlalchemy.orm import Session,joinedload
 from typing import List
 from datetime import datetime
 from app.routers.inventario_L import registrar_salida_stock
-from app import database
-from app import models, schemas 
+from .. import models, database,schemas
 router=APIRouter(prefix="/pedidosF",tags=["pedidosF"])
 def get_db():
     db = database.SessionLocal()
@@ -161,30 +160,35 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
                 detail=f"Pedido #{id} no encontrado"
             )
         estado_anterior = pedido.estado
+        
         # Determinar nuevo estado
-        if pedido.estado == models.EstadoPedidoEnum.pendiente: # type: ignore
+        if pedido.estado == models.EstadoPedidoEnum.pendiente:
             nuevo_estado = models.EstadoPedidoEnum.en_preparacion
-        elif pedido.estado == models.EstadoPedidoEnum.en_preparacion: # type: ignore
+        elif pedido.estado == models.EstadoPedidoEnum.en_preparacion:
             nuevo_estado = models.EstadoPedidoEnum.listo
-        elif pedido.estado == models.EstadoPedidoEnum.listo: # type: ignore
-            # Aquí la lógica es un poco más compleja, ya que compara con un string
-            # DEBES COMPARAR CON LOS VALORES DE ENUM
-            if pedido.tipo_pedido == models.TipoPedidoEnum.delivery: # type: ignore
+        elif pedido.estado == models.EstadoPedidoEnum.listo:
+            if pedido.tipo_pedido == models.TipoPedidoEnum.delivery:
                 nuevo_estado = models.EstadoPedidoEnum.entregado
             else:
                 nuevo_estado = models.EstadoPedidoEnum.servido
         else:
-            # Ahora, la comparación final es segura porque compara objetos Enum
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Estado '{pedido.estado.value}' no válido o ya está completo"
             )
         
         # Actualizar el pedido
-        pedido.estado = nuevo_estado # type: ignore
+        pedido.estado = nuevo_estado
 
-        if (estado_anterior==models.EstadoPedidoEnum.pendiente and nuevo_estado == models.EstadoPedidoEnum.en_preparacion): # type: ignore
-            descontar_insumos_pedido(id,db)
+        # Registrar hora_fin cuando se completa
+        if nuevo_estado in [models.EstadoPedidoEnum.entregado, models.EstadoPedidoEnum.servido]:
+            if pedido.hora_fin is None:
+                pedido.hora_fin = datetime.now()
+
+        if (estado_anterior == models.EstadoPedidoEnum.pendiente and 
+            nuevo_estado == models.EstadoPedidoEnum.en_preparacion):
+            descontar_insumos_pedido(id, db)
+        
         # Actualizar todos los detalles en una sola query (MÁS EFICIENTE)
         detalles_actualizados = db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == id
@@ -480,6 +484,8 @@ def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session 
 
         # Cambiar estado del pedido a 'Completado'
         pedido.estado = models.EstadoPedidoEnum.completado
+        if pedido.hora_fin is None:
+            pedido.hora_fin = datetime.now()
 
         db.commit()
         db.refresh(nuevo_pago)

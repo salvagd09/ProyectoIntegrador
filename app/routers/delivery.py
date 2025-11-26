@@ -3,9 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
 from datetime import datetime, date
-import database
-import schemas
-import models
+from app import database, schemas, models
 
 router = APIRouter(prefix="/delivery", tags=["delivery"])
 

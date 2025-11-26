@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from routers.inventario_L import registrar_salida_stock
+from app.routers.inventario_L import registrar_salida_stock
 from typing import List,Optional
-import database
-import schemas
-import models
+from app import database, schemas, models
+
 router = APIRouter(prefix="/api/inventario", tags=["inventario"])
 
 def get_db():

@@ -10,15 +10,18 @@ import {
   Modal,
   Badge,
   Alert,
+  InputGroup,
 } from "react-bootstrap";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "../Modulos/CSS/Insumos.css";
+import styles from '../Modulos/Menu.module.css';
+
 const API_BASE_URL = "http://127.0.0.1:8000";
+
 function Insumos() {
   const obtenerRol = () => {
     const path = window.location.pathname;
     return path.includes("/cocina/") ? "cocina" : "admin";
   };
+  
   const [rol] = useState(obtenerRol());
   const [insumos, setInsumos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -31,8 +34,63 @@ function Insumos() {
   const [registroMerma,setRegistroMerma]=useState([]);
   const [showModalMovimientos,setShowModalMovimientos]=useState(false);
   const [empleadoId,setEmpleadoId]=useState(null);
-  const [insumoSeleccionadoParaLotes,setInsumoSeleccionadoParaLotes]=useState(null);
-  const [showModalLotesNV,setShowModalLotesNV]=useState(false);
+
+  // Estilos tematizados 
+  const moduleBg = { 
+    backgroundColor: 'var(--color-bg)', 
+    color: 'var(--color-text)' 
+  };
+    
+  const headerStyle = { 
+    backgroundColor: 'var(--color-header)', 
+    color: 'var(--color-title)', 
+    border: `1px solid var(--color-header)` 
+  };
+  
+  const cardStyle = { 
+    backgroundColor: 'var(--color-card)', 
+    color: 'var(--color-text)', 
+    border: `2px solid var(--color-accent)` 
+  };
+  
+  const inputStyle = { 
+    backgroundColor: 'var(--color-bg)', 
+    color: 'var(--color-text)', 
+    borderColor: 'var(--color-muted)' 
+  };
+  
+  const btnPrimary = { 
+    backgroundColor: 'var(--color-btn)', 
+    borderColor: 'var(--color-btn)', 
+    color: 'white', 
+    fontWeight: 'bold' 
+  };
+  
+  const btnSecondary = { 
+    backgroundColor: 'var(--color-muted)', 
+    borderColor: 'var(--color-muted)', 
+    color: 'white'
+  };
+  
+  const btnWarning = { 
+    backgroundColor: 'var(--color-accent)', 
+    borderColor: 'var(--color-accent)', 
+    color: 'white', 
+    fontWeight: 'bold' 
+  };
+
+  const btnAccent = { 
+    backgroundColor: 'var(--color-accent)', 
+    borderColor: 'var(--color-accent)', 
+    color: 'white', 
+    fontWeight: 'bold' 
+  };
+
+  const badgeRol = {
+    backgroundColor: rol === "admin" ? 'var(--color-btn)' : 'var(--color-secondary)',
+    color: 'white'
+  };
+
   // Cargar datos de la base de datos
   const cargarInsumos = async () => {
     setLoading(true);
@@ -47,6 +105,7 @@ function Insumos() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     cargarInsumos();
     const userData = localStorage.getItem('userData');
@@ -55,6 +114,7 @@ function Insumos() {
       setEmpleadoId(user.id);
     }
   }, []);
+
   // Crear insumo
   const agregarInsumo = async (nuevoInsumo) => {
     const datosParaBackend = {
@@ -76,6 +136,7 @@ function Insumos() {
     await cargarInsumos();
     setShowModal(false);
   };
+
   // Editar insumo
   const editarInsumo = async (insumoActualizado) => {
     const datosParaBackend = {
@@ -93,17 +154,17 @@ function Insumos() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(datosParaBackend)
       });
-      // 🟢 2. Registrar lote si hay aumento de stock
+      // Registrar lote si hay aumento de stock
       if (insumoActualizado.diferencia > 0) {
         await fetch(`${API_BASE_URL}/inventario_L/lote`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ingrediente_id: insumoActualizado.id,
-            proveedor_id: insumoActualizado.proveedor_id || null,           // ✅
+            proveedor_id: null,
             cantidad: insumoActualizado.diferencia,
-            numero_lote: insumoActualizado.numero_lote || null,             // ✅
-            fecha_vencimiento: insumoActualizado.fecha_vencimiento || null, 
+            numero_lote: null,
+            fecha_vencimiento: null,
             empleado_id: empleadoId 
           }),
         });
@@ -112,8 +173,9 @@ function Insumos() {
       setShowModal(false);
       setInsumoEditando(null);
   } catch (error) {
-      console.error("Error al actualizar insumo o crear lote:", error);
+      console.error("Error al actualizar insumo o crear lote: ", error);
   }}
+
   // Manejar guardar insumo
   const manejarGuardarInsumo = async (datos) => {
     if (insumoEditando) {
@@ -122,67 +184,75 @@ function Insumos() {
       await agregarInsumo(datos);
     }
   };
+  // Manejar merma
   const manejarEnvioMerma=async(nuevaMerma)=>{
     try {
-    const respuesta=await fetch(`${API_BASE_URL}/api/inventario/rMerma`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(nuevaMerma)
-    })
-    const datoR=await respuesta.json()
-     if (!respuesta.ok) {
-      console.error('❌ Error completo:', datoR);
-      alert(`Error: ${JSON.stringify(datoR.detail, null, 2)}`);
-    } else {
-      // ✅ Mostrar ingredientes descontados si existen
-      if (datoR.ingredientes_descontados) {
-        const ingredientesInfo = datoR.ingredientes_descontados
-          .map(ing => `• ${ing.ingrediente}: ${ing.cantidad} ${ing.unidad}`)
-          .join('\n');
-        
-        alert(`${datoR.mensaje}\n\nIngredientes descontados:\n${ingredientesInfo}`);
+      const respuesta=await fetch(`${API_BASE_URL}/api/inventario/rMerma`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(nuevaMerma)
+      })
+      const datoR=await respuesta.json()
+      if (!respuesta.ok) {
+        console.error('❌ Error completo:', datoR);
+        alert(`Error: ${JSON.stringify(datoR.detail, null, 2)}`);
       } else {
-        alert(datoR.mensaje);
+        // Mostrar ingredientes descontados si existen
+        if (datoR.ingredientes_descontados) {
+          const ingredientesInfo = datoR.ingredientes_descontados
+            .map(ing => `• ${ing.ingrediente}: ${ing.cantidad} ${ing.unidad}`)
+            .join('\n');
+          
+          alert(`${datoR.mensaje}\n\nIngredientes descontados:\n${ingredientesInfo}`);
+        } else {
+          alert(datoR.mensaje);
+        }
       }
-    }
-    await cargarInsumos();
-    setShowModalMerma(false)
+      await cargarInsumos();
+      setShowModalMerma(false)
     }catch (error) {
-      console.error('❌ Error de red:', error);
-      alert('Error de conexión al servidor');
-  }
-  }
+        console.error('❌ Error de red:', error);
+        alert('Error de conexión al servidor');
+    }
+  };
+
   // Filtrar insumos
   const categorias = ["Todas", ...new Set(insumos.map(insumo => insumo.categoria))];
   const insumosFiltrados = insumos.filter(insumo =>
     (categoriaFiltro === "Todas" || insumo.categoria === categoriaFiltro) &&
     insumo.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
+
   // Calcular totales
   const totalInsumos = insumos.length;
   const valorTotal = insumos.reduce((total, i) => total + i.cantidad_actual * i.precio, 0);
   const stockBajo = insumos.filter(i => i.cantidad_actual <= i.minimo).length;
   const categoriasActivas = new Set(insumos.map(i => i.categoria)).size;
   const insumosBajos = insumos.filter(i => i.cantidad_actual <= i.minimo);
+
   return (
-    <Container fluid className="py-4">
-      <Row className="mb-4">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <p className="text-muted">📦 Control de inventario para cevichería</p>
-            </div>
-            <Badge bg={rol === "admin" ? "primary" : "success"}>
-              {rol === "admin" ? "👑 Administrador" : "👨‍🍳 Área de Cocina"}
-            </Badge>
-          </div>
-        </Col>
-      </Row>
+    <Container fluid style={moduleBg} className="py-4">
+      {/* Encabezado */}
+      <div className={styles.menuHeader} style={headerStyle}>
+        <div className="d-flex align-items-center justify-content-between mb-2">
+          <h1 className="h2 fw-bold mb-1" style={{color: 'var(--color-title)'}}>
+            Gestión de Insumos
+          </h1>
+          <Badge style={badgeRol}>
+            {rol === "admin" ? "👑 Administrador" : "👨‍🍳 Área de Cocina"}
+          </Badge>
+        </div>
+        <p style={{color: 'var(--color-muted)'}} className="mb-1">
+          Control de inventario para cevichería
+        </p>
+      </div>
+
       {loading && <Alert variant="info">Cargando inventario...</Alert>}
       {error && <Alert variant="danger">Error: {error}</Alert>}
+
       {insumosBajos.length > 0 && (
         <Alert variant="warning" className="mb-4">
-          <Alert.Heading>⚠️ Alerta de Stock Bajo</Alert.Heading>
+          <Alert.Heading style={{color: 'var(--color-title)'}}>⚠️ Alerta de Stock Bajo</Alert.Heading>
           <div className="mb-2">
             {insumosBajos.map(insumo => (
               <Badge key={insumo.id} bg="warning" text="dark" className="me-2 mb-1">
@@ -195,129 +265,152 @@ function Insumos() {
           )}
         </Alert>
       )}
+
+      {/* Cards */}
       <Row className="mb-4">
         <Col md={3} className="mb-3">
-          <Card className="h-100 border-0 shadow-sm">
+          <Card className="h-100" style={cardStyle}>
             <Card.Body className="text-center">
-              <div className="text-primary mb-2">📦</div>
-              <Card.Title className="fs-6">Total Insumos</Card.Title>
-              <h3 className="text-primary">{totalInsumos}</h3>
+              <div className="mb-2" style={{color: 'var(--color-accent)', fontSize: '1.5rem'}}>📦</div>
+              <Card.Title className="fs-6" style={{color: 'var(--color-text)'}}>Total Insumos</Card.Title>
+              <h3 style={{color: 'var(--color-accent)'}}>{totalInsumos}</h3>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3} className="mb-3">
-          <Card className="h-100 border-0 shadow-sm">
+          <Card className="h-1000" style={cardStyle}>
             <Card.Body className="text-center">
-              <div className="text-success mb-2">💰</div>
-              <Card.Title className="fs-6">Valor Total</Card.Title>
-              <h3 className="text-success">S/ {valorTotal.toFixed(2)}</h3>
+              <div className="mb-2" style={{color: 'var(--color-secondary)', fontSize: '1.5rem'}}>💰</div>
+              <Card.Title className="fs-6" style={{color: 'var(--color-text)'}}>Valor Total</Card.Title>
+              <h3 style={{color: 'var(--color-secondary)'}}>S/ {valorTotal.toFixed(2)}</h3>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3} className="mb-3">
-          <Card className="h-100 border-0 shadow-sm">
+          <Card className="h-100" style={cardStyle}>
             <Card.Body className="text-center">
-              <div className="text-warning mb-2">⚠️</div>
-              <Card.Title className="fs-6">Stock Bajo</Card.Title>
-              <h3 className="text-danger">{stockBajo}</h3>
+              <div className="mb-2" style={{color: 'var(--color-btn-delete)', fontSize: '1.5rem'}}>⚠️</div>
+              <Card.Title className="fs-6" style={{color: 'var(--color-text)'}}>Stock Bajo</Card.Title>
+              <h3 style={{color: 'var(--color-btn-delete)'}}>{stockBajo}</h3>
             </Card.Body>
           </Card>
         </Col>
         <Col md={3} className="mb-3">
-          <Card className="h-100 border-0 shadow-sm">
+          <Card className="h-100" style={cardStyle}>
             <Card.Body className="text-center">
-              <div className="text-info mb-2">🏷️</div>
-              <Card.Title className="fs-6">Categorías</Card.Title>
-              <h3 className="text-primary">{categoriasActivas}</h3>
+              <div className="mb-2" style={{color: 'var(--color-accent)', fontSize: '1.5rem'}}>🏷️</div>
+              <Card.Title className="fs-6" style={{color: 'var(--color-text)'}}>Categorías</Card.Title>
+              <h3 style={{color: 'var(--color-accent)'}}>{categoriasActivas}</h3>
             </Card.Body>
           </Card>
         </Col>
       </Row>
-      <Card className="mb-4 border-0 shadow-sm">
+
+      {/* Filtros */}
+      <Card className="mb-4" style={cardStyle}>
         <Card.Body>
           <Row>
             <Col md={4}>
-              <Form.Control
-                type="text"
-                placeholder="🔍 Buscar por nombre o categoría..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-              />
+              <InputGroup>
+                  <Form.Control
+                    type="text"
+                    placeholder="🔍 Buscar por nombre o categoría..."
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    style={inputStyle}
+                  />
+              </InputGroup>
             </Col>
             <Col md={3}>
-              <Form.Select value={categoriaFiltro} onChange={(e) => setCategoriaFiltro(e.target.value)}>
-                {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              <Form.Select 
+                  value={categoriaFiltro} 
+                  onChange={(e) => setCategoriaFiltro(e.target.value)}
+                  style={inputStyle}
+              >
+                  {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </Form.Select>
             </Col>
             <Col md={5} className="text-end">
               {rol === "admin" && (<>
-                <Button variant="primary" onClick={() => { setInsumoEditando(null); setShowModal(true); }} className="px-4">
+                <Button style={btnPrimary} onClick={() => { setInsumoEditando(null); setShowModal(true); }} className="px-4 me-2">
                   ➕ Agregar Insumo
                 </Button>
-                <Button variant="secondary" onClick={()=>{setShowModalMovimientos(true)}} className="m-2">Ver movimientos</Button>
-                </> 
+                <Button style={btnSecondary} onClick={()=>{setShowModalMovimientos(true)}}>
+                  📊 Ver movimientos
+                </Button>
+                </>
               )}
               {rol === "cocina" && (
-                <Button variant="secondary" onClick={() => { setRegistroMerma(null); setShowModalMerma(true); }} className="px-4">
-                  Registrar Merma
+                <Button style={btnWarning} onClick={() => { setRegistroMerma(null); setShowModalMerma(true); }} className="px-4">
+                  🗑️ Registrar Merma
                 </Button>
               )}
             </Col>
           </Row>
         </Card.Body>
       </Card>
-      <Card className="border-0 shadow-sm">
-        <Card.Header className="bg-white border-0">
-          <h5 className="mb-0">📋 Lista de Insumos</h5>
+      
+      {/* Tabla */}
+      <Card style={cardStyle}>
+        <Card.Header style={headerStyle}>
+          <h5 className="mb-0" style={{color: 'var(--color-title)'}}>📋 Lista de Insumos</h5>
         </Card.Header>
         <Card.Body className="p-0">
-          <Table responsive hover className="mb-0">
-            <thead className="bg-light">
+          <Table responsive hover className="mb-0 align-middle text-center" style={{backgroundColor: 'var(--color-bg)'}}>
+            <thead style={{backgroundColor: 'var(--color-header)'}}>
               <tr>
-                <th>Insumo</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Descripción</th>
-                <th>Valor Total</th>
-                <th>¿Es perecible?</th>
-                {rol === "admin" && <th width="200">Acción</th>}
+                <th style={{color: 'var(--color-title)'}}>Insumo</th>
+                <th style={{color: 'var(--color-title)'}}>Cantidad</th>
+                <th style={{color: 'var(--color-title)'}}>Precio</th>
+                <th style={{color: 'var(--color-title)'}}>Descripción</th>
+                <th style={{color: 'var(--color-title)'}}>Valor Total</th>
+                <th style={{color: 'var(--color-title)'}}>¿Es perecible?</th>
+                {rol === "admin" && <th width="200" style={{color: 'var(--color-title)'}}>Acción</th>}
               </tr>
             </thead>
             <tbody>
               {insumosFiltrados.map(insumo => {
                 const estaBajoStock = insumo.cantidad_actual <= insumo.minimo;
                 return (
-                  <tr key={insumo.id} className={estaBajoStock ? "table-warning" : ""}>
+                  <tr key={insumo.id} style={{ 
+                      backgroundColor: estaBajoStock ? 'var(--color-warning-light)' : 'transparent',
+                      color: 'var(--color-text)'
+                    }}
+                  >
                     <td>
                       <div>
                         <strong>{insumo.nombre}</strong>
                         {estaBajoStock && <Badge bg="warning" text="dark" className="ms-2">Stock Bajo</Badge>}
                       </div>
-                      <small className="text-muted">Unidad: {insumo.unidad_medida}</small>
+                      <small style={{color: 'var(--color-muted)'}}>Unidad: {insumo.unidad_medida}</small>
                     </td>
                     <td>
-                      <span className={estaBajoStock ? "text-danger fw-bold" : "text-success"}>
+                      <span style={{color: estaBajoStock ? 'var(--color-btn-delete)' : 'var(--color-secondary)', fontWeight: 'bold'}}>
                         {insumo.cantidad_actual} {insumo.unidad_medida}
                       </span>
                       <br />
-                      <small className="text-muted">Mín: {insumo.minimo} {insumo.unidad_medida}</small>
+                      <small style={{color: 'var(--color-muted)'}}>Mín: {insumo.minimo} {insumo.unidad_medida}</small>
                     </td>
-                    <td>S/ {insumo.precio.toFixed(2)}</td>
-                    <td><Badge bg="secondary">{insumo.categoria}</Badge></td>
-                    <td><strong>S/ {(insumo.cantidad_actual * insumo.precio).toFixed(2)}</strong></td>
-                    <td><strong>{insumo.perecible ? "Sí" : "No"}</strong></td>
+                    <td style={{color: 'var(--color-bg)'}}>S/ {insumo.precio.toFixed(2)}</td>
+                    <td>
+                      <Badge style={{backgroundColor: 'var(--color-muted)', color: 'white'}}>{insumo.categoria}</Badge>
+                    </td>
+                    <td>
+                      <strong style={{color: 'var(--color-accent)'}}>S/ {(insumo.cantidad_actual * insumo.precio).toFixed(2)}</strong>
+                    </td>
+                    <td>
+                      <strong style={{color: 'var(--color-bg)'}}>{insumo.perecible ? "Sí" : "No"}</strong>
+                    </td>
                     {rol === "admin" && (
                       <td>
                         <div className="d-flex gap-2">
-                          <Button variant="outline-primary w-100" size="sm" onClick={() => { setInsumoEditando(insumo); setShowModal(true); }}>
+                          <Button 
+                            style={btnWarning}
+                            size="sm" 
+                            onClick={() => { setInsumoEditando(insumo); setShowModal(true); }}
+                          >
                             ✏️ Editar
                           </Button>
-                         <Button variant="success" onClick={() => {
-                              setInsumoSeleccionadoParaLotes(insumo.id);
-                              setShowModalLotesNV(true);
-                            }} className="m-2">
-                              Ver lotes no vencidos
-                            </Button>
                         </div>
                       </td>
                     )}
@@ -326,11 +419,12 @@ function Insumos() {
               })}
             </tbody>
           </Table>
+
           {insumosFiltrados.length === 0 && !loading && (
-            <div className="text-center py-5">
-              <div className="text-muted">📭 No se encontraron insumos</div>
+            <div className="text-center py-5" style={{color: 'var(--color-muted)'}}>
+              <div>📭 No se encontraron insumos</div>
               {rol === "admin" && (
-                <Button variant="outline-primary" size="sm" className="mt-2" onClick={() => setShowModal(true)}>
+                <Button style={btnPrimary} size="sm" className="mt-2" onClick={() => setShowModal(true)}>
                   Agregar primer insumo
                 </Button>
               )}
@@ -338,92 +432,169 @@ function Insumos() {
           )}
         </Card.Body>
       </Card>
+
+      {/* Modales */}
       <Modal show={showModalMerma} onHide={()=>{setShowModalMerma(false);setRegistroMerma(null)}} centered>
-          <Modal.Header closeButton>
-            <Modal.Title>Área de registro de mermas 🗑️</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <FormMermas empleadoId={empleadoId} merma={registroMerma} onGuardar={manejarEnvioMerma} onCancelar={()=>{setShowModalMerma(false),setRegistroMerma(null)}} />
-          </Modal.Body>
+          <div style={cardStyle}>
+            <Modal.Header style={headerStyle}>
+              <Modal.Title style={{color: 'var(--color-title)'}}>🗑️ Registro de Mermas</Modal.Title>
+              <button 
+                type="button" 
+                className="btn-close" 
+                onClick={()=>{setShowModalMerma(false);setRegistroMerma(null)}} 
+                style={{ filter: 'var(--logo-filter)'}}
+              >
+              </button>
+            </Modal.Header>
+            <Modal.Body style={{backgroundColor: 'var(--color-bg)', color: 'var(--color-text)'}}>
+              <FormMermas 
+                empleadoId={empleadoId} merma={registroMerma} 
+                onGuardar={manejarEnvioMerma} 
+                onCancelar={()=>{setShowModalMerma(false),setRegistroMerma(null)}} 
+              />
+            </Modal.Body>
+          </div>
       </Modal>
+
       <Modal show={showModal} onHide={() => { setShowModal(false); setInsumoEditando(null); }} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{insumoEditando ? "✏️ Editar Insumo" : "➕ Agregar Nuevo Insumo"}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-            <FormInsumo empleadoId={empleadoId} insumo={insumoEditando} onGuardar={manejarGuardarInsumo} onCancelar={() => { setShowModal(false); setInsumoEditando(null); }} />
-        </Modal.Body>
-      </Modal>
-      <Modal show={showModalMovimientos} onHide={()=>{setShowModalMovimientos(false)}} centered  dialogClassName="modal-ancho">
-          <Modal.Header closeButton>
-            <Modal.Title>Historial de movimientos</Modal.Title>
+        <div style={cardStyle}>
+          <Modal.Header style={headerStyle}>
+            <Modal.Title style={{color: 'var(--color-title)'}}>
+              {insumoEditando ? "✏️ Editar Insumo" : "➕ Agregar Nuevo Insumo"}
+            </Modal.Title>
+            <button 
+              type="button" 
+              className="btn-close" 
+              onClick={() => { setShowModal(false); setInsumoEditando(null); }} 
+              style={{ filter: 'var(--logo-filter)'}}
+            >
+            </button>
           </Modal.Header>
-          <Modal.Body>
-               <HistorialMovimientos />
+          <Modal.Body style={{backgroundColor: 'var(--color-bg)', color: 'var(--color-text)'}}>
+              <FormInsumo   
+                empleadoId={empleadoId} 
+                insumo={insumoEditando} 
+                onGuardar={manejarGuardarInsumo} 
+                onCancelar={() => { setShowModal(false); setInsumoEditando(null); }} 
+              />
           </Modal.Body>
+        </div>
       </Modal>
-      <Modal show={showModalLotesNV}  onHide={()=>{  setShowModalLotesNV(false);setInsumoSeleccionadoParaLotes(null);}} centered dialogClassName="modal-ancho">
-        <Modal.Header closeButton>
-          <Modal.Title>Lotes aún no vencidos</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <MostrarLotesNoVencidos ingredienteId={insumoSeleccionadoParaLotes}/>
-        </Modal.Body>
+
+      <Modal show={showModalMovimientos} onHide={()=>{setShowModalMovimientos(false)}} centered size="lg">
+          <div style={cardStyle}>
+              <Modal.Header style={headerStyle}>
+                <Modal.Title style={{color: 'var(--color-title)'}}>Historial de movimientos</Modal.Title>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={()=>{setShowModalMovimientos(false)}} 
+                  style={{ filter: 'var(--logo-filter)'}}
+                >
+                </button>
+              </Modal.Header>
+              <Modal.Body style={{backgroundColor: 'var(--color-bg)', color: 'var(--color-text)', maxHeight: '70vh', overflowY: 'auto'}}>
+                  <HistorialMovimientos />
+              </Modal.Body>
+          </div>
       </Modal>
     </Container>
   );
 }
-function FormMermas({merma,empleadoId,onGuardar,onCancelar}){
-  const [formInfo,setformInfo]=useState({
-     platillo_id:merma?.platillo_id||"",
-     cantidad:merma?.cantidad|| "",
-     motivo:merma?.motivo|| ""
+
+function FormMermas({merma, empleadoId, onGuardar, onCancelar}){
+  const [formInfo, setformInfo] = useState({
+      platillo_id:merma?.platillo_id||"",
+      cantidad:merma?.cantidad|| "",
+      motivo:merma?.motivo|| ""
   })
-  const [platillos,setPlatillos]=useState([])
+  const [platillos,setPlatillos] = useState([])
 
   useEffect(()=> {
       fetch("http://127.0.0.1:8000/pedidosF/platillos")
         .then((res) => res.json())
-        .then((data) => {setPlatillos(data);      
+        .then((data) => {
+          setPlatillos(data);      
           console.log("🍽️ Platillos cargados:", data);
-      data.forEach(p => {
-        console.log(`- ${p.nombre}: ID = ${p.id}`);
-      });})
+          data.forEach(p => {
+            console.log(`- ${p.nombre}: ID = ${p.id}`);
+          });
+        })
         .catch((err) => console.error(err));
   }, [])
+
   const manejarEnvio=(e)=>{
     e.preventDefault();
-   const datosLimpios = {
-    platillo_id: Number(formInfo.platillo_id),
-    cantidad: Number(formInfo.cantidad),
-    motivo: formInfo.motivo.trim(),
-    empleado_id: empleadoId || null
+    const datosLimpios = {
+      platillo_id: Number(formInfo.platillo_id),
+      cantidad: Number(formInfo.cantidad),
+      motivo: formInfo.motivo.trim(),
+      empleado_id: empleadoId || null
   };  
   onGuardar(datosLimpios);
-  }
-     return(
-  <>
-    <Form onSubmit={manejarEnvio}>
+};
+
+ const inputStyle = { 
+    backgroundColor: 'var(--color-bg)', 
+    color: 'var(--color-text)', 
+    borderColor: 'var(--color-muted)' 
+  };
+
+  const btnPrimary = { 
+    backgroundColor: 'var(--color-btn)', 
+    borderColor: 'var(--color-btn)', 
+    color: 'white', 
+    fontWeight: 'bold' 
+  };
+
+  const btnSecondary = { 
+    backgroundColor: 'var(--color-muted)', 
+    borderColor: 'var(--color-muted)', 
+    color: 'white'
+  };
+
+return(
+  <Form onSubmit={manejarEnvio}>
       <Form.Group className="mb-3">
-        <Form.Label>Selecciona el platillo:</Form.Label>
-        <Form.Select className="form-control w-100" value={formInfo.platillo_id} 
-        onChange={(e)=>setformInfo({...formInfo,platillo_id:e.target.value})} >
+          <Form.Label style={{color: 'var(--color-text)'}}>Selecciona el platillo:</Form.Label>
+        <Form.Select 
+          style={inputStyle}
+          value={formInfo.platillo_id} 
+          onChange={(e)=>setformInfo({...formInfo,platillo_id:e.target.value})} 
+        >
           <option value="">Selecciona un platillo...</option>
           {platillos.map((platillo)=>(
               <option key={platillo.id} value={platillo.id}>{platillo.nombre}</option>
           ))}
         </Form.Select>
-        <Form.Label>Selecciona la cantidad:</Form.Label>
-        <Form.Control type="number" className="form-control w-25" value={formInfo.cantidad}   onChange={(e) => setformInfo({...formInfo,cantidad:Number(e.target.value)})} required min="1" />
-        <Form.Label>Establece el motivo:</Form.Label>
-        <Form.Control as="textarea" className="w-100" rows={3} value={formInfo.motivo}  onChange={(e)=>setformInfo({...formInfo,motivo:e.target.value})} required/>
+
+        <Form.Label style={{color: 'var(--color-text)'}} className="mt-3">Selecciona la cantidad:</Form.Label>
+        <Form.Control 
+          type="number" 
+          className="form-control w-25" 
+          value={formInfo.cantidad}   
+          onChange={(e) => setformInfo({...formInfo,cantidad:Number(e.target.value)})} 
+          required 
+          min="1" 
+        />
+        <Form.Label style={{color: 'var(--color-text)'}} className="mt-3">Establece el motivo:</Form.Label>
+        <Form.Control 
+          as="textarea" 
+          style={inputStyle}
+          rows={3} 
+          value={formInfo.motivo}  
+          onChange={(e)=>setformInfo({...formInfo,motivo:e.target.value})} 
+          required
+        />
       </Form.Group>
-      <Button variant="outline-primary mx-1" onClick={onCancelar}>Cancelar</Button>
-      <Button variant="warning mx-1" type="submit">Registrar merma</Button>
-    </Form>
-  
-  </>)
-  }
+      <div className="d-flex justify-content-end gap-2">
+        <Button style={btnSecondary} onClick={onCancelar}>Cancelar</Button>
+        <Button style={btnPrimary} type="submit">Registrar Merma</Button>
+      </div>
+  </Form>
+  );
+}
+
 function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
   const [formData, setFormData] = useState({
     nombre: insumo?.nombre || "",
@@ -433,71 +604,72 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
     unidad: insumo?.unidad_medida || "kg",
     minimo: insumo?.minimo || 0,
     perecible: insumo?.perecible ?? false,
-    proveedor_id: "",
-    fecha_vencimiento: "",
-    numero_lote: ""
   });
-  const cantidadOR = parseFloat(insumo?.cantidad_actual || 0);
-  const cantidadNU = parseFloat(formData.cantidad || 0);
-  const hayAumento = insumo && cantidadNU > cantidadOR;
-  const [proveedores, setProveedores] = useState([]);
+
   const categorias = ["Pescados", "Mariscos", "Frutas", "Verduras", "Tubérculos", "Granos", "Condimentos", "Hierbas", "Otros"];
   const unidades = ["kg", "gr", "litro", "unidad", "hojas", "paquete", "caja"];
+
+  const inputStyle = { 
+    backgroundColor: 'var(--color-bg)', 
+    color: 'var(--color-text)', 
+    borderColor: 'var(--color-muted)' 
+  };
+
+  const btnPrimary = { 
+    backgroundColor: 'var(--color-btn)', 
+    borderColor: 'var(--color-btn)', 
+    color: 'white', 
+    fontWeight: 'bold' 
+  };
+
+  const btnSecondary = { 
+    backgroundColor: 'var(--color-muted)', 
+    borderColor: 'var(--color-muted)', 
+    color: 'white'
+  };
+
   const manejarEnvio = (e) => {
     e.preventDefault();
     const cantidadNueva = parseFloat(formData.cantidad);
     const cantidadOriginal = parseFloat(insumo?.cantidad_actual || 0);
     const diferencia = cantidadNueva - cantidadOriginal;
-     if (!empleadoId) {
+
+    if (!empleadoId) {
       alert('Error: No se pudo identificar al empleado. Por favor, vuelva a iniciar sesión.');
       return;
     }
+
     onGuardar({
       ...formData,
       cantidad: parseFloat(formData.cantidad),
       precio: parseFloat(formData.precio),
       minimo: parseFloat(formData.minimo),
       diferencia:diferencia,
-      empleado_id: empleadoId || null,
-       ...(diferencia > 0 && {
-      proveedor_id: formData.proveedor_id?parseInt(formData.proveedor_id) : null,
-      fecha_vencimiento: formData.fecha_vencimiento || null,
-      numero_lote: formData.numero_lote || null
-    })
+      empleado_id: empleadoId || null
     });
   };
-  useEffect(() => {
-    cargarProveedores();
-  }, []);
-  const cargarProveedores = async () => {
-    try {
-      const respuesta = await fetch(`${API_BASE_URL}/api/inventario/proveedores`);
-      if (!respuesta.ok) throw new Error("Error al cargar proveedores");
-      const datos = await respuesta.json();
-      setProveedores(datos);
-    } catch (err) {
-      console.error("Error cargando proveedores:", err);
-      setProveedores([]); // Array vacío si falla
-    }
-  };
+
   return (
     <Form onSubmit={manejarEnvio}>
       <Form.Group className="mb-3">
-        <Form.Label>Nombre del Insumo *</Form.Label>
+        <Form.Label style={{color: 'var(--color-text)'}}>Nombre del Insumo</Form.Label>
         <Form.Control
           type="text"
+          style={inputStyle}
           value={formData.nombre}
           onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
           placeholder="Ej: Pescado, Limón, Cebolla, etc."
           required
         />
       </Form.Group>
+
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label>Cantidad Actual *</Form.Label>
+            <Form.Label style={{color: 'var(--color-text)'}}>Cantidad Actual</Form.Label>
             <Form.Control
               type="number"
+              style={inputStyle}
               value={formData.cantidad}
               onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })}
               min="0"
@@ -507,9 +679,10 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
         </Col>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label>Stock Mínimo *</Form.Label>
+            <Form.Label style={{color: 'var(--color-text)'}}>Stock Mínimo</Form.Label>
             <Form.Control
               type="number"
+              style={inputStyle}
               value={formData.minimo}
               onChange={(e) => setFormData({ ...formData, minimo: e.target.value })}
               min="0"
@@ -518,12 +691,14 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
           </Form.Group>
         </Col>
       </Row>
+
       <Row>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label>Precio Unitario (S/) *</Form.Label>
+            <Form.Label style={{color: 'var(--color-text)'}}>Precio Unitario (S/) *</Form.Label>
             <Form.Control
               type="number"
+              style={inputStyle}
               step="0.01"
               value={formData.precio}
               onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
@@ -534,81 +709,64 @@ function FormInsumo({ insumo,empleadoId, onGuardar, onCancelar }) {
         </Col>
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label>Unidad de Medida *</Form.Label>
-            <Form.Select value={formData.unidad} onChange={(e) => setFormData({ ...formData, unidad: e.target.value })} required>
+            <Form.Label style={{color: 'var(--color-text)'}}>Unidad de Medida</Form.Label>
+            <Form.Select 
+              style={inputStyle}
+              value={formData.unidad} 
+              onChange={(e) => setFormData({ ...formData, unidad: e.target.value })} 
+              required
+            >
               {unidades.map(unidad => <option key={unidad} value={unidad}>{unidad}</option>)}
             </Form.Select>
           </Form.Group>
         </Col>
       </Row>
-            {hayAumento && (
-        <>
-          <Form.Group className="mb-3">
-            <Form.Label>Proveedor (Opcional)</Form.Label>
-            <Form.Select
-              value={formData.proveedor_id}
-              onChange={(e) => setFormData({ ...formData, proveedor_id: e.target.value })}
-            >
-              <option value="">-- Sin proveedor --</option>
-              {proveedores.map(prov => (
-                <option key={prov.id} value={prov.id}>{prov.nombre}</option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>
-                  Fecha de Vencimiento {formData.perecible && "*"}
-                </Form.Label>
-                <Form.Control
-                  type="date"
-                  value={formData.fecha_vencimiento}
-                  onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
-                  required={formData.perecible}  // ✅ Obligatorio si es perecible
-                  min={new Date().toISOString().split('T')[0]}  // No fechas pasadas
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Número de Lote (Opcional)</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.numero_lote}
-                  onChange={(e) => setFormData({ ...formData, numero_lote: e.target.value })}
-                  placeholder="Ej: L2025-001"
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-        </>
-      )}
+
       <Form.Group className="mb-4">
-        <Form.Label>Categoría *</Form.Label>
-        <Form.Select value={formData.categoria} onChange={(e) => setFormData({ ...formData, categoria: e.target.value })} required>
+        <Form.Label style={{color: 'var(--color-text)'}}>Categoría</Form.Label>
+        <Form.Select
+          style={inputStyle}
+          value={formData.categoria} 
+          onChange={(e) => setFormData({ ...formData, categoria: e.target.value })} 
+          required
+        >
           {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
         </Form.Select>
       </Form.Group>
+
       <Form.Group className="mb-4">
-        <Form.Label>¿Es perecible? *</Form.Label>
-        <Form.Select value={formData.perecible ? "true" : "false"} onChange={(e) => setFormData({ ...formData, perecible: e.target.value === "true" })} required>
+        <Form.Label style={{color: 'var(--color-text)'}}>¿Es perecible? *</Form.Label>
+        <Form.Select 
+          style={inputStyle}
+          value={formData.perecible ? "true" : "false"} 
+          onChange={(e) => setFormData({ ...formData, perecible: e.target.value === "true" })} 
+          required
+        >
           <option value="true">Sí</option>
           <option value="false">No</option>
         </Form.Select>
       </Form.Group>
+
       <div className="d-flex gap-2 justify-content-end">
-        <Button variant="outline-secondary" onClick={onCancelar}>Cancelar</Button>
-        <Button variant="primary" type="submit">{insumo ? "Actualizar" : "Guardar Insumo"}</Button>
+        <Button style={btnSecondary} onClick={onCancelar}>Cancelar</Button>
+        <Button style={btnPrimary} type="submit">{insumo ? "Actualizar" : "Guardar Insumo"}</Button>
       </div>
     </Form>
   );
 }
+
 function HistorialMovimientos() {
   const [ingredientes, setIngredientes] = useState([]);
   const [historial, setHistorial] = useState([]);
   const [ingredienteSeleccionado, setIngredienteSeleccionado] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const inputStyle = { 
+    backgroundColor: 'var(--color-bg)', 
+    color: 'var(--color-text)', 
+    borderColor: 'var(--color-muted)' 
+  };
+
   const cargarIngredientes = async () => {
     try {
       const respuesta = await fetch(`${API_BASE_URL}/inventario_L/ingredientes-con-lotes`);
@@ -619,6 +777,7 @@ function HistorialMovimientos() {
       console.error("Error:", err);
     }
   };
+
   const formatearFecha = (fechaISO) => {
     const fecha = new Date(fechaISO);
     return fecha.toLocaleString('es-PE', {
@@ -629,22 +788,28 @@ function HistorialMovimientos() {
       minute: '2-digit'
     });
   };
-  const mostrarMovimientos = async (ingrediente_id = null) => {
+
+  const mostrarMovimientos = async (ingredienteId = null) => {
     setLoading(true);
     try {
-      const url = ingrediente_id 
-        ? `${API_BASE_URL}/inventario_L/movimientos/historial/?ingrediente_id=${ingrediente_id}`
+      const url = ingredienteId 
+        ? `${API_BASE_URL}/inventario_L/lotes/ingrediente/?ingrediente_id=${ingredienteId}`
         : `${API_BASE_URL}/inventario_L/movimientos/historial`;
       const respuesta = await fetch(url);
+
       if (respuesta.status === 404) {
         setHistorial([]);
         return;
-      } 
+      }
+      
+      // Verificar si la respuesta es OK
       if (!respuesta.ok) {
         throw new Error("Error al cargar historial");
-      }  
+      }
+      
       const datos = await respuesta.json();
       setHistorial(datos);
+      
     } catch (err) {
       console.error("Error al cargar el historial:", err);
       setHistorial([]);
@@ -652,61 +817,65 @@ function HistorialMovimientos() {
       setLoading(false);
     }
   };
-  const filtrarPorIngredientes = (ingrediente_id) => {
-    setIngredienteSeleccionado(ingrediente_id);
+
+  const filtrarPorIngredientes = (ingredienteId) => {
+    setIngredienteSeleccionado(ingredienteId);
     
-    if (!ingrediente_id || ingrediente_id === "") {
+    if (!ingredienteId || ingredienteId === "") {
       mostrarMovimientos();
     } else {
-      mostrarMovimientos(parseInt(ingrediente_id));
+      mostrarMovimientos(parseInt(ingredienteId));
     }
   };
+
   useEffect(() => {
     cargarIngredientes();
     mostrarMovimientos();
-    console.log("IDs de ingredientes:", ingredientes.map(i => i.id));
   }, []);
+
   return (
     <>
-    <div>
       <Form className="mb-3">
         <Form.Group>
-          <Form.Label>Filtrar por ingrediente:</Form.Label>
-            <select 
-                    className="form-select"
-                    value={ingredienteSeleccionado} 
-                    onChange={(e) => filtrarPorIngredientes(e.target.value)}
-                    disabled={loading}
-            >
-              <option value="">-- Todos los ingredientes --</option>
-                {ingredientes.map((ingrediente) => (
-                  <option key={ingrediente.id} value={ingrediente.id}>
-                    {ingrediente.nombre}
-                  </option>
-              ))}
-            </select>
+          <Form.Label style={{color: 'var(--color-text)'}}>Filtrar por ingrediente:</Form.Label>
+          <Form.Select 
+            style={inputStyle}
+            value={ingredienteSeleccionado} 
+            onChange={(e) => filtrarPorIngredientes(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">-- Todos los ingredientes --</option>
+            {ingredientes.map((ingrediente) => (
+              <option key={ingrediente.id} value={ingrediente.id}>
+                {ingrediente.nombre}
+              </option>
+            ))}
+          </Form.Select>
         </Form.Group>
       </Form>
+
       {loading && (
         <Alert variant="info" className="mb-3">
           Cargando movimientos...
         </Alert>
       )}
+
       {!loading && ingredienteSeleccionado && (
         <Alert variant="info" className="mb-3">
           Mostrando {historial.length} movimiento(s) de{' '}
           {ingredientes.find(i => i.id === parseInt(ingredienteSeleccionado))?.nombre}
         </Alert>
       )}
-      <Table striped bordered hover className="w-100">
-        <thead>
+
+      <Table striped bordered hover className="w-100" style={{backgroundColor: 'var(--color-bg)', color: 'var(--color-text)'}}>
+        <thead style={{backgroundColor: 'var(--color-header)'}}>
           <tr>
-            <th>Id del Lote</th>
-            <th>Empleado</th>
-            <th>Tipo</th>
-            <th>Ingrediente</th>
-            <th>Cantidad</th>
-            <th>Fecha</th>
+            <th style={{color: 'var(--color-title)'}}>Lote #</th>
+            <th style={{color: 'var(--color-title)'}}>Empleado</th>
+            <th style={{color: 'var(--color-title)'}}>Tipo</th>
+            <th style={{color: 'var(--color-title)'}}>Ingrediente</th>
+            <th style={{color: 'var(--color-title)'}}>Cantidad</th>
+            <th style={{color: 'var(--color-title)'}}>Fecha</th>
           </tr>
         </thead>
         <tbody>
@@ -741,66 +910,8 @@ function HistorialMovimientos() {
           )}
         </tbody>
       </Table>
-    </div>
     </>
   );
 }
-function MostrarLotesNoVencidos({ ingredienteId }) {
-  const [lotes, setLotes] = useState([]);
-  const [loading, setLoading] = useState(false);
 
-  const fetchLotes = async () => {
-    if (!ingredienteId) return; 
-    
-    setLoading(true);
-    try {
-      const respuesta = await fetch(
-        `${API_BASE_URL}/inventario_L/lotes/ingrediente/${ingredienteId}`
-      );
-      if (respuesta.status === 404) {
-        setLotes([]);
-        return;
-      }
-      if (!respuesta.ok) throw new Error("Error al cargar lotes");
-      const datos = await respuesta.json();
-      setLotes(datos);
-    } catch (err) {
-      console.error("Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (ingredienteId) {  
-      fetchLotes();
-    }
-  }, [ingredienteId]);
-  if (lotes.length === 0 && !loading) {
-    return <Alert>El ingrediente no presenta ningún lote activo</Alert>;
-  }
-
-  return (
-    <Table striped bordered hover className="w-100">
-      <thead>
-        <tr>
-          <th>Id del Lote</th>
-          <th>Nombre del proveedor</th>
-          <th>Cantidad de lote</th>
-          <th>Fecha de Vencimiento</th>
-        </tr>
-      </thead>
-      <tbody>
-        {lotes.map((lote) => (
-          <tr key={lote.id}>
-            <td>{lote.id}</td>
-            <td>{lote.nombre_proveedor ?? "Sin proveedor"}</td>
-            <td>{lote.stock_actual}</td>
-            <td>{lote.fecha_vencimiento ?? "Sin fecha"}</td>
-          </tr>
-        ))}
-      </tbody>
-    </Table>
-  );
-}
 export default Insumos;

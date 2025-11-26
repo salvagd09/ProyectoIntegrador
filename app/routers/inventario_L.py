@@ -4,9 +4,9 @@ from sqlalchemy import func,exists
 from typing import List, Optional
 from decimal import Decimal
 from datetime import date
-import models, schemas
-from database import get_db
-from utils import registrar_auditoria, serializar_db_object
+from app import models, schemas
+from app.database import get_db
+from app.utils import registrar_auditoria, serializar_db_object
 router = APIRouter(
     prefix="/inventario_L",
     tags=["Inventario_L"]

@@ -413,13 +413,13 @@ return (
                                                 <tbody>
                                                 {producto.ingredientes_receta.map((ingrediente, index) => (
                                                     <tr key={index}>
-                                                        <td style={{color: 'var(--color-bg)', fontSize: '0.8rem'}}>
+                                                        <td style={{color: 'var(--color-muted)', fontSize: '0.8rem'}}>
                                                             {ingrediente.nombre_ingrediente}
                                                         </td>
-                                                        <td style={{color: 'var(--color-bg)', fontSize: '0.8rem'}}>
+                                                        <td style={{color: 'var(--color-muted)', fontSize: '0.8rem'}}>
                                                             {ingrediente.cantidad_requerida}
                                                         </td>
-                                                        <td style={{color: 'var(--color-bg)', fontSize: '0.8rem'}}>
+                                                        <td style={{color: 'var(--color-muted)', fontSize: '0.8rem'}}>
                                                             {ingrediente.unidad_medida}
                                                         </td>
                                                     </tr>

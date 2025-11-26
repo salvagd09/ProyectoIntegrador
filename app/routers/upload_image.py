@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import cloudinary.uploader
-from cloudinary_config import cloudinary  
+from app.cloudinary_config import cloudinary  
 
 router = APIRouter(
     prefix="/Cloudinary",

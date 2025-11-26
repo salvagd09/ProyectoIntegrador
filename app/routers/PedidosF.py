@@ -2,10 +2,9 @@ from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session,joinedload
 from typing import List
 from datetime import datetime
-from routers.inventario_L import registrar_salida_stock
-import database
-import schemas
-import models
+from app.routers.inventario_L import registrar_salida_stock
+from app import database
+from app import models, schemas 
 router=APIRouter(prefix="/pedidosF",tags=["pedidosF"])
 def get_db():
     db = database.SessionLocal()

@@ -11,8 +11,8 @@ import asyncio
 from datetime import datetime
 from sqlalchemy.orm import Session
 # Importaciones de tu base de datos y modelos
-from database import get_db
-from models import Pagos, Pedidos, EstadoPagoEnum, MetodoPagoEnum, EstadoPedidoEnum
+from app.database import get_db
+from app.models import Pagos, Pedidos, EstadoPagoEnum, MetodoPagoEnum, EstadoPedidoEnum
 router = APIRouter()
 
 # Configuración de Culqi DIRECTAMENTE desde variables de entorno

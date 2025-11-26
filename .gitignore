@@ -35,6 +35,7 @@ app/venv/
 
 # Ignorar archivos Python
 __pycache__/
+routers/__pycache__/
 *.pyc
 *.pyo
 *.pyd

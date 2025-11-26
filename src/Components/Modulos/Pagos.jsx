@@ -322,6 +322,7 @@ const PaymentManager = () => {
     setCurrentStep(1);
     setShowModal(false);
   };
+
   const printReceipt = () => {
     const receiptContent = receiptRef.current;
     if (receiptContent && payments[0]) {
@@ -335,11 +336,11 @@ const PaymentManager = () => {
     }
   };
 
-  // ========== ESTADÍSTICAS ==========
-  const totalRevenue = payments.reduce((sum, payment) => sum + payment.total, 0);
-  const todayPayments = payments.filter(payment => 
-    new Date(payment.createdAt).toDateString() === new Date().toDateString()
-  );
+  const totalRevenue = payments.reduce((sum, payment) => sum + (payment.monto || 0), 0);
+  const todayPayments = payments.filter(payment => {
+    const paymentDate = new Date(payment.fecha_pago || payment.createdAt);
+    return paymentDate.toDateString() === new Date().toDateString();
+  });
 
   return (
     <div className="container-fluid p-4">

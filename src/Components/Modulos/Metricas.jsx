@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import '../Modulos/CSS/Metricas.css';
+import '../Modulos/Metricas.css';
 
 const Metricas = () => {
   const [metricas, setMetricas] = useState({

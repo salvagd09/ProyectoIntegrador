@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import '../Modulos/Metricas.css';
+import '../Modulos/CSS/Metricas.css';
+import { metricasAPI } from '../../api/metricasAPI'; //
 
 const Metricas = () => {
   const [metricas, setMetricas] = useState({
@@ -9,6 +10,7 @@ const Metricas = () => {
     ventasMensuales: []
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); //
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
 
@@ -16,21 +18,19 @@ const Metricas = () => {
   const cargarMetricas = async () => {
     try {
       setLoading(true);
-      
-      // Parámetros de fecha si existen
-      const params = new URLSearchParams();
-      if (fechaInicio) params.append('fecha_inicio', fechaInicio);
-      if (fechaFin) params.append('fecha_fin', fechaFin);
+      setError(null);
 
-      const [ticketRes, tiempoRes, ventasRes] = await Promise.all([
-        fetch(`http://localhost:8000/api/metricas/ticket-promedio?${params}`),
-        fetch(`http://localhost:8000/api/metricas/tiempo-promedio?${params}`),
-        fetch(`http://localhost:8000/api/metricas/ventas-mensuales?${params}`)
+      // USA API EN VEZ DE FETCH DIRECTO
+      const [ticketData, tiempoData, ventasData] = await Promise.all([
+        metricasAPI.getTicketPromedio(fechaInicio, fechaFin),
+        metricasAPI.getTiempoPromedio(fechaInicio, fechaFin),
+        metricasAPI.getVentasMensuales(fechaInicio, fechaFin)
       ]);
 
-      const ticketData = await ticketRes.json();
-      const tiempoData = await tiempoRes.json();
-      const ventasData = await ventasRes.json();
+      // DEBUG: Ver qué datos llegan
+      console.log('Ticket:', ticketData);
+      console.log('Tiempo:', tiempoData);
+      console.log('Ventas:', ventasData);
 
       setMetricas({
         ticketPromedio: ticketData.ticket_promedio || 0,
@@ -39,6 +39,7 @@ const Metricas = () => {
       });
     } catch (error) {
       console.error('Error cargando métricas:', error);
+      setError('Error al cargar las métricas. Verifica que el backend esté corriendo.');
     } finally {
       setLoading(false);
     }
@@ -64,9 +65,21 @@ const Metricas = () => {
     );
   }
 
+  // MOSTRAR ERROR SI EXISTE
+  if (error) {
+    return (
+      <div className="metricas-container">
+        <div className="error-message" style={{color: 'red', padding: '20px'}}>
+          {error}
+        </div>
+        <button onClick={cargarMetricas}>Reintentar</button>
+      </div>
+    );
+  }
+
   return (
     <div className="metricas-container">
-      <h1>Nuestras Métricas</h1>
+      <h1>📊 Dashboard de Métricas</h1>
       
       {/* Filtros de fecha */}
       <div className="filtros">

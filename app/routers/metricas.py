@@ -99,7 +99,8 @@ def obtener_tiempo_promedio(
                     models.Pedidos.estado == models.EstadoPedidoEnum.entregado
                 )
             ),
-            models.Pedidos.hora_fin.isnot(None)  # Solo pedidos con hora_fin establecida
+            models.Pedidos.hora_fin.isnot(None),
+            models.Pedidos.hora_inicio.isnot(None)
         )
         
         # Aplicar filtros de fecha si se proporcionan
@@ -115,28 +116,62 @@ def obtener_tiempo_promedio(
         # Obtener pedidos completados
         pedidos = db.query(models.Pedidos).filter(filtro_base).all()
         
+        print(f"🔍 DEBUG: {len(pedidos)} pedidos con horas registradas")
+        
         if not pedidos:
             return {
                 "tiempo_promedio": 0,
                 "total_pedidos": 0,
+                "pedidos_con_tiempo_valido": 0,
+                "debug_info": "No hay pedidos con horas de inicio y fin registradas",
                 "periodo": {
                     "fecha_inicio": fecha_inicio,
                     "fecha_fin": fecha_fin
                 }
             }
         
-        # Calcular tiempo promedio en minutos
+        # CALCULAR CON FILTROS MÁS FLEXIBLES
         tiempos = []
+        debug_info = {
+            "total_pedidos": len(pedidos),
+            "sin_horas": 0,
+            "orden_incorrecto": 0,
+            "fuera_rango": 0,
+            "validos": 0
+        }
+        
         for pedido in pedidos:
             if pedido.hora_inicio and pedido.hora_fin:
-                duracion = (pedido.hora_fin - pedido.hora_inicio).total_seconds() / 60
-                tiempos.append(duracion)
+                duracion_minutos = (pedido.hora_fin - pedido.hora_inicio).total_seconds() / 60
+                
+                print(f"📦 Pedido {pedido.id}: {duracion_minutos:.1f} min")
+                
+                # FILTROS MÁS FLEXIBLES:
+                orden_correcto = pedido.hora_fin > pedido.hora_inicio
+                tiempo_valido = 1 <= duracion_minutos <= 480  # 1 min a 8 horas
+                
+                if not orden_correcto:
+                    debug_info["orden_incorrecto"] += 1
+                    continue
+                    
+                if not tiempo_valido:
+                    debug_info["fuera_rango"] += 1
+                    continue
+                
+                # PEDIDO VÁLIDO
+                debug_info["validos"] += 1
+                tiempos.append(duracion_minutos)
         
+        # Calcular promedio
         tiempo_promedio = sum(tiempos) / len(tiempos) if tiempos else 0
+        
+        print(f"📊 RESULTADO: {debug_info['validos']} pedidos válidos, Promedio: {tiempo_promedio:.1f} min")
         
         return {
             "tiempo_promedio": round(tiempo_promedio, 1),
             "total_pedidos": len(pedidos),
+            "pedidos_con_tiempo_valido": len(tiempos),
+            "debug_info": debug_info,
             "periodo": {
                 "fecha_inicio": fecha_inicio,
                 "fecha_fin": fecha_fin
@@ -144,6 +179,7 @@ def obtener_tiempo_promedio(
         }
         
     except Exception as e:
+        print(f"🚨 ERROR en tiempo-promedio: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error calculando tiempo promedio: {str(e)}")
 
 @router.get("/ventas-mensuales")
@@ -153,29 +189,11 @@ def obtener_ventas_mensuales(
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene las ventas mensuales agrupadas por mes
+    Obtiene las ventas mensuales desde PAGOS REALES
     """
     try:
-        # Construir filtro base para pedidos completados
-        filtro_base = and_(
-            or_(
-                # Delivery completado
-                and_(
-                    models.Pedidos.tipo_pedido == models.TipoPedidoEnum.delivery,
-                    models.Pedidos.estado == models.EstadoPedidoEnum.entregado
-                ),
-                # Mesa completada
-                and_(
-                    models.Pedidos.tipo_pedido == models.TipoPedidoEnum.mesa,
-                    models.Pedidos.estado == models.EstadoPedidoEnum.servido
-                ),
-                # Recojo local completado
-                and_(
-                    models.Pedidos.tipo_pedido == models.TipoPedidoEnum.recojo_local,
-                    models.Pedidos.estado == models.EstadoPedidoEnum.entregado
-                )
-            )
-        )
+        # FILTRAR SOLO PAGOS CONFIRMADOS
+        filtro_base = models.Pagos.estado == models.EstadoPagoEnum.pagado
         
         # Aplicar filtros de fecha si se proporcionan
         if fecha_inicio and fecha_fin:
@@ -183,8 +201,8 @@ def obtener_ventas_mensuales(
             fecha_fin_dt = datetime.strptime(fecha_fin, "%Y-%m-%d")
             filtro_base = and_(
                 filtro_base,
-                models.Pedidos.fecha_creacion >= fecha_inicio_dt,
-                models.Pedidos.fecha_creacion <= fecha_fin_dt
+                models.Pagos.fecha_pago >= fecha_inicio_dt,
+                models.Pagos.fecha_pago <= fecha_fin_dt
             )
         else:
             # Por defecto, último año
@@ -192,21 +210,21 @@ def obtener_ventas_mensuales(
             fecha_inicio_dt = fecha_fin_dt - timedelta(days=365)
             filtro_base = and_(
                 filtro_base,
-                models.Pedidos.fecha_creacion >= fecha_inicio_dt,
-                models.Pedidos.fecha_creacion <= fecha_fin_dt
+                models.Pagos.fecha_pago >= fecha_inicio_dt,
+                models.Pagos.fecha_pago <= fecha_fin_dt
             )
         
-        # Consulta para ventas mensuales
+        # CONSULTA CORREGIDA - desde PAGOS REALES
         ventas_mensuales = db.query(
-            extract('month', models.Pedidos.fecha_creacion).label('mes_numero'),
-            func.sum(models.Pedidos.monto_total).label('ventas'),
-            func.count(models.Pedidos.id).label('cantidad_pedidos')
+            extract('month', models.Pagos.fecha_pago).label('mes_numero'),
+            func.sum(models.Pagos.monto).label('ventas'),
+            func.count(models.Pagos.id).label('cantidad_pedidos')
         ).filter(
             filtro_base
         ).group_by(
-            extract('month', models.Pedidos.fecha_creacion)
+            extract('month', models.Pagos.fecha_pago)
         ).order_by(
-            extract('month', models.Pedidos.fecha_creacion)
+            extract('month', models.Pagos.fecha_pago)
         ).all()
         
         # Mapear números de mes a nombres
@@ -223,6 +241,10 @@ def obtener_ventas_mensuales(
                 "ventas": float(venta.ventas) if venta.ventas else 0.0,
                 "cantidad_pedidos": venta.cantidad_pedidos
             })
+        
+        # Verificar cuántos pagos encontró
+        total_pagos = sum(item['cantidad_pedidos'] for item in resultado)
+        print(f"📊 PAGOS ENCONTRADOS EN MÉTRICAS: {total_pagos}")
         
         return resultado
         

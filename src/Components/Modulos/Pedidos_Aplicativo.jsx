@@ -111,12 +111,12 @@ function Pedidos_Aplicativo() {
     p => !pedidosCerrados.includes(p.pedido.id)
   );
   // Calcular contadores - TODAS LAS VARIABLES SE USAN
-  const pedidosPendientes = pedidosFiltrados.filter(p => p.pedido.estado === 'pendiente').length;
-  const pedidosPreparacion = pedidosFiltrados.filter(p => p.pedido.estado === 'en_preparacion').length;
-  const pedidosListos = pedidosFiltrados.filter(p => p.pedido.estado === 'listo').length;
+  const pedidosPendientes = pedidos.filter(p => p.pedido.estado === 'pendiente').length;
+  const pedidosPreparacion = pedidos.filter(p => p.pedido.estado === 'en_preparacion').length;
+  const pedidosListos = pedidos.filter(p => p.pedido.estado === 'listo').length;
   const pedidosEntregados = pedidos.filter(p => p.pedido.estado === 'entregado').length;
   const pedidosDelivery = pedidosFiltrados.filter(p => p.pedido.tipo_pedido === 'delivery');
-  const pedidosRecojo = pedidosFiltrados.filter(p => p.pedido.tipo_pedido === 'recojo_local');
+  const pedidosRecojo = pedidos.filter(p => p.pedido.tipo_pedido === 'recojo_local');
   const getBadgeStyle = (plataforma) => {
     // Mapeo temático para plataformas
     if (plataforma === 'rappi') return { backgroundColor: '#ed673aff', color: 'white' };

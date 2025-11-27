@@ -28,6 +28,8 @@ from app.routers.upload_image import router as upload_image_router
 
 app = FastAPI(title="Sistema de Pedidos")
 
+app = FastAPI(title="Sistema de Pedidos")
+
 # --- Middleware CORS ---
 app.add_middleware(
     CORSMiddleware,
@@ -54,7 +56,6 @@ app.include_router(pedidos_router)
 app.include_router(upload_image_router)
 app.include_router(delivery_router)
 app.include_router(pagos_router)
-
 
 # --- Ruta raíz ---
 @app.get("/")

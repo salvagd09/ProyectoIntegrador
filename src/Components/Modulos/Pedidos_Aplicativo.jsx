@@ -13,6 +13,10 @@ function Pedidos_Aplicativo() {
   const [pedidos, setPedidos] = useState([]);
   const [estadisticas, setEstadisticas] = useState({});
   const [cargando, setCargando] = useState(true);
+    const [pedidosCerrados, setPedidosCerrados] = useState(() => {
+      const saved = localStorage.getItem('pedidosArchivados');
+      return saved ? JSON.parse(saved) : [];
+    });
   // Estilos
   const headerStyle = { 
     color: 'var(--color-title)', 
@@ -31,20 +35,16 @@ function Pedidos_Aplicativo() {
     backgroundColor: 'var(--color-bg)', 
     color: 'var(--color-text)' 
   };
-  const btnPrimary = {
-    backgroundColor: 'var(--color-accent)', 
-    borderColor: 'var(--color-accent)', 
-    color: 'white' 
-  };
   const btnCancel = { 
     backgroundColor: 'var(--color-btn-delete)', 
     borderColor: 'var(--color-btn-delete)', 
     color: 'white' 
   };
-  const btnReady = { 
-    backgroundColor: 'var(--color-secondary)', 
-    borderColor: 'var(--color-secondary)', 
-    color: 'var(--color-title)' 
+  const cerrarTarjeta = (pedidoId) => {
+    const cerrado = [...pedidosCerrados, pedidoId];
+    setPedidosCerrados(cerrado);
+    // Persistir en local storage
+    localStorage.setItem('pedidosArchivados', JSON.stringify(cerrado));
   };
   // Obtener pedidos de delivery
   const obtenerPedidos = async () => {
@@ -107,13 +107,16 @@ function Pedidos_Aplicativo() {
   if (cargando) {
     return <div className="text-center py-5" style={moduleBg}>Cargando pedidos...</div>;
   }
+  const pedidosFiltrados = pedidos.filter(
+    p => !pedidosCerrados.includes(p.pedido.id)
+  );
   // Calcular contadores - TODAS LAS VARIABLES SE USAN
-  const pedidosPendientes = pedidos.filter(p => p.pedido.estado === 'pendiente').length;
-  const pedidosPreparacion = pedidos.filter(p => p.pedido.estado === 'en_preparacion').length;
-  const pedidosListos = pedidos.filter(p => p.pedido.estado === 'listo').length;
+  const pedidosPendientes = pedidosFiltrados.filter(p => p.pedido.estado === 'pendiente').length;
+  const pedidosPreparacion = pedidosFiltrados.filter(p => p.pedido.estado === 'en_preparacion').length;
+  const pedidosListos = pedidosFiltrados.filter(p => p.pedido.estado === 'listo').length;
   const pedidosEntregados = pedidos.filter(p => p.pedido.estado === 'entregado').length;
-  const pedidosDelivery = pedidos.filter(p => p.pedido.tipo_pedido === 'delivery');
-  const pedidosRecojo = pedidos.filter(p => p.pedido.tipo_pedido === 'recojo_local');
+  const pedidosDelivery = pedidosFiltrados.filter(p => p.pedido.tipo_pedido === 'delivery');
+  const pedidosRecojo = pedidosFiltrados.filter(p => p.pedido.tipo_pedido === 'recojo_local');
   const getBadgeStyle = (plataforma) => {
     // Mapeo temático para plataformas
     if (plataforma === 'rappi') return { backgroundColor: '#ed673aff', color: 'white' };
@@ -144,6 +147,9 @@ function Pedidos_Aplicativo() {
                 <div className="d-flex justify-content-between align-items-start mb-3">
                     <div className="flex-1">
                         <div className="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                            {(pedido.estado==="entregado" || pedido.estado==="cancelado")&&(<Button size="sm" style={btnCancel} onClick= {() => cerrarTarjeta(pedido.id)}>
+                                    <i className="fa-solid fa-times me-1"></i> Cerrar
+                              </Button>)}
                             {/* Plataforma Badge */}
                             <span className={styles.badgeBase} style={getBadgeStyle(pedido.plataforma)}>
                                 {formatText(pedido.plataforma)}
@@ -206,24 +212,11 @@ function Pedidos_Aplicativo() {
                 <div className="mt-3 d-flex gap-2 flex-wrap">
                     {pedido.estado === 'pendiente' && (
                         <>
-                            <Button style={btnPrimary} size="sm" onClick={() => actualizarEstado(pedido.id, 'en_preparacion')}>
-                                <i className="fa-solid fa-utensils me-1"></i> Iniciar Preparación
-                            </Button>
                             <Button style={btnCancel} size="sm" onClick={() => actualizarEstado(pedido.id, 'cancelado')}>
                                 <i className="fa-solid fa-xmark me-1"></i> Cancelar
                             </Button>
                         </>
                     )}  
-                    {pedido.estado === 'en_preparacion' && (
-                        <Button style={btnReady} size="sm" onClick={() => actualizarEstado(pedido.id, 'listo')}>
-                            <i className="fa-solid fa-check me-1"></i> Marcar como Listo
-                        </Button>
-                    )}  
-                    {pedido.estado === 'listo' && (
-                        <Button style={btnPrimary} size="sm" onClick={() => actualizarEstado(pedido.id, 'entregado')}>
-                              <i className="fa-solid fa-truck me-1"></i> Marcar Entregado
-                        </Button>
-                    )}
                     {(pedido.estado === 'entregado' || pedido.estado === 'cancelado') && (
                         <span 
                             className={styles.completedStatus} 
@@ -312,7 +305,7 @@ function Pedidos_Aplicativo() {
             </Col>
         </Row>
         {/* Lista de Pedidos Dividida por Tipo */}
-         <PedidosPorConfirmar />
+        <PedidosPorConfirmar/>
         <Row className="g-4">
             {/* Columna de Delivery */}
             <Col md={6}>
@@ -373,5 +366,4 @@ function Pedidos_Aplicativo() {
         </Container>
   );
 }
-
 export default Pedidos_Aplicativo;

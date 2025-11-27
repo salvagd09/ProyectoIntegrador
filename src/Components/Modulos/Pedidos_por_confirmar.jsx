@@ -28,27 +28,10 @@ export function PedidosPorConfirmar() {
     try {
       const response = await fetch(
         `${API_BASE_URL}/delivery/webhook/${pedidoId}/confirmar`,
-        { method: "PATCH" }
+        { method: "PUT" }
       );
       if (response.ok) {
         alert("Pedido confirmado");
-        cargarPedidos();
-      }
-    } catch (err) {
-      console.error("Error:", err);
-    }
-  };
-
-  const rechazarPedido = async (pedidoId) => {
-    if (!window.confirm("¿Rechazar este pedido?")) return;
-    
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/delivery/webhook/${pedidoId}/rechazar`,
-        { method: "PATCH" }
-      );
-      if (response.ok) {
-        alert("Pedido rechazado");
         cargarPedidos();
       }
     } catch (err) {
@@ -73,7 +56,7 @@ export function PedidosPorConfirmar() {
   return (
     <Card className="mb-4" style={{...cardBg, border: '2px solid var(--color-btn-delete)'}}>
       <Card.Header style={{backgroundColor: 'var(--color-btn-delete)', color: 'white'}}>
-        <h5>Pedidos por Confirmar ({pedidos.length})</h5>
+        <h5>Pedidos de delivery a marcar como pendientes({pedidos.length})</h5>
       </Card.Header>
       <Card.Body>
         {pedidos.map((pedido) => (
@@ -121,14 +104,7 @@ export function PedidosPorConfirmar() {
                       style={{backgroundColor: 'var(--color-secondary)', border: 'none', color: 'var(--color-title)'}}
                       onClick={() => confirmarPedido(pedido.id)}
                     >
-                      <i className="fa-solid fa-check me-1"></i> Aceptar
-                    </Button>
-                    <Button 
-                      size="sm"
-                      style={{backgroundColor: 'var(--color-btn-delete)', border: 'none'}}
-                      onClick={() => rechazarPedido(pedido.id)}
-                    >
-                      <i className="fa-solid fa-xmark me-1"></i> Rechazar
+                      <i className="fa-solid fa-check me-1"></i> Marcar como pendiente
                     </Button>
                   </div>
                 </Card.Body>

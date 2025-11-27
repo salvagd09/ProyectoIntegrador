@@ -15,7 +15,7 @@ const formatTime = (dateString) => {
         // Si la fecha es válida, formateamos la hora
         return date.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
     } catch (e) {
-        return 'Hora Indefinida';
+        console.error("Error al establecer la hora:",e);
     }
 };
 
@@ -178,17 +178,7 @@ export default function Pedidos_Fisicos() {
     // Persistir en local storage
     localStorage.setItem('pedidosArchivados', JSON.stringify(cerrado));
   };
-  //Para cambiar el nombre de los botones que cambian el estado de pedido
-  const obtenerTextoBoton = (estadoP, tipoServicio) => {
-    const textos = {
-      pendiente: "Marcar como en preparación",
-      "en_preparacion": "Marcar como listo",
-      listo: tipoServicio === "delivery" 
-        ? "Marcar como entregado" 
-        : "Marcar como servido"
-    };
-    return textos[estadoP] || "Cambiar estado";
-  };
+
 
   // -- Lógica de Creación/Agregación -- //
   // Para agregar pedidos
@@ -550,7 +540,7 @@ export default function Pedidos_Fisicos() {
 
                   {rol == 1 && (
                       <div className="d-flex flex-wrap justify-content-center mt-3 gap-2">
-                          {!isCompleted && (
+                          {p.estado==="pendiente" && (
                                 <Button size="sm" style={btnWarning} onClick={() => abrirModalEditar(p)}>
                                     <i className="fa-solid fa-pen-to-square me-1"></i> Modificar
                                 </Button>
@@ -574,7 +564,7 @@ export default function Pedidos_Fisicos() {
                               </Button>
                           )}
 
-                          {!isCompleted && (
+                          {p.estado==="pendiente" && (
                                 <Button size="sm" style={btnDelete} onClick={() => { setShowModalB(true); setPedidoSeleccionado(p); }}>
                                     <i className="fa-solid fa-times me-1"></i> Cancelar
                                 </Button>

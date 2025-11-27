@@ -97,11 +97,9 @@ function Mesas() {
     }, []);
 
     function ocupar(mesa) {
-        const nuevoEstado = mesa.estado === "libre" ? "ocupada" : "libre";
-
-        fetch(`http://127.0.0.1:8000/mesas/${mesa.id}/estado?estado=${nuevoEstado}`, {
+        fetch(`http://127.0.0.1:8000/mesas/${mesa.id}/estado`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" }
         })
         .then((res) => {
             if (!res.ok) throw new Error("Fallo al cambiar el estado");

@@ -33,6 +33,8 @@ app = FastAPI(title="Sistema de Pedidos")
 
 app = FastAPI(title="Sistema de Pedidos")
 
+app = FastAPI(title="Sistema de Pedidos")
+
 # --- Middleware CORS ---
 app.add_middleware(
     CORSMiddleware,

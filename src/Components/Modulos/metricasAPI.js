@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import '../Modulos/CSS/Metricas.css';
-import { metricasAPI } from '../../api/metricasAPI'; // 👈 IMPORTA TU API
+import { metricasAPI } from '../../api/metricasAPI'; //
 
 const Metricas = () => {
   const [metricas, setMetricas] = useState({
@@ -10,7 +10,7 @@ const Metricas = () => {
     ventasMensuales: []
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // 👈 Agregar manejo de errores
+  const [error, setError] = useState(null); //
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
 
@@ -20,14 +20,14 @@ const Metricas = () => {
       setLoading(true);
       setError(null);
 
-      // 👇 USA TU API EN VEZ DE FETCH DIRECTO
+      // USA API EN VEZ DE FETCH DIRECTO
       const [ticketData, tiempoData, ventasData] = await Promise.all([
         metricasAPI.getTicketPromedio(fechaInicio, fechaFin),
         metricasAPI.getTiempoPromedio(fechaInicio, fechaFin),
         metricasAPI.getVentasMensuales(fechaInicio, fechaFin)
       ]);
 
-      // 🔍 DEBUG: Ver qué datos llegan
+      // DEBUG: Ver qué datos llegan
       console.log('Ticket:', ticketData);
       console.log('Tiempo:', tiempoData);
       console.log('Ventas:', ventasData);
@@ -65,7 +65,7 @@ const Metricas = () => {
     );
   }
 
-  // 👇 MOSTRAR ERROR SI EXISTE
+  // MOSTRAR ERROR SI EXISTE
   if (error) {
     return (
       <div className="metricas-container">

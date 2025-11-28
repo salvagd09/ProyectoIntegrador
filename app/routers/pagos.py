@@ -10,16 +10,15 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Pagos, Pedidos, EstadoPagoEnum, MetodoPagoEnum, EstadoPedidoEnum
-from logging_config import setup_loggers
+from app.logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")
 error_logger = logging.getLogger("error_logger")
-router = APIRouter()
+router = APIRouter(tags=["pagos"])
 # Configuración
 CULQI_SECRET_KEY = os.getenv("CULQI_SECRET_KEY", "sk_test_UTCQSGcXW8bCyU59")
 CULQI_BASE_URL = "https://api.culqi.com/v2"
-
 # Modelos esenciales
 class LinkPagoRequest(BaseModel):
     pedido_id: int

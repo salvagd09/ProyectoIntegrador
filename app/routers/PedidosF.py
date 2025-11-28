@@ -2,7 +2,7 @@ from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session,joinedload
 from typing import List
 from datetime import datetime
-from logging_config import setup_loggers
+from  app.logging_config import setup_loggers
 from app.routers.inventario_L import registrar_salida_stock
 from app import database
 from app import models, schemas 
@@ -223,8 +223,8 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
+        error_logger.error("Error 500 al momento de cambiar de estado de un pedido")
         raise HTTPException(
-            error_logger.error("Error 500 al momento de cambiar de estado de un pedido"),
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error: {str(e)}"
         )

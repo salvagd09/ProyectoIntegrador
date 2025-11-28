@@ -1,0 +1,59 @@
+2025-11-27 18:51:20,094 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-27 21:47:19,886 - WARNING - Intento de logging fallido de usuario:SalvadorA
+2025-11-27 21:47:36,214 - WARNING - Intento de logging fallido de usuario:cajaP
+2025-11-27 21:47:42,696 - WARNING - Las credenciales ingresadas son inválidas
+2025-11-27 21:47:52,969 - WARNING - Intento fallido de inicio de sesión de mesero
+2025-11-27 21:47:59,889 - INFO - Ingreso del mesero exitoso
+2025-11-27 22:48:46,968 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-27 22:56:21,221 - INFO - Se obtuvieron los 5 platillos más vendidos del mes
+2025-11-27 22:56:21,221 - INFO - Se obtuvo ticket promedio correctamente
+2025-11-27 22:56:21,225 - INFO - Se obtuvieron los datos de las ventas mensuales
+2025-11-27 22:56:21,742 - INFO - Se obtuvieron los 5 platillos más vendidos del mes
+2025-11-27 22:56:21,742 - INFO - Se obtuvo ticket promedio correctamente
+2025-11-27 22:56:21,743 - INFO - Se obtuvieron los datos de las ventas mensuales
+2025-11-27 23:11:15,188 - INFO - Se obtuvo ticket promedio correctamente
+2025-11-27 23:11:15,191 - INFO - Se obtuvo ticket promedio correctamente
+2025-11-27 23:11:15,246 - INFO - Se obtuvieron los datos de las ventas mensuales
+2025-11-27 23:11:15,246 - INFO - Se obtuvieron los 5 platillos más vendidos del mes
+2025-11-27 23:11:15,702 - INFO - Se obtuvieron los datos de las ventas mensuales
+2025-11-27 23:11:15,711 - INFO - Se obtuvieron los 5 platillos más vendidos del mes
+2025-11-27 23:47:30,363 - INFO - Se han obtenido las estadisticas de hoy de delivery
+2025-11-27 23:47:30,917 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:31,256 - INFO - Se han obtenido las estadisticas de hoy de delivery
+2025-11-27 23:47:31,792 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:32,659 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:33,515 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:34,220 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:35,083 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:36,325 - INFO - Los pedidos de delivery a confirmar se muestran correctamente
+2025-11-27 23:47:36,470 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:37,324 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:37,539 - INFO - Los pedidos de delivery a confirmar se muestran correctamente
+2025-11-27 23:47:38,188 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:39,062 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:39,753 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:47:40,614 - INFO - Los pedidos son listados correctamente
+2025-11-27 23:54:04,874 - INFO - Platillos existentes para el pedido
+2025-11-27 23:54:04,905 - INFO - Las mesas disponibles han sido mostradas
+2025-11-27 23:54:05,388 - INFO - Platillos existentes para el pedido
+2025-11-27 23:54:05,436 - INFO - Las mesas disponibles han sido mostradas
+2025-11-27 23:54:13,687 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:54:14,035 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:54:23,534 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:54:43,507 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:55:35,282 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:55:47,402 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:56:14,892 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:57:29,246 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:57:29,299 - INFO - Todos los empleados han sido mostrados de forma correcta
+2025-11-27 23:57:29,851 - INFO - Todos los empleados han sido mostrados de forma correcta
+2025-11-27 23:57:34,399 - INFO - Todos los empleados han sido mostrados de forma correcta
+2025-11-27 23:57:34,928 - INFO - Todos los empleados han sido mostrados de forma correcta
+2025-11-27 23:57:35,731 - INFO - Platillos existentes para el pedido
+2025-11-27 23:57:36,243 - INFO - Platillos existentes para el pedido
+2025-11-27 23:57:36,943 - INFO - Las mesas disponibles han sido mostradas
+2025-11-27 23:57:37,463 - INFO - Las mesas disponibles han sido mostradas
+2025-11-27 23:57:44,123 - INFO - Todos los empleados han sido mostrados de forma correcta
+2025-11-27 23:57:44,639 - INFO - Todos los empleados han sido mostrados de forma correcta
+2025-11-27 23:57:44,874 - INFO - Los pedidos son mostrados de forma correcta
+2025-11-27 23:57:54,497 - INFO - Los pedidos son mostrados de forma correcta

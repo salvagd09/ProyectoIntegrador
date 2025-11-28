@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from app.database import get_db
 from app import models
-from logging_config import setup_loggers
+from app.logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

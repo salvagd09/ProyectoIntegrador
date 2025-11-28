@@ -12,7 +12,7 @@ import {
   Alert,
   InputGroup,
 } from "react-bootstrap";
-import styles from '../Modulos/Menu.module.css';
+import styles from '../Modulos/Insumos.module.css';
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -58,7 +58,18 @@ function Insumos() {
     color: 'var(--color-text)', 
     borderColor: 'var(--color-muted)' 
   };
-  
+
+  const tableHeaderStyle = { 
+    backgroundColor: 'var(--color-header)', 
+    color: 'var(--color-title)', 
+    borderBottom: `2px solid var(--color-accent)`
+  };
+
+  const tableRowStyle = { 
+    backgroundColor: 'var(--color-card)', 
+    color: 'var(--color-text)' 
+  };
+
   const btnPrimary = { 
     backgroundColor: 'var(--color-btn)', 
     borderColor: 'var(--color-btn)', 
@@ -353,39 +364,48 @@ function Insumos() {
       {/* Tabla */}
       <Card style={cardStyle}>
         <Card.Header style={headerStyle}>
-          <h5 className="mb-0" style={{color: 'var(--color-title)'}}>📋 Lista de Insumos</h5>
+          <h5 className="mb-0" style={{color: 'var(--color-title)', fontWeight: 'bold'}}>
+              <i className="fa-solid fa-boxes-stacked me-2"></i> Lista de Insumos
+          </h5>
         </Card.Header>
+
         <Card.Body className="p-0">
-          <Table responsive hover className="mb-0 align-middle text-center" style={{backgroundColor: 'var(--color-bg)'}}>
-            <thead style={{backgroundColor: 'var(--color-header)'}}>
+          <Table responsive hover className={styles.themedTable}>
+            <thead style={tableHeaderStyle}>
               <tr>
-                <th style={{color: 'var(--color-title)'}}>Insumo</th>
-                <th style={{color: 'var(--color-title)'}}>Cantidad</th>
-                <th style={{color: 'var(--color-title)'}}>Precio</th>
-                <th style={{color: 'var(--color-title)'}}>Descripción</th>
-                <th style={{color: 'var(--color-title)'}}>Valor Total</th>
-                <th style={{color: 'var(--color-title)'}}>¿Es perecible?</th>
-                {rol === "admin" && <th width="200" style={{color: 'var(--color-title)'}}>Acción</th>}
+                <th className={styles.tableHead}>Insumo</th>
+                <th className={styles.tableHead}>Cantidad</th>
+                <th className={styles.tableHead}>Precio</th>
+                <th className={styles.tableHead}>Descripción</th>
+                <th className={styles.tableHead}>Valor Total</th>
+                <th className={styles.tableHead}>¿Es perecible?</th>
+                {rol === "admin" && <th width="200" className={styles.tableHead}>Acción</th>}
               </tr>
             </thead>
             <tbody>
               {insumosFiltrados.map(insumo => {
                 const estaBajoStock = insumo.cantidad_actual <= insumo.minimo;
+                const stockTextColor = estaBajoStock ? 'var(--color-btn-delete)' : 'var(--color-secondary)';
                 return (
-                  <tr key={insumo.id} style={{ 
-                      backgroundColor: estaBajoStock ? 'var(--color-warning-light)' : 'transparent',
+                  <tr key={insumo.id} className={styles.tableRow} 
+                    style={{ 
+                      backgroundColor: estaBajoStock ? 'var(--color-warning)' : cardStyle.backgroundColor,
                       color: 'var(--color-text)'
                     }}
                   >
                     <td>
                       <div>
                         <strong>{insumo.nombre}</strong>
-                        {estaBajoStock && <Badge bg="warning" text="dark" className="ms-2">Stock Bajo</Badge>}
+                        {estaBajoStock && (
+                          <Badge className="ms-2" style={{backgroundColor: 'var(--color-btn)', color: 'white'}}>
+                              Stock Bajo
+                          </Badge>
+                        )}
                       </div>
                       <small style={{color: 'var(--color-muted)'}}>Unidad: {insumo.unidad_medida}</small>
                     </td>
                     <td>
-                      <span style={{color: estaBajoStock ? 'var(--color-btn-delete)' : 'var(--color-secondary)', fontWeight: 'bold'}}>
+                      <span style={{color: stockTextColor, fontWeight: 'bold'}}>
                         {insumo.cantidad_actual} {insumo.unidad_medida}
                       </span>
                       <br />
@@ -534,7 +554,7 @@ function FormMermas({merma, empleadoId, onGuardar, onCancelar}){
   onGuardar(datosLimpios);
 };
 
- const inputStyle = { 
+const inputStyle = { 
     backgroundColor: 'var(--color-bg)', 
     color: 'var(--color-text)', 
     borderColor: 'var(--color-muted)' 

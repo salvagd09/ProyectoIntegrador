@@ -5,6 +5,11 @@ import models
 from typing import List
 from database import get_db
 from sqlalchemy.orm import Session
+from logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 router=APIRouter(prefix="/menu_A",tags=["menu_A"])
 #Acciones del router=
 
@@ -26,6 +31,7 @@ def listar_productos_con_ingredientes(db: Session = Depends(get_db)):
             "producto_activo":producto.producto_activo,
             "ingredientes": [{"nombre": ing[0]} for ing in ingredientes]
         })
+    app_logger.info("Los productos con ingredientes han sido listados")
     return mostrar_menu
 
 @router.put("/deshabilitar/{id}",response_model=None)
@@ -33,6 +39,7 @@ def HabilitarPlatillo(id:int,db:Session=Depends(get_db)):
     platillo=db.query(models.Platillo).filter(models.Platillo.id==id).first()
     
     if platillo is None:
+        app_logger.warning(f'El platillo no existe')
         raise HTTPException(status_code=404, detail="Platillo no encontrado")
 
     valor_actual = getattr(platillo, "producto_activo")
@@ -42,6 +49,8 @@ def HabilitarPlatillo(id:int,db:Session=Depends(get_db)):
     db.refresh(platillo)
 
     if getattr(platillo, "producto_activo"):
+        app_logger.info("El platillo ha sido activado")
         return {"mensaje": "Estado activado correctamente"}
     else:
+        app_logger.info("El platillo ha sido desactivado")
         return {"mensaje": "Estado desactivado correctamente"}

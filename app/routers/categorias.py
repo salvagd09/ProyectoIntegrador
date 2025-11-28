@@ -4,7 +4,11 @@ from typing import List
 from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria 
-
+from logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 router = APIRouter(
     prefix="/categorias",
     tags=["Categorías"]
@@ -15,8 +19,8 @@ router = APIRouter(
 def listar_categorias(db: Session = Depends(get_db)):
     """Lista todas las categorías, ordenadas por índice de orden"""
     categorias = db.query(models.Categoria).order_by(models.Categoria.indice_orden).all()
+    app_logger.info("Todas las categorías son mostradas")
     return categorias
-
 # Crear una nueva categoría
 @router.post("/", response_model=schemas.CategoriaResponse, status_code=status.HTTP_201_CREATED)
 def crear_categoria(categoria: schemas.CategoriaCreate, db: Session = Depends(get_db)):
@@ -27,6 +31,7 @@ def crear_categoria(categoria: schemas.CategoriaCreate, db: Session = Depends(ge
         models.Categoria.nombre.ilike(categoria.nombre)
     ).first()
     if existente:
+        app_logger.warning(f'Ya existe una categoria con el nombre {existente.nombre}')
         raise HTTPException(status_code=400, detail="Ya existe una categoría con ese nombre")
 
     # Crear la nueva categoría
@@ -43,7 +48,7 @@ def crear_categoria(categoria: schemas.CategoriaCreate, db: Session = Depends(ge
         nombre_tabla="categorias",
         registro_id=getattr(nueva_categoria, "id"),
     )
-    
+    app_logger.info(f'La categoria {nueva_categoria.nombre} ha sido creada')
     return nueva_categoria
 
 # Actualizar una categoría
@@ -54,6 +59,7 @@ def actualizar_categoria(categoria_id: int, categoria: schemas.CategoriaUpdate, 
     
     # Verificar si la categoría existe
     if not categoria_db:
+        app_logger.warning("La categoría no existe")
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
     # Actualizar campos
@@ -72,6 +78,7 @@ def actualizar_categoria(categoria_id: int, categoria: schemas.CategoriaUpdate, 
         nombre_tabla="categorias",
         registro_id=getattr(categoria_db, "id"),
     )
+    app_logger.info(f'La categoría {categoria_db.nombre} ya ha sido actualizada')
     return categoria_db
 
 # Eliminar una categoría
@@ -95,5 +102,5 @@ def eliminar_categoria(categoria_id: int, db: Session = Depends(get_db)):
         nombre_tabla="categorias",
         registro_id=getattr(categoria_db, "id"),
     )
-    
+    app_logger.info("La categoría ha sido eliminada")
     return {"detail": "Categoría eliminada con éxito"}

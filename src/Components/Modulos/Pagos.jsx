@@ -2,37 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 
 const PaymentManager = () => {
   const [payments, setPayments] = useState([]);
-  const [pedidosDeliveryPendientes, setPedidosDeliveryPendientes] = useState([]);
+  const [allPayments, setAllPayments] = useState([]);
+  const [pedidosServidos, setPedidosServidos] = useState([]);
+  const [pedidosDelivery, setPedidosDelivery] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [showPedidosFisicos, setShowPedidosFisicos] = useState(false);
+  const [showPedidosDelivery, setShowPedidosDelivery] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [modalMode, setModalMode] = useState('local');
   const [selectedPedido, setSelectedPedido] = useState(null);
 
-  const [orderData, setOrderData] = useState({
-    orderId: '',
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
-    tableNumber: '',
-    discount: 0
-  });
-
-  const [orderItems, setOrderItems] = useState([
-    { id: '1', name: '', quantity: 1, price: 0 }
-  ]);
-
-  const [deliveryOrderData, setDeliveryOrderData] = useState({
-    orderId: '',
-    customerName: '',
-    customerPhone: '',
-    customerAddress: '',
-    discount: 0
-  });
-
-  const [deliveryOrderItems, setDeliveryOrderItems] = useState([
-    { id: '1', name: '', quantity: 1, price: 0 }
-  ]);
+  // Estados para filtros
+  const [dateFilter, setDateFilter] = useState('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [filteredPayments, setFilteredPayments] = useState([]);
 
   const [cashData, setCashData] = useState({
     received: 0,
@@ -49,9 +32,30 @@ const PaymentManager = () => {
   const receiptRef = useRef(null);
 
   useEffect(() => {
-    obtenerPedidosDeliveryPendientes();
     obtenerHistorialPagos();
+    obtenerPedidosServidos();
   }, []);
+
+  useEffect(() => {
+    applyDateFilter();
+  }, [dateFilter, customStartDate, customEndDate, payments]);
+
+  // Función para obtener pagos de hoy
+  const getTodayPayments = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return payments.filter(payment => {
+      const paymentDate = new Date(payment.fecha_pago || payment.createdAt);
+      paymentDate.setHours(0, 0, 0, 0);
+      return paymentDate.getTime() === today.getTime();
+    });
+  };
+
+  // Función para obtener pagos completados
+  const getCompletedPayments = () => {
+    return payments.filter(p => p.estado === 'pagado' || p.estado === 'completado' || !p.estado);
+  };
 
   const obtenerHistorialPagos = async () => {
     try {
@@ -60,6 +64,7 @@ const PaymentManager = () => {
         const data = await response.json();
         if (data.success) {
           setPayments(data.pagos);
+          setAllPayments(data.pagos);
         }
       }
     } catch (error) {
@@ -67,87 +72,101 @@ const PaymentManager = () => {
     }
   };
 
-  const obtenerPedidosDeliveryPendientes = async () => {
+  const obtenerPedidosServidos = async () => {
     try {
-      const response = await fetch('http://localhost:8000/pedidosF/delivery-pendientes-pago/');
+      const response = await fetch('http://127.0.0.1:8000/pedidosF/pedidos-servidos-pago/');
       if (response.ok) {
         const data = await response.json();
-        setPedidosDeliveryPendientes(data);
+        if (data.success) {
+          const fisicos = data.pedidos.filter(pedido => pedido.tipo === 'fisico');
+          const delivery = data.pedidos.filter(pedido => pedido.tipo === 'delivery');
+          
+          setPedidosServidos(fisicos);
+          setPedidosDelivery(delivery);
+        }
       }
     } catch (error) {
-      console.error('Error al obtener pedidos delivery:', error);
+      console.error('Error al obtener pedidos servidos:', error);
     }
   };
 
-  const calculateTotals = () => {
-    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.18;
-    const total = subtotal + tax - orderData.discount;
-    return { subtotal, tax, total };
-  };
+  // Función para aplicar filtros de fecha
+  const applyDateFilter = () => {
+    let filtered = [...payments];
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  const totals = calculateTotals();
-  const subtotal = totals.subtotal;
-  const tax = totals.tax;
-  const total = totals.total;
-
-  const addOrderItem = () => {
-    const newId = Date.now().toString();
-    setOrderItems([...orderItems, { id: newId, name: '', quantity: 1, price: 0 }]);
-  };
-
-  const updateOrderItem = (id, field, value) => {
-    setOrderItems(orderItems.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const removeOrderItem = (id) => {
-    if (orderItems.length > 1) {
-      setOrderItems(orderItems.filter(item => item.id !== id));
+    switch (dateFilter) {
+      case 'today':
+        filtered = getTodayPayments();
+        break;
+      
+      case 'yesterday':
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        filtered = payments.filter(payment => {
+          const paymentDate = new Date(payment.fecha_pago || payment.createdAt);
+          paymentDate.setHours(0, 0, 0, 0);
+          return paymentDate.getTime() === yesterday.getTime();
+        });
+        break;
+      case 'week':
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        filtered = payments.filter(payment => {
+          const paymentDate = new Date(payment.fecha_pago || payment.createdAt);
+          return paymentDate >= weekAgo;
+        });
+        break;
+      case 'month':
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        filtered = payments.filter(payment => {
+          const paymentDate = new Date(payment.fecha_pago || payment.createdAt);
+          return paymentDate >= monthAgo;
+        });
+        break;
+      
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          const start = new Date(customStartDate);
+          const end = new Date(customEndDate);
+          end.setHours(23, 59, 59, 999);
+          
+          filtered = payments.filter(payment => {
+            const paymentDate = new Date(payment.fecha_pago || payment.createdAt);
+            return paymentDate >= start && paymentDate <= end;
+          });
+        }
+        break;
+      
+      case 'all':
+      default:
+        filtered = [...payments];
+        break;
     }
+    
+    setFilteredPayments(filtered);
   };
 
-  const calculateDeliveryTotals = () => {
-    const subtotal = deliveryOrderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.18;
-    const total = subtotal + tax - deliveryOrderData.discount;
-    return { subtotal, tax, total };
+  // Calcular estadísticas en tiempo real
+  const todayPayments = getTodayPayments();
+  const completedPayments = getCompletedPayments();
+  const totalRevenue = payments.reduce((sum, payment) => sum + (payment.monto || 0), 0);
+  const filteredRevenue = filteredPayments.reduce((sum, payment) => sum + (payment.monto || 0), 0);
+  const filteredCount = filteredPayments.length;
+
+  const cargarPedidoServido = (pedido) => {
+    setSelectedPedido(pedido);
+    setShowModal(true);
+    setShowPedidosFisicos(false);
+    setShowPedidosDelivery(false);
   };
 
-  const deliveryTotals = calculateDeliveryTotals();
-  const deliverySubtotal = deliveryTotals.subtotal;
-  const deliveryTax = deliveryTotals.tax;
-  const deliveryTotal = deliveryTotals.total;
-
-  const addDeliveryOrderItem = () => {
-    const newId = Date.now().toString();
-    setDeliveryOrderItems([...deliveryOrderItems, { id: newId, name: '', quantity: 1, price: 0 }]);
-  };
-
-  const updateDeliveryOrderItem = (id, field, value) => {
-    setDeliveryOrderItems(deliveryOrderItems.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const removeDeliveryOrderItem = (id) => {
-    if (deliveryOrderItems.length > 1) {
-      setDeliveryOrderItems(deliveryOrderItems.filter(item => item.id !== id));
-    }
-  };
-
+  // Resto de las funciones se mantienen igual...
   const calculateChange = (received) => {
-    let amount = 0;
-    
-    if (modalMode === 'delivery' && selectedPedido) {
-      amount = selectedPedido.pedido.monto_total;
-    } else if (modalMode === 'delivery') {
-      amount = deliveryTotal;
-    } else {
-      amount = total;
-    }
-    
+    const amount = selectedPedido ? selectedPedido.monto_pendiente : 0;
     const change = received - amount;
     setCashData({ received, change: Math.max(0, change) });
   };
@@ -156,32 +175,15 @@ const PaymentManager = () => {
     setLinkPago({ loading: true, paymentUrl: null, qrUrl: null, linkId: null });
     
     try {
-      const monto = getTotalAmount();
-      const email = orderData.customerEmail;
-      
-      const idInput = prompt("Ingresa el ID del pedido para generar el link:");
-      
-      if (!idInput) {
-        alert("Debes ingresar un ID de pedido");
-        setLinkPago({ loading: false, paymentUrl: null, qrUrl: null, linkId: null });
-        return;
-      }
-      
-      const pedidoIdParaLink = parseInt(idInput);
-      
-      if (isNaN(pedidoIdParaLink) || pedidoIdParaLink <= 0) {
-        alert("ID invalido");
-        setLinkPago({ loading: false, paymentUrl: null, qrUrl: null, linkId: null });
-        return;
-      }
+      const monto = selectedPedido.monto_pendiente;
 
       const response = await fetch("http://127.0.0.1:8000/api/pagos/generar-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pedido_id: pedidoIdParaLink,
+          pedido_id: selectedPedido.id,
           monto: monto,
-          email_cliente: email
+          email_cliente: "cliente@restaurante.com"
         })
       });
 
@@ -205,8 +207,8 @@ const PaymentManager = () => {
     }
   };
 
-  const processPayment = async () => {
-    if (paymentMethod === 'cash' && cashData.received < getTotalAmount()) {
+  const processPaymentFisico = async () => {
+    if (paymentMethod === 'cash' && cashData.received < selectedPedido.monto_pendiente) {
       alert('El monto recibido es insuficiente');
       return;
     }
@@ -219,61 +221,13 @@ const PaymentManager = () => {
     await createPaymentInDatabase(referenciaPago);
   };
 
-  const getTotalAmount = () => {
-    if (modalMode === 'delivery' && selectedPedido) {
-      return selectedPedido.pedido.monto_total;
-    } else if (modalMode === 'delivery') {
-      return deliveryTotal;
-    } else {
-      return total;
-    }
-  };
-
-  const createPaymentInDatabase = async (cargoId) => {
+  const procesarPagoDelivery = async () => {
     try {
-      let pedidoIdReal;
-      let montoReal;
-
-      if (modalMode === 'local') {
-        const idInput = prompt("Ingresa el ID de un pedido existente:");
-        
-        if (!idInput) {
-          alert("Debes ingresar un ID de pedido");
-          return;
-        }
-        
-        pedidoIdReal = parseInt(idInput);
-        
-        if (isNaN(pedidoIdReal) || pedidoIdReal <= 0) {
-          alert("ID invalido");
-          return;
-        }
-
-        const verifyUrl = 'http://127.0.0.1:8000/api/pagos/verificar-pedido/' + pedidoIdReal.toString();
-        const verifyResponse = await fetch(verifyUrl);
-        const verifyData = await verifyResponse.json();
-
-        if (!verifyData.existe) {
-          throw new Error(verifyData.mensaje);
-        }
-
-        if (!verifyData.puede_pagar) {
-          throw new Error(verifyData.mensaje);
-        }
-
-        montoReal = verifyData.pedido ? verifyData.pedido.monto_total : total;
-        
-      } else {
-        pedidoIdReal = selectedPedido.pedido.id;
-        montoReal = selectedPedido.pedido.monto_total;
-      }
-
-      const timestamp = Date.now().toString();
       const pagoData = {
-        pedido_id: pedidoIdReal,
-        monto: montoReal,
-        metodo_pago: paymentMethod === 'cash' ? 'efectivo' : 'tarjeta',
-        referencia_pago: cargoId || ('REF-' + timestamp)
+        pedido_id: selectedPedido.id,
+        monto: selectedPedido.monto_pendiente,
+        metodo_pago: 'efectivo',
+        referencia_pago: `DELIVERY-${selectedPedido.id}-${Date.now()}`
       };
 
       const response = await fetch('http://127.0.0.1:8000/api/pagos/registrar', {
@@ -288,8 +242,42 @@ const PaymentManager = () => {
       }
 
       await obtenerHistorialPagos();
-      await obtenerPedidosDeliveryPendientes();
-      setCurrentStep(3);
+      await obtenerPedidosServidos();
+      
+      alert('✅ Pago registrado exitosamente');
+      resetForm();
+      
+    } catch (error) {
+      console.error('Error en el proceso de pago:', error);
+      alert('Error: ' + error.message);
+    }
+  };
+
+  const createPaymentInDatabase = async (cargoId) => {
+    try {
+      const pagoData = {
+        pedido_id: selectedPedido.id,
+        monto: selectedPedido.monto_pendiente,
+        metodo_pago: paymentMethod === 'cash' ? 'efectivo' : 'tarjeta',
+        referencia_pago: cargoId
+      };
+
+      const response = await fetch('http://127.0.0.1:8000/api/pagos/registrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pagoData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Error al registrar pago');
+      }
+
+      await obtenerHistorialPagos();
+      await obtenerPedidosServidos();
+      
+      alert('✅ Pago registrado exitosamente');
+      resetForm();
       
     } catch (error) {
       console.error('Error en el proceso de pago:', error);
@@ -298,48 +286,12 @@ const PaymentManager = () => {
   };
 
   const resetForm = () => {
-    setOrderData({
-      orderId: '',
-      customerName: '',
-      customerEmail: '',
-      customerPhone: '',
-      tableNumber: '',
-      discount: 0
-    });
-    setOrderItems([{ id: '1', name: '', quantity: 1, price: 0 }]);
-    setDeliveryOrderData({
-      orderId: '',
-      customerName: '',
-      customerPhone: '',
-      customerAddress: '',
-      discount: 0
-    });
-    setDeliveryOrderItems([{ id: '1', name: '', quantity: 1, price: 0 }]);
     setCashData({ received: 0, change: 0 });
     setLinkPago({ loading: false, paymentUrl: null, qrUrl: null, linkId: null });
     setPaymentMethod('cash');
     setSelectedPedido(null);
-    setCurrentStep(1);
     setShowModal(false);
   };
-  const printReceipt = () => {
-    const receiptContent = receiptRef.current;
-    if (receiptContent && payments[0]) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        const receiptId = payments[0].orderId || payments[0].id;
-        printWindow.document.write('<html><head><title>Recibo</title></head><body>' + receiptContent.innerHTML + '</body></html>');
-        printWindow.document.close();
-        printWindow.print();
-      }
-    }
-  };
-
-  // ========== ESTADÍSTICAS ==========
-  const totalRevenue = payments.reduce((sum, payment) => sum + payment.total, 0);
-  const todayPayments = payments.filter(payment => 
-    new Date(payment.createdAt).toDateString() === new Date().toDateString()
-  );
 
   return (
     <div className="container-fluid p-4">
@@ -347,36 +299,119 @@ const PaymentManager = () => {
         <h2 className="h4 fw-bold text-dark">SISTEMA DE PAGOS</h2>
         <div className="d-flex gap-2">
           <button 
-            className="btn btn-primary fw-bold"
-            onClick={() => {
-              setModalMode('delivery');
-              setShowModal(true);
-              setCurrentStep(1);
-              setSelectedPedido(null);
-            }}
+            className="btn btn-success fw-bold"
+            onClick={() => setShowPedidosFisicos(true)}
           >
-            Pago Delivery
+            🍽️ Pedidos Servidos ({pedidosServidos.length})
           </button>
           <button 
-            className="btn btn-success fw-bold"
-            onClick={() => {
-              setModalMode('local');
-              setShowModal(true);
-              setCurrentStep(1);
-            }}
+            className="btn btn-primary fw-bold"
+            onClick={() => setShowPedidosDelivery(true)}
           >
-            Nuevo Pago Local
+            🛵 Delivery Entregados ({pedidosDelivery.length})
           </button>
         </div>
       </div>
 
+      {/* Filtros por fecha */}
+      <div className="card mb-4 border-0 shadow-sm">
+        <div className="card-header bg-light">
+          <h5 className="mb-0 fw-bold">📅 FILTROS POR FECHA</h5>
+        </div>
+        <div className="card-body">
+          <div className="row align-items-end">
+            <div className="col-md-6">
+              <label className="form-label fw-bold">Seleccionar período:</label>
+              <div className="d-flex flex-wrap gap-2">
+                <button
+                  className={`btn btn-sm ${dateFilter === 'all' ? 'btn-dark' : 'btn-outline-dark'}`}
+                  onClick={() => setDateFilter('all')}
+                >
+                  TODOS
+                </button>
+                <button
+                  className={`btn btn-sm ${dateFilter === 'today' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  onClick={() => setDateFilter('today')}
+                >
+                  HOY
+                </button>
+                <button
+                  className={`btn btn-sm ${dateFilter === 'yesterday' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                  onClick={() => setDateFilter('yesterday')}
+                >
+                  AYER
+                </button>
+                <button
+                  className={`btn btn-sm ${dateFilter === 'week' ? 'btn-info' : 'btn-outline-info'}`}
+                  onClick={() => setDateFilter('week')}
+                >
+                  ÚLTIMA SEMANA
+                </button>
+                <button
+                  className={`btn btn-sm ${dateFilter === 'month' ? 'btn-warning' : 'btn-outline-warning'}`}
+                  onClick={() => setDateFilter('month')}
+                >
+                  ÚLTIMO MES
+                </button>
+                <button
+                  className={`btn btn-sm ${dateFilter === 'custom' ? 'btn-success' : 'btn-outline-success'}`}
+                  onClick={() => setDateFilter('custom')}
+                >
+                  PERSONALIZADO
+                </button>
+              </div>
+            </div>
+            
+            {dateFilter === 'custom' && (
+              <div className="col-md-6">
+                <div className="row">
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold">Fecha inicio:</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold">Fecha fin:</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Resumen del filtro aplicado */}
+          <div className="mt-3 p-3 bg-light rounded">
+            <div className="row text-center">
+              <div className="col-md-6">
+                <h6 className="fw-bold text-muted">PAGOS FILTRADOS</h6>
+                <h4 className="fw-bold text-primary">{filteredCount}</h4>
+              </div>
+              <div className="col-md-6">
+                <h6 className="fw-bold text-muted">INGRESOS FILTRADOS</h6>
+                <h4 className="fw-bold text-success">S/ {filteredRevenue.toFixed(2)}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Estadísticas en tiempo real */}
       <div className="row mb-4">
         <div className="col-md-3 col-6 mb-3">
           <div className="card border-0 shadow-sm bg-primary text-white">
             <div className="card-body">
               <h6 className="fw-bold">PAGOS HOY</h6>
               <h4 className="fw-bold">{todayPayments.length}</h4>
-              <small>Total del dia</small>
+              <small>Total del día</small>
             </div>
           </div>
         </div>
@@ -393,7 +428,7 @@ const PaymentManager = () => {
           <div className="card border-0 shadow-sm bg-info text-white">
             <div className="card-body">
               <h6 className="fw-bold">COMPLETADOS</h6>
-              <h4 className="fw-bold">{payments.filter(p => p.estado === 'pagado').length}</h4>
+              <h4 className="fw-bold">{completedPayments.length}</h4>
               <small>Pagos exitosos</small>
             </div>
           </div>
@@ -402,23 +437,192 @@ const PaymentManager = () => {
           <div className="card border-0 shadow-sm bg-warning text-dark">
             <div className="card-body">
               <h6 className="fw-bold">PENDIENTES</h6>
-              <h4 className="fw-bold">{pedidosDeliveryPendientes.length}</h4>
-              <small>Delivery por cobrar</small>
+              <h4 className="fw-bold">{pedidosServidos.length + pedidosDelivery.length}</h4>
+              <small>Pedidos por cobrar</small>
             </div>
           </div>
         </div>
       </div>
 
-      {showModal && (
+      {/* Los modales se mantienen igual... */}
+      {showPedidosFisicos && (
+        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-xl">
+            <div className="modal-content">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title fw-bold">
+                  🍽️ PEDIDOS FÍSICOS SERVIDOS - LISTOS PARA PAGAR
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowPedidosFisicos(false)}
+                ></button>
+              </div>
+              
+              <div className="modal-body">
+                {pedidosServidos.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p>No hay pedidos físicos servidos pendientes de pago</p>
+                  </div>
+                ) : (
+                  <div className="row">
+                    {pedidosServidos.map((pedido) => (
+                      <div key={pedido.id} className="col-md-6 mb-3">
+                        <div 
+                          className="card h-100 cursor-pointer border-success"
+                          style={{cursor: 'pointer'}}
+                          onClick={() => cargarPedidoServido(pedido)}
+                        >
+                          <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-start">
+                              <h6 className="card-title">
+                                🍽️ Pedido #{pedido.id}
+                              </h6>
+                              <span className="badge bg-success">
+                                MESA {pedido.mesa}
+                              </span>
+                            </div>
+                            
+                            <p className="mb-2">
+                              <strong>{pedido.cliente_nombre}</strong>
+                              {pedido.cliente_telefono && <><br/>📞 {pedido.cliente_telefono}</>}
+                              <br/>🍽️ {pedido.mesa}
+                            </p>
+                            
+                            <div className="small mb-2">
+                              {pedido.items.slice(0, 3).map((item, idx) => (
+                                <div key={idx}>
+                                  {item.cantidad}x {item.nombre} - S/ {item.subtotal.toFixed(2)}
+                                </div>
+                              ))}
+                              {pedido.items.length > 3 && (
+                                <small>+{pedido.items.length - 3} más...</small>
+                              )}
+                            </div>
+                            
+                            <div className="d-flex justify-content-between align-items-center mt-2">
+                              <strong className="h5 mb-0 text-success">
+                                S/ {pedido.monto_pendiente.toFixed(2)}
+                              </strong>
+                              <button className="btn btn-sm btn-success">
+                                Procesar Pago
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="modal-footer">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setShowPedidosFisicos(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPedidosDelivery && (
+        <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+          <div className="modal-dialog modal-xl">
+            <div className="modal-content">
+              <div className="modal-header bg-primary text-white">
+                <h5 className="modal-title fw-bold">
+                  🛵 PEDIDOS DELIVERY ENTREGADOS - LISTOS PARA PAGAR
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowPedidosDelivery(false)}
+                ></button>
+              </div>
+              
+              <div className="modal-body">
+                {pedidosDelivery.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p>No hay pedidos delivery entregados pendientes de pago</p>
+                  </div>
+                ) : (
+                  <div className="row">
+                    {pedidosDelivery.map((pedido) => (
+                      <div key={pedido.id} className="col-md-6 mb-3">
+                        <div 
+                          className="card h-100 cursor-pointer border-primary"
+                          style={{cursor: 'pointer'}}
+                          onClick={() => cargarPedidoServido(pedido)}
+                        >
+                          <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-start">
+                              <h6 className="card-title">
+                                🛵 Pedido #{pedido.id}
+                              </h6>
+                              <span className="badge bg-primary">
+                                DELIVERY
+                              </span>
+                            </div>
+                            
+                            <p className="mb-2">
+                              <strong>{pedido.cliente_nombre}</strong>
+                              {pedido.cliente_telefono && <><br/>📞 {pedido.cliente_telefono}</>}
+                              {pedido.direccion && <><br/>📍 {pedido.direccion}</>}
+                            </p>
+                            
+                            <div className="small mb-2">
+                              {pedido.items.slice(0, 3).map((item, idx) => (
+                                <div key={idx}>
+                                  {item.cantidad}x {item.nombre} - S/ {item.subtotal.toFixed(2)}
+                                </div>
+                              ))}
+                              {pedido.items.length > 3 && (
+                                <small>+{pedido.items.length - 3} más...</small>
+                              )}
+                            </div>
+                            
+                            <div className="d-flex justify-content-between align-items-center mt-2">
+                              <strong className="h5 mb-0 text-success">
+                                S/ {pedido.monto_pendiente.toFixed(2)}
+                              </strong>
+                              <button className="btn btn-sm btn-primary">
+                                Registrar Pago
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="modal-footer">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setShowPedidosDelivery(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de pago */}
+      {showModal && selectedPedido && (
         <div className="modal show d-block" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
               <div className="modal-header bg-primary text-white">
                 <h5 className="modal-title fw-bold">
-                  {currentStep === 1 && modalMode === 'local' && 'REGISTRAR PEDIDO LOCAL'}
-                  {currentStep === 1 && modalMode === 'delivery' && 'REGISTRAR PEDIDO DELIVERY'}
-                  {currentStep === 2 && 'PROCESAR PAGO'}
-                  {currentStep === 3 && 'PAGO COMPLETADO'}
+                  {selectedPedido.tipo === 'delivery' ? '🛵 REGISTRAR PAGO DELIVERY' : '🍽️ PROCESAR PAGO'}
                 </h5>
                 <button 
                   type="button" 
@@ -427,219 +631,82 @@ const PaymentManager = () => {
                 ></button>
               </div>
 
-              <div className="modal-body" style={{maxHeight: '70vh', overflowY: 'auto'}}>
-                {currentStep === 1 && modalMode === 'local' && (
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">NOMBRE DEL CLIENTE</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={orderData.customerName}
-                        onChange={(e) => setOrderData({...orderData, customerName: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">EMAIL</label>
-                      <input
-                        type="email"
-                        className="form-control"
-                        value={orderData.customerEmail}
-                        onChange={(e) => setOrderData({...orderData, customerEmail: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">MESA</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={orderData.tableNumber}
-                        onChange={(e) => setOrderData({...orderData, tableNumber: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">TELEFONO</label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        value={orderData.customerPhone}
-                        onChange={(e) => setOrderData({...orderData, customerPhone: e.target.value})}
-                      />
-                    </div>
-
-                    <div className="col-12 mb-3">
-                      <div className="d-flex justify-content-between mb-2">
-                        <label className="fw-bold">ITEMS</label>
-                        <button className="btn btn-sm btn-primary" onClick={addOrderItem}>
-                          Agregar Item
-                        </button>
+              <div className="modal-body">
+                <div className="card mb-4">
+                  <div className="card-header bg-light">
+                    <h6 className="mb-0">
+                      {selectedPedido.tipo === 'delivery' ? '🛵' : '🍽️'} Pedido #{selectedPedido.id}
+                      <span className={`badge ms-2 ${selectedPedido.tipo === 'fisico' ? 'bg-success' : 'bg-primary'}`}>
+                        {selectedPedido.tipo === 'fisico' ? 'MESA' : 'DELIVERY'}
+                      </span>
+                    </h6>
+                  </div>
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-6">
+                        <p><strong>Cliente:</strong> {selectedPedido.cliente_nombre}</p>
+                        <p><strong>Teléfono:</strong> {selectedPedido.cliente_telefono || 'No especificado'}</p>
                       </div>
-                      {orderItems.map((item, idx) => (
-                        <div key={item.id} className="row g-2 mb-2">
-                          <div className="col-5">
-                            <input
-                              type="text"
-                              className="form-control form-control-sm"
-                              value={item.name}
-                              onChange={(e) => updateOrderItem(item.id, 'name', e.target.value)}
-                              placeholder="Producto"
-                            />
-                          </div>
-                          <div className="col-2">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm"
-                              value={item.quantity}
-                              onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                            />
-                          </div>
-                          <div className="col-3">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm"
-                              value={item.price}
-                              step="0.01"
-                              onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                            />
-                          </div>
-                          <div className="col-2">
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => removeOrderItem(item.id)}
-                              disabled={orderItems.length === 1}
-                            >
-                              X
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                      <div className="col-md-6">
+                        {selectedPedido.mesa && <p><strong>Mesa:</strong> {selectedPedido.mesa}</p>}
+                        {selectedPedido.direccion && <p><strong>Dirección:</strong> {selectedPedido.direccion}</p>}
+                      </div>
                     </div>
-
-                    <div className="col-12">
-                      <div className="card">
-                        <div className="card-body">
-                          <div className="d-flex justify-content-between">
-                            <span>Subtotal:</span>
-                            <span>S/ {subtotal.toFixed(2)}</span>
-                          </div>
-                          <div className="d-flex justify-content-between">
-                            <span>IGV (18%):</span>
-                            <span>S/ {tax.toFixed(2)}</span>
-                          </div>
-                          <hr />
-                          <div className="d-flex justify-content-between fw-bold">
-                            <span>TOTAL:</span>
-                            <span>S/ {total.toFixed(2)}</span>
-                          </div>
-                        </div>
+                    
+                    <div className="mt-3">
+                      <h6>Items del Pedido:</h6>
+                      <div className="table-responsive">
+                        <table className="table table-sm">
+                          <thead>
+                            <tr>
+                              <th>Producto</th>
+                              <th>Cantidad</th>
+                              <th>Precio Unit.</th>
+                              <th>Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedPedido.items.map((item, index) => (
+                              <tr key={index}>
+                                <td>{item.nombre}</td>
+                                <td>{item.cantidad}</td>
+                                <td>S/ {item.precio_unitario.toFixed(2)}</td>
+                                <td>S/ {item.subtotal.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr>
+                              <td colSpan="3" className="text-end"><strong>Total:</strong></td>
+                              <td><strong>S/ {selectedPedido.monto_pendiente.toFixed(2)}</strong></td>
+                            </tr>
+                          </tfoot>
+                        </table>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
 
-                {currentStep === 1 && modalMode === 'delivery' && (
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">NOMBRE</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={deliveryOrderData.customerName}
-                        onChange={(e) => setDeliveryOrderData({...deliveryOrderData, customerName: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">TELEFONO</label>
-                      <input
-                        type="tel"
-                        className="form-control"
-                        value={deliveryOrderData.customerPhone}
-                        onChange={(e) => setDeliveryOrderData({...deliveryOrderData, customerPhone: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-12 mb-3">
-                      <label className="form-label fw-bold">DIRECCION</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={deliveryOrderData.customerAddress}
-                        onChange={(e) => setDeliveryOrderData({...deliveryOrderData, customerAddress: e.target.value})}
-                      />
+                {selectedPedido.tipo === 'delivery' && (
+                  <div className="text-center">
+                    <div className="alert alert-info">
+                      <h4 className="mb-3">TOTAL A COBRAR: S/ {selectedPedido.monto_pendiente.toFixed(2)}</h4>
+                      <p className="mb-0">Confirma el pago recibido del repartidor</p>
                     </div>
 
-                    <div className="col-12 mb-3">
-                      <div className="d-flex justify-content-between mb-2">
-                        <label className="fw-bold">ITEMS</label>
-                        <button className="btn btn-sm btn-primary" onClick={addDeliveryOrderItem}>
-                          Agregar Item
-                        </button>
-                      </div>
-                      {deliveryOrderItems.map((item) => (
-                        <div key={item.id} className="row g-2 mb-2">
-                          <div className="col-5">
-                            <input
-                              type="text"
-                              className="form-control form-control-sm"
-                              value={item.name}
-                              onChange={(e) => updateDeliveryOrderItem(item.id, 'name', e.target.value)}
-                            />
-                          </div>
-                          <div className="col-2">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm"
-                              value={item.quantity}
-                              onChange={(e) => updateDeliveryOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                            />
-                          </div>
-                          <div className="col-3">
-                            <input
-                              type="number"
-                              className="form-control form-control-sm"
-                              value={item.price}
-                              step="0.01"
-                              onChange={(e) => updateDeliveryOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                            />
-                          </div>
-                          <div className="col-2">
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() => removeDeliveryOrderItem(item.id)}
-                              disabled={deliveryOrderItems.length === 1}
-                            >
-                              X
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="col-12">
-                      <div className="card">
-                        <div className="card-body">
-                          <div className="d-flex justify-content-between">
-                            <span>Subtotal:</span>
-                            <span>S/ {deliverySubtotal.toFixed(2)}</span>
-                          </div>
-                          <div className="d-flex justify-content-between">
-                            <span>IGV (18%):</span>
-                            <span>S/ {deliveryTax.toFixed(2)}</span>
-                          </div>
-                          <hr />
-                          <div className="d-flex justify-content-between fw-bold">
-                            <span>TOTAL:</span>
-                            <span>S/ {deliveryTotal.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <button
+                      className="btn btn-success btn-lg"
+                      onClick={procesarPagoDelivery}
+                    >
+                      ✅ REGISTRAR PAGO DELIVERY
+                    </button>
                   </div>
                 )}
 
-                {currentStep === 2 && (
+                {selectedPedido.tipo === 'fisico' && (
                   <div>
                     <div className="alert alert-info text-center mb-4">
-                      <h4>TOTAL A PAGAR: S/ {getTotalAmount().toFixed(2)}</h4>
+                      <h4>TOTAL A PAGAR: S/ {selectedPedido.monto_pendiente.toFixed(2)}</h4>
                     </div>
 
                     <div className="row mb-4">
@@ -669,6 +736,7 @@ const PaymentManager = () => {
                           className="form-control form-control-lg"
                           value={cashData.received}
                           onChange={(e) => calculateChange(parseFloat(e.target.value) || 0)}
+                          step="0.01"
                         />
                         {cashData.received > 0 && (
                           <div className="alert alert-success mt-3">
@@ -708,94 +776,68 @@ const PaymentManager = () => {
                                 Copiar
                               </button>
                             </div>
-                            <div className="alert alert-info">
-                              Comparte el link/QR con el cliente y haz clic en CONFIRMAR PAGO
-                            </div>
                           </div>
                         )}
                       </div>
                     )}
                   </div>
                 )}
-
-                {currentStep === 3 && payments[0] && (
-                  <div ref={receiptRef} className="text-center">
-                    <div className="mb-4">
-                      <i className="fas fa-check-circle text-success" style={{fontSize: '4rem'}}></i>
-                    </div>
-                    <h3 className="text-success mb-4">PAGO COMPLETADO</h3>
-                    <div className="card">
-                      <div className="card-body">
-                        <h5 className="mb-3">Pedido #{payments[0].pedido_id}</h5>
-                        <p className="mb-2">Monto: S/ {payments[0].monto.toFixed(2)}</p>
-                        <p className="mb-4">Metodo: {payments[0].metodo_pago}</p>
-                        <button className="btn btn-primary me-2" onClick={printReceipt}>
-                          Imprimir
-                        </button>
-                        <button className="btn btn-success" onClick={resetForm}>
-                          Nuevo Pago
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
-              <div className="modal-footer">
-                {currentStep === 1 && (
-                  <div className="w-100 d-flex justify-content-between">
-                    <button className="btn btn-secondary" onClick={resetForm}>
-                      Cancelar
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => setCurrentStep(2)}
-                      disabled={
-                        (modalMode === 'local' && (!orderData.customerName || !orderData.customerEmail)) ||
-                        (modalMode === 'delivery' && (!deliveryOrderData.customerName || !deliveryOrderData.customerPhone))
-                      }
-                    >
-                      Continuar
-                    </button>
-                  </div>
-                )}
-                {currentStep === 2 && (
-                  <div className="w-100 d-flex justify-content-between">
-                    <button className="btn btn-secondary" onClick={() => setCurrentStep(1)}>
-                      Volver
-                    </button>
-                    <button
-                      className="btn btn-success"
-                      onClick={processPayment}
-                      disabled={paymentMethod === 'cash' && cashData.received < getTotalAmount()}
-                    >
-                      CONFIRMAR PAGO
-                    </button>
-                  </div>
-                )}
-              </div>
+              {selectedPedido.tipo === 'fisico' && (
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={resetForm}>
+                    Cancelar
+                  </button>
+                  <button
+                    className="btn btn-success"
+                    onClick={processPaymentFisico}
+                    disabled={paymentMethod === 'cash' && cashData.received < selectedPedido.monto_pendiente}
+                  >
+                    CONFIRMAR PAGO
+                  </button>
+                </div>
+              )}
+
+              {selectedPedido.tipo === 'delivery' && (
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={resetForm}>
+                    Cancelar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
+      {/* Historial de pagos FILTRADO */}
       <div className="row">
         <div className="col-12">
-          <h3 className="h4 mb-3 fw-bold text-dark">PAGOS RECIENTES</h3>
-          {payments.length === 0 ? (
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h3 className="h4 fw-bold text-dark">PAGOS {dateFilter.toUpperCase()}</h3>
+            <div className="text-muted">
+              Mostrando {filteredPayments.length} de {payments.length} pagos
+            </div>
+          </div>
+          
+          {filteredPayments.length === 0 ? (
             <div className="card border-dark">
               <div className="card-body text-center text-dark">
-                <p className="mb-0 fw-bold">NO HAY PAGOS REGISTRADOS</p>
+                <p className="mb-0 fw-bold">NO HAY PAGOS REGISTRADOS PARA EL PERÍODO SELECCIONADO</p>
+                <small className="text-muted">Prueba con otro filtro de fecha</small>
               </div>
             </div>
           ) : (
             <div className="row">
-              {payments.map((payment) => (
+              {filteredPayments.map((payment) => (
                 <div key={payment.id} className="col-md-6 col-lg-4 mb-3">
                   <div className="card h-100 border-dark shadow-sm">
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-start mb-2">
-                        <h6 className="card-title fw-bold text-primary">{payment.orderId}</h6>
+                        <h6 className="card-title fw-bold text-primary">
+                          {payment.orderId || `PAGO-${payment.id}`}
+                        </h6>
                         <span className="badge bg-success fw-bold">COMPLETADO</span>
                       </div>
                       <p className="card-text small text-dark mb-2">
@@ -822,14 +864,6 @@ const PaymentManager = () => {
                         </span>
                         <strong className="h5 mb-0 text-dark">S/ {payment.monto.toFixed(2)}</strong>
                       </div>
-                      {payment.plataforma && (
-                        <div className="mt-2">
-                          <small className="text-muted">
-                            <i className="fas fa-truck me-1"></i>
-                            {payment.plataforma}
-                          </small>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

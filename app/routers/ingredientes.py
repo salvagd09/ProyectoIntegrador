@@ -4,6 +4,11 @@ from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from app import models, schemas
 from app.database import get_db
+from logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 # Importamos la auditoría y serialización para el registro de cambios
 from app.utils import registrar_auditoria, serializar_db_object 
 router = APIRouter(
@@ -29,6 +34,7 @@ def crear_ingrediente(ingrediente: schemas.IngredienteCreate, db: Session = Depe
     
     # Si ya existe, lanzar error
     if existente:
+        app_logger.warning("Ya existe un ingrediente con ese nombre")
         raise HTTPException(status_code=400, detail="Ya existe un ingrediente con ese nombre")
     
     if ingrediente.categoria_ingrediente_id:
@@ -36,8 +42,8 @@ def crear_ingrediente(ingrediente: schemas.IngredienteCreate, db: Session = Depe
             models.CategoriaIngrediente.id == ingrediente.categoria_ingrediente_id
         ).first()
         if not categoria:
+            app_logger.warning("Categoría de ingrediente no válida")
             raise HTTPException(status_code=400, detail="ID de Categoría de Ingrediente no válido")
-
     # Crear el nuevo ingrediente
     nuevo_ingrediente = models.Ingrediente(**ingrediente.model_dump())
     db.add(nuevo_ingrediente)
@@ -57,7 +63,7 @@ def crear_ingrediente(ingrediente: schemas.IngredienteCreate, db: Session = Depe
         registro_id=getattr(nuevo_ingrediente, "id"),
         valores_nuevos=valores_nuevos
     )
-    
+    app_logger.info(f'El ingrediente {nuevo_ingrediente.nombre} ha sido creado correctamente')
     return cargar_relaciones_ingrediente(query).first()
 
 # Listar todos los ingredientes
@@ -68,8 +74,8 @@ def listar_ingredientes(db: Session = Depends(get_db)):
     query = db.query(models.Ingrediente)
     # Cargar relaciones
     ingredientes = cargar_relaciones_ingrediente(query).all()
+    app_logger.info("Todos los ingredientes han sido listados")
     return ingredientes
-
 # Obtener detalle de un ingrediente específico
 @router.get("/{ingrediente_id}", response_model=schemas.IngredienteResponse)
 def obtener_ingrediente(ingrediente_id: int, db: Session = Depends(get_db)):
@@ -81,8 +87,9 @@ def obtener_ingrediente(ingrediente_id: int, db: Session = Depends(get_db)):
     
     # Verificar si el ingrediente existe
     if not ingrediente_db:
+        app_logger.warning(f'El ingrediente {ingrediente_db.nombre} no se encuentra')
         raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
-    
+    app_logger.info("Se ha obtenido el ingrediente correctamente")
     return ingrediente_db
 
 # Actualizar un ingrediente existente
@@ -94,6 +101,7 @@ def actualizar_ingrediente(ingrediente_id: int, ingrediente: schemas.Ingrediente
 
     # Verificar si el ingrediente existe
     if not ingrediente_db:
+        app_logger.warning(f'El ingrediente {ingrediente_db.nombre} no se encuentra')
         raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
 
     # Validar categoría si se proporciona
@@ -102,6 +110,7 @@ def actualizar_ingrediente(ingrediente_id: int, ingrediente: schemas.Ingrediente
             models.CategoriaIngrediente.id == ingrediente.categoria_ingrediente_id
         ).first()
         if not categoria:
+            app_logger.warning("Categoría de ingrediente no válida")
             raise HTTPException(status_code=400, detail="ID de Categoría de Ingrediente no válido")
     
     # Registrar valores antiguos para auditoría
@@ -131,7 +140,7 @@ def actualizar_ingrediente(ingrediente_id: int, ingrediente: schemas.Ingrediente
         valores_antiguos=valores_antiguos,
         valores_nuevos=valores_nuevos
     )
-    
+    app_logger.info(f'El ingrediente {ingrediente_actualizado.id} ha sido actualizado correctamente')
     return ingrediente_actualizado
 
 # Eliminar un ingrediente
@@ -146,6 +155,7 @@ def eliminar_ingrediente(ingrediente_id: int, db: Session = Depends(get_db)):
 
     # Verificar si el ingrediente existe
     if not ingrediente_db:
+        app_logger.warning(f'El ingrediente {ingrediente_db.nombre} no ha sido encontrado')
         raise HTTPException(status_code=404, detail="Ingrediente no encontrado")
 
     db.delete(ingrediente_db)
@@ -159,5 +169,5 @@ def eliminar_ingrediente(ingrediente_id: int, db: Session = Depends(get_db)):
         nombre_tabla="ingredientes",
         registro_id=getattr(ingrediente_db, "id"),
     )
-    
+    app_logger.info("El ingrediente ha sido eliminado")
     return Response(status_code=status.HTTP_204_NO_CONTENT)

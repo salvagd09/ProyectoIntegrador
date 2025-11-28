@@ -2,12 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, File, U
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
-
 from decimal import Decimal
 from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria, serializar_db_object, transformar_producto_con_receta
-
+from logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 router = APIRouter(
     prefix="/menu",
     tags=["Menú"]
@@ -36,10 +39,10 @@ def listar_productos(categoria_id: Optional[int] = None, db: Session = Depends(g
     productos_listos = [transformar_producto_con_receta(p) for p in productos]
     # Verificar si hay productos
     if not productos_listos:
+        app_logger.warning("No hay productos")
         raise HTTPException(status_code=404, detail="No hay productos disponibles")
-
+    app_logger.info("Los productos han sido mostrados correctamente")
     return productos_listos
-
 # Buscar producto/platillo por texto
 @router.get("/buscar/", response_model=List[schemas.ProductoResponse])
 def buscar_productos(search: str, db: Session = Depends(get_db)):
@@ -51,21 +54,18 @@ def buscar_productos(search: str, db: Session = Depends(get_db)):
         (models.Platillo.nombre.ilike(f"%{search}%")) |
         (models.Platillo.descripcion.ilike(f"%{search}%"))
     )
-    
     # Cargamos la receta y sus ingredientes
     query = query.options(
         selectinload(models.Platillo.receta_asociaciones)
         .selectinload(models.Recetas.ingrediente)
     )
-
     productos = query.all()
     productos_listos = [transformar_producto_con_receta(p) for p in productos]
-
     if not productos_listos:
+        app_logger.warning("No hay productos con el criterio escrito")
         raise HTTPException(status_code=404, detail="No se encontraron productos con ese criterio")
-    
+    app_logger.info("Se mostró correctamente el producto")
     return productos_listos
-
 # Obtener detalle de un producto/platillo específico
 @router.get("/{producto_id}", response_model=schemas.ProductoResponse)
 def obtener_producto(producto_id: int, db: Session = Depends(get_db)):
@@ -95,6 +95,7 @@ def crear_producto(producto: schemas.ProductoCreate, db: Session = Depends(get_d
     ).first()
 
     if existente:
+        app_logger.warning("Ya existe un producto con ese código")
         raise HTTPException(status_code=400, detail="Ya existe un producto con ese código")
 
     nuevo_producto = models.Platillo(**producto.model_dump())
@@ -117,7 +118,7 @@ def crear_producto(producto: schemas.ProductoCreate, db: Session = Depends(get_d
         selectinload(models.Platillo.receta_asociaciones)
         .selectinload(models.Recetas.ingrediente)
     ).first()
-
+    app_logger.info(f'El producto {producto_con_receta_cargada.nombre} ha sido creado correctamente')
     return transformar_producto_con_receta(producto_con_receta_cargada)
 
 # Editar/Actualizar un producto/platillo existente
@@ -155,7 +156,7 @@ def actualizar_producto(producto_id: int, producto: schemas.ProductoCreate, db: 
         selectinload(models.Platillo.receta_asociaciones)
         .selectinload(models.Recetas.ingrediente)
     ).first()
-    
+    app_logger.info(f'El producto {producto_con_receta_cargada.nombre} ha sido actualizado correctamente')
     return transformar_producto_con_receta(producto_con_receta_cargada)
 
 # Desactivar un producto/platillo (soft delete)
@@ -167,11 +168,10 @@ def desactivar_producto(producto_id: int, db: Session = Depends(get_db)):
     producto_db = db.query(models.Platillo).filter(models.Platillo.id == producto_id).first()
 
     if not producto_db:
+        app_logger.warning(f'El producto {producto_db} no ha sido encontrado')
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-
     setattr(producto_db, "producto_activo", False)
     db.commit()
-
     registrar_auditoria(
         db, 
         "DESACTIVAR", 
@@ -179,7 +179,7 @@ def desactivar_producto(producto_id: int, db: Session = Depends(get_db)):
         nombre_tabla="productos",
         registro_id=getattr(producto_db, "id"),
     )
-    
+    app_logger.info(f'El producto {producto_db.nombre} se ha desactivado exitosamente')
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 # Reactivar un producto/platillo
@@ -202,7 +202,7 @@ def reactivar_producto(producto_id: int, db: Session = Depends(get_db)):
         selectinload(models.Platillo.receta_asociaciones)
         .selectinload(models.Recetas.ingrediente)
     ).first()
-    
+    app_logger.info(f'El producto {producto_con_receta_cargada.nombre} ha sido actualizado correctamente')
     return transformar_producto_con_receta(producto_con_receta_cargada)
 
 # Listar productos inactivos
@@ -210,6 +210,7 @@ def reactivar_producto(producto_id: int, db: Session = Depends(get_db)):
 def listar_inactivos(db: Session = Depends(get_db)):
     productos = db.query(models.Platillo).filter(models.Platillo.producto_activo == False).all()
     productos_listos = [transformar_producto_con_receta(p) for p in productos]
+    app_logger.info("Se muestran todos los productos desactivados de forma exitosa")
     return productos_listos
 
 # ------------------- GESTIÓN DE RECETAS -------------------
@@ -225,6 +226,7 @@ def obtener_receta_producto(producto_id: int, db: Session = Depends(get_db)):
     ).first()
     
     if not producto_db:
+        app_logger.warning("El producto no ha sido encontrado")
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
     receta_data = []
@@ -241,7 +243,7 @@ def obtener_receta_producto(producto_id: int, db: Session = Depends(get_db)):
             nombre_ingrediente=ingrediente.nombre,
             unidad_medida=ingrediente.unidad_de_medida,
         ))
-        
+    app_logger.info("Se obtuvo la receta del producto")
     return receta_data
 
 @router.put("/{producto_id}/receta", status_code=status.HTTP_200_OK)
@@ -256,6 +258,7 @@ def actualizar_receta_producto(
     producto_db = db.query(models.Platillo).filter(models.Platillo.id == producto_id).first()
 
     if not producto_db:
+        app_logger.warning("No se encontró el producto")
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
     try:
@@ -270,6 +273,7 @@ def actualizar_receta_producto(
             ).first()
 
             if not ingrediente_existe:
+                app_logger.warning(f'No exite el ingrediente {item.ingrediente_id}')
                 raise HTTPException(status_code=400, detail=f"Ingrediente ID {item.ingrediente_id} no existe")
 
             # Crear la nueva asociación de receta
@@ -292,13 +296,16 @@ def actualizar_receta_producto(
         )
 
     except IntegrityError:
+        error_logger.error("Error en la integridad de la base de datos")
         db.rollback()
         raise HTTPException(status_code=400, detail="Error de integridad de la base de datos (Ej: duplicados o valores no válidos)")
     except HTTPException as e:
+        error_logger.error("Error en la petición HTTP para actualizar la receta")
         db.rollback()
         raise e
     except Exception as e:
+        error_logger.error("Error al intentar procesar la receta")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error interno al procesar la receta: {e}")
-
+    app_logger.info(f'Se logró actualizar la receta de {producto_id}')
     return {"detail": f"Receta para el producto ID {producto_id} actualizada exitosamente"}

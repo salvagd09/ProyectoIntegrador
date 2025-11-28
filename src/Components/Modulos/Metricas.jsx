@@ -11,6 +11,14 @@ const Metricas = () => {
   const [loading, setLoading] = useState(true);
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
+  const [topPlatillos, setTopPlatillos] = useState([]);
+  const [mesSeleccionado, setMesSeleccionado] = useState('');
+
+  // Todos los meses del año para el filtro
+  const mesesDelAño = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
 
   // Cargar métricas desde el backend
   const cargarMetricas = async () => {
@@ -44,9 +52,24 @@ const Metricas = () => {
     }
   };
 
+  // Función para cargar top platillos por mes
+  const cargarTopPlatillos = async (mes = '') => {
+    try {
+      const params = new URLSearchParams();
+      if (mes) params.append('mes', mes);
+      
+      const response = await fetch(`http://localhost:8000/api/metricas/top5-platillos-mensual?${params}`);
+      const data = await response.json();
+      setTopPlatillos(data.top_platillos_por_mes || []);
+    } catch (error) {
+      console.error('Error cargando top platillos:', error);
+    }
+  };
+
   useEffect(() => {
     cargarMetricas();
-  }, [fechaInicio, fechaFin]);
+    cargarTopPlatillos(mesSeleccionado);
+  }, [fechaInicio, fechaFin, mesSeleccionado]);
 
   // Formatear moneda
   const formatearMoneda = (valor) => {
@@ -112,7 +135,63 @@ const Metricas = () => {
         </div>
       </div>
 
-      {/* Gráfico de Ventas Mensuales */}
+      {/* NUEVA SECCIÓN: Top 5 Platillos Más Vendidos (AHORA SEGUNDO) */}
+      <div className="tabla-container">
+        <div className="filtro-superior">
+          <h2>🏆 Top 5 Platillos Más Vendidos</h2>
+          <div className="filtro-mes">
+            <label>Filtrar por mes:</label>
+            <select 
+              value={mesSeleccionado}
+              onChange={(e) => setMesSeleccionado(e.target.value)}
+            >
+              <option value="">Todos los meses</option>
+              {mesesDelAño.map((mes, index) => (
+                <option key={index} value={mes}>
+                  {mes}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        {topPlatillos.length > 0 ? (
+          topPlatillos.map((mes) => (
+            <div key={`${mes.año}-${mes.mes_numero}`} className="mes-container">
+              <h3 className="mes-titulo">{mes.mes_nombre} {mes.año}</h3>
+              <table className="tabla-top-platillos">
+                <thead>
+                  <tr>
+                    <th>Posición</th>
+                    <th>Platillo</th>
+                    <th>Total Vendido</th>
+                    <th>Veces Pedido</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mes.platillos.map((platillo, index) => (
+                    <tr key={platillo.producto_id}>
+                      <td>#{index + 1}</td>
+                      <td>{platillo.nombre}</td>
+                      <td>{platillo.total_vendido} unidades</td>
+                      <td>{platillo.veces_pedido} veces</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))
+        ) : (
+          <div className="no-data">
+            {mesSeleccionado 
+              ? `No hay datos de platillos para ${mesSeleccionado}`
+              : 'No hay datos de platillos para el período seleccionado'
+            }
+          </div>
+        )}
+      </div>
+
+      {/* Gráfico de Ventas Mensuales (AHORA AL FINAL) */}
       <div className="chart-container">
         <h2>Ventas por Mes</h2>
         {metricas.ventasMensuales.length > 0 ? (
@@ -137,7 +216,7 @@ const Metricas = () => {
         )}
       </div>
 
-      {/* Tabla de Ventas Detallada */}
+      {/* Tabla de Ventas Detallada (AHORA AL FINAL) */}
       <div className="tabla-container">
         <h2>Detalle de Ventas Mensuales</h2>
         <table className="tabla-ventas">

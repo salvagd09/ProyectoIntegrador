@@ -3,8 +3,7 @@ from sqlalchemy.orm import Session,joinedload
 from typing import List
 from datetime import datetime
 from app.routers.inventario_L import registrar_salida_stock
-from app import database
-from app import models, schemas 
+from .. import models, database,schemas
 router=APIRouter(prefix="/pedidosF",tags=["pedidosF"])
 def get_db():
     db = database.SessionLocal()
@@ -28,7 +27,7 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
             ).all()
             for receta in recetas:
                 cantidad = receta.cantidad_requerida * detalle.cantidad
-                # ✅ Acumular, no sobrescribir
+                # Acumular, no sobrescribir
                 if receta.ingrediente_id in insumos_necesarios:
                     insumos_necesarios[receta.ingrediente_id] += cantidad
                 else:
@@ -36,7 +35,7 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
         
         # 3. Verificar y descontar de forma ATÓMICA
         for insumo_id, cantidad in insumos_necesarios.items():
-            # ✅ Usar row locking para evitar race conditions
+            # Usar row locking para evitar race conditions
             insumo = db.query(models.Ingrediente).filter(
                 models.Ingrediente.id == insumo_id
             ).with_for_update().first()
@@ -53,9 +52,9 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
                     detail=f"Stock insuficiente de {insumo.nombre}"
                 )
             
-            # ✅ Descontar correctamente
+            # Descontar correctamente
             insumo.cantidad_actual -= cantidad_float
-            # ✅ AGREGAR empleado_id al llamado
+            # AGREGAR empleado_id al llamado
             registrar_salida_stock(
                 ingrediente_id=insumo_id,
                 cantidad_a_consumir=cantidad,
@@ -161,30 +160,35 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
                 detail=f"Pedido #{id} no encontrado"
             )
         estado_anterior = pedido.estado
+        
         # Determinar nuevo estado
-        if pedido.estado == models.EstadoPedidoEnum.pendiente: # type: ignore
+        if pedido.estado == models.EstadoPedidoEnum.pendiente:
             nuevo_estado = models.EstadoPedidoEnum.en_preparacion
-        elif pedido.estado == models.EstadoPedidoEnum.en_preparacion: # type: ignore
+        elif pedido.estado == models.EstadoPedidoEnum.en_preparacion:
             nuevo_estado = models.EstadoPedidoEnum.listo
-        elif pedido.estado == models.EstadoPedidoEnum.listo: # type: ignore
-            # Aquí la lógica es un poco más compleja, ya que compara con un string
-            # DEBES COMPARAR CON LOS VALORES DE ENUM
-            if pedido.tipo_pedido == models.TipoPedidoEnum.delivery: # type: ignore
+        elif pedido.estado == models.EstadoPedidoEnum.listo:
+            if pedido.tipo_pedido == models.TipoPedidoEnum.delivery:
                 nuevo_estado = models.EstadoPedidoEnum.entregado
             else:
                 nuevo_estado = models.EstadoPedidoEnum.servido
         else:
-            # Ahora, la comparación final es segura porque compara objetos Enum
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Estado '{pedido.estado.value}' no válido o ya está completo"
             )
         
         # Actualizar el pedido
-        pedido.estado = nuevo_estado # type: ignore
+        pedido.estado = nuevo_estado
 
-        if (estado_anterior==models.EstadoPedidoEnum.pendiente and nuevo_estado == models.EstadoPedidoEnum.en_preparacion): # type: ignore
-            descontar_insumos_pedido(id,db)
+        # Registrar hora_fin cuando se completa
+        if nuevo_estado in [models.EstadoPedidoEnum.entregado, models.EstadoPedidoEnum.servido]:
+            if pedido.hora_fin is None:
+                pedido.hora_fin = datetime.now()
+
+        if (estado_anterior == models.EstadoPedidoEnum.pendiente and 
+            nuevo_estado == models.EstadoPedidoEnum.en_preparacion):
+            descontar_insumos_pedido(id, db)
+        
         # Actualizar todos los detalles en una sola query (MÁS EFICIENTE)
         detalles_actualizados = db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == id
@@ -233,7 +237,7 @@ def agregar_Pedido(data:schemas.AgregarPedido,db:Session=Depends(get_db)):
         detalles = db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == nuevo_pedido.id
         ).all()
-        # 4. Retornar el pedido creado
+        # Retornar el pedido creado
         return {
             "id": nuevo_pedido.id,
             "mesa": f"Mesa {mesa.numero}",
@@ -287,13 +291,13 @@ def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Se
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"La cantidad debe ser mayor a 0"
                 )
-        # ✅ ELIMINAR items antiguos con synchronize_session=False
+        
         db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == id
         ).delete(synchronize_session=False)
-        # ✅ FORZAR la ejecución del DELETE antes de continuar
+        
         db.flush()
-        # Agregar los nuevos items
+        
         for detalle in pedido_data.items:
             nuevo_detalle = models.Detalles_Pedido(
                 pedido_id=id,
@@ -392,7 +396,7 @@ def obtener_pedidos_delivery_pendientes_pago(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ ENDPOINT NUEVO: Obtener pagos completados (solo delivery)
+# ENDPOINT NUEVO: Obtener pagos completados (solo delivery)
 @router.get("/pagos-completados/")
 def obtener_pagos_completados(db: Session = Depends(get_db)):
     try:    # ✅ Cargar TODO con joins anticipados (evita N+1 queries)
@@ -445,7 +449,7 @@ def obtener_pagos_completados(db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ ENDPOINT NUEVO: Procesar pago delivery
+# ENDPOINT NUEVO: Procesar pago delivery
 @router.post("/procesar-pago-delivery/")
 def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session = Depends(get_db)):
     try:
@@ -480,6 +484,8 @@ def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session 
 
         # Cambiar estado del pedido a 'Completado'
         pedido.estado = models.EstadoPedidoEnum.completado
+        if pedido.hora_fin is None:
+            pedido.hora_fin = datetime.now()
 
         db.commit()
         db.refresh(nuevo_pago)
@@ -506,3 +512,104 @@ def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session 
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e)) 
+
+# ENDPOINT PARA PEDIDOS SERVIDOS LISTOS PARA PAGAR
+@router.get("/pedidos-servidos-pago/")
+def obtener_pedidos_servidos_para_pago(db: Session = Depends(get_db)):
+    """
+    Obtener pedidos listos para pagar:
+    - Físicos: estado 'servido' 
+    - Delivery: estado 'entregado'
+    - Que no tengan pago completado
+    """
+    try:
+        # Buscar pedidos servidos/entregados sin pago completado
+        pedidos = db.query(models.Pedidos).filter(
+            models.Pedidos.estado.in_(["servido", "entregado"]),
+            ~models.Pedidos.pagos.any(models.Pagos.estado == "pagado")
+        ).options(
+            joinedload(models.Pedidos.mesas),
+            joinedload(models.Pedidos.Dpedido).joinedload(models.Detalles_Pedido.platillos),
+            joinedload(models.Pedidos.PedidosD),
+            joinedload(models.Pedidos.pedidosR),
+            joinedload(models.Pedidos.pagos)
+        ).all()
+
+        resultado = []
+        
+        for pedido in pedidos:
+            # Determinar tipo y obtener datos específicos
+            if pedido.tipo_pedido == "mesa":
+                # PEDIDO FÍSICO
+                tipo = "fisico"
+                cliente_nombre = "Cliente en Local"
+                cliente_telefono = ""
+                direccion = None
+                mesa_info = f"Mesa {pedido.mesas.numero}" if pedido.mesas else "Sin mesa"
+                
+            elif pedido.tipo_pedido == "delivery":
+                # PEDIDO DELIVERY
+                tipo = "delivery"
+                delivery_info = db.query(models.Pedidos_Delivery).filter(
+                    models.Pedidos_Delivery.pedido_id == pedido.id
+                ).first()
+                cliente_nombre = delivery_info.nombre_cliente if delivery_info else "Cliente Delivery"
+                cliente_telefono = delivery_info.telefono_cliente if delivery_info else ""
+                direccion = delivery_info.direccion_cliente if delivery_info else ""
+                mesa_info = None
+                
+            elif pedido.tipo_pedido == "recojo_local":
+                # PEDIDO RECOJO LOCAL
+                tipo = "recojo_local"
+                recojo_info = db.query(models.PedidosRecojoLocal).filter(
+                    models.PedidosRecojoLocal.pedido_id == pedido.id
+                ).first()
+                cliente_nombre = recojo_info.nombre_cliente if recojo_info else "Cliente Recojo"
+                cliente_telefono = recojo_info.telefono_cliente if recojo_info else ""
+                direccion = "Recojo en local"
+                mesa_info = None
+            else:
+                continue
+
+            # Obtener items del pedido
+            items = []
+            for detalle in pedido.Dpedido:
+                items.append({
+                    "id": detalle.id,
+                    "nombre": detalle.platillos.nombre if detalle.platillos else "Producto",
+                    "cantidad": detalle.cantidad,
+                    "precio_unitario": float(detalle.precio_unitario),
+                    "subtotal": float(detalle.precio_unitario * detalle.cantidad)
+                })
+
+            # Calcular monto pendiente (por si hay pagos parciales)
+            monto_pagado = sum(pago.monto for pago in pedido.pagos if pago.estado == "pagado")
+            monto_pendiente = float(pedido.monto_total) - monto_pagado
+
+            pedido_data = {
+                "id": pedido.id,
+                "tipo": tipo,
+                "estado": pedido.estado,
+                "monto_total": float(pedido.monto_total),
+                "monto_pendiente": monto_pendiente,
+                "cliente_nombre": cliente_nombre,
+                "cliente_telefono": cliente_telefono,
+                "direccion": direccion,
+                "mesa": mesa_info,
+                "fecha_creacion": pedido.fecha_creacion.isoformat() if pedido.fecha_creacion else None,
+                "items": items
+            }
+            
+            resultado.append(pedido_data)
+
+        return {
+            "success": True,
+            "pedidos": resultado,
+            "total": len(resultado)
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }

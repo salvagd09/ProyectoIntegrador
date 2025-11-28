@@ -386,7 +386,7 @@ def recibir_pedido_externo(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-@router.patch("/webhook/{pedido_id}/confirmar")
+@router.put("/webhook/{pedido_id}/confirmar")
 def confirmar_pedido_externo(pedido_id: int, db: Session = Depends(get_db)):
     """Admin confirma el pedido y pasa a 'pendiente'"""
     pedido = db.query(models.Pedidos).filter(

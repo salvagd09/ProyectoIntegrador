@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 from app.routers.inventario_L import registrar_salida_stock
 from typing import List,Optional
 from app import database, schemas, models
-
+from app.logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 router = APIRouter(prefix="/api/inventario", tags=["inventario"])
 
 def get_db():
@@ -93,8 +97,8 @@ def Mostrar_inventario(db: Session = Depends(get_db)):
             "unidad_medida": ingrediente.unidad_de_medida,
             "perecible": ingrediente.es_perecible
         })
+    app_logger.info("El inventario se ha mostrado por completo")
     return mostrar_ingredientes
-
 # POST /api/inventario/ - Crear nuevo insumo
 @router.post("/")
 def crear_insumo(insumo: schemas.AInsumo, db: Session = Depends(get_db)):
@@ -105,6 +109,7 @@ def crear_insumo(insumo: schemas.AInsumo, db: Session = Depends(get_db)):
         ).first()
         
         if insumo_existente:
+            app_logger.warning("Ya existe un insumo con este nombre")
             raise HTTPException(status_code=400, detail="Ya existe un insumo con este nombre")
         
         # Crear nuevo ingrediente
@@ -121,7 +126,7 @@ def crear_insumo(insumo: schemas.AInsumo, db: Session = Depends(get_db)):
         db.add(db_ingrediente)
         db.commit()
         db.refresh(db_ingrediente)
-        
+        app_logger.info(f'El insumo {insumo.nombre} ha sido creado exitosamente')
         return {
             "id": db_ingrediente.id,
             "nombre": db_ingrediente.nombre,
@@ -132,8 +137,8 @@ def crear_insumo(insumo: schemas.AInsumo, db: Session = Depends(get_db)):
             "unidad_medida": db_ingrediente.unidad_de_medida,
             "perecible": db_ingrediente.es_perecible
         }
-        
     except Exception as e:
+        error_logger.error("Error al crear un insumo")
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Error creando insumo: {str(e)}")
 
@@ -145,6 +150,7 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
         db_ingrediente = db.query(models.Ingrediente).filter(models.Ingrediente.id == insumo_id).first()
         
         if not db_ingrediente:
+            app_logger.warning(f'El insumo {db_ingrediente.nombre} no se encuentra')
             raise HTTPException(status_code=404, detail="Insumo no encontrado")
         
         # Verificar nombre duplicado
@@ -154,6 +160,7 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
                 models.Ingrediente.id != insumo_id
             ).first()
             if insumo_existente:
+                app_logger.warning(f'El insumo {db_ingrediente.nombre} ya existe')
                 raise HTTPException(status_code=400, detail="Ya existe otro insumo con este nombre")
         
         # Actualizar campos
@@ -167,7 +174,7 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
         
         db.commit()
         db.refresh(db_ingrediente)
-        
+        app_logger.info(f'El insumo {db_ingrediente.nombre} ha sido actualizado')
         return {
             "id": db_ingrediente.id,
             "nombre": db_ingrediente.nombre,
@@ -180,6 +187,7 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
         }
         
     except Exception as e:
+        error_logger.error("Hubo un error al actualizar insumo")
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Error actualizando insumo: {str(e)}")
 
@@ -190,14 +198,16 @@ def eliminar_insumo(insumo_id: int, db: Session = Depends(get_db)):
         db_ingrediente = db.query(models.Ingrediente).filter(models.Ingrediente.id == insumo_id).first()
         
         if not db_ingrediente:
+            app_logger.warning(f'El insumo {db_ingrediente.nombre} no ha sido encontrado')
             raise HTTPException(status_code=404, detail="Insumo no encontrado")
         
         db.delete(db_ingrediente)
         db.commit()
-        
+        app_logger.info("El insumo ha sido eliminado")
         return {"message": "Insumo eliminado correctamente"}
         
     except Exception as e:
+        error_logger("Hubo un error al momento de eliminar el insumo")
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Error eliminando insumo: {str(e)}")
 
@@ -231,6 +241,7 @@ def registrar_movimiento(movimiento_data: dict, db: Session = Depends(get_db)):
         if tipo_movimiento in ["Consumo", "Merma"]:
             if ingrediente.cantidad_actual < cantidad_float:
                 raise HTTPException(
+                    app_logger.error("No hay stock suficiente para eliminar insumos"),
                     status_code=400, 
                     detail=f"Stock insuficiente. Disponible: {ingrediente.cantidad_actual} {ingrediente.unidad_de_medida}"
                 )
@@ -244,15 +255,17 @@ def registrar_movimiento(movimiento_data: dict, db: Session = Depends(get_db)):
         print(f"Nuevo stock: {ingrediente.cantidad_actual}")
         
         db.commit()
-        
+        app_logger.info("El movimiento ha sido registrado correctamente")
         return {
             "message": "Movimiento registrado correctamente",
             "nuevo_stock": float(ingrediente.cantidad_actual)
         }
         
     except HTTPException:
+        error_logger.error("Error al realizar una petición HTTP para registrar movimiento")
         raise
     except Exception as e:
+        error_logger.error("Error al registrar el movimiento")
         db.rollback()
         print(f"Error completo: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error registrando movimiento: {str(e)}")
@@ -278,6 +291,7 @@ def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
         ).all()
         
         if not recetas:
+            app_logger.warning(f'El platillo {platillo.nombre} no tiene receta')
             raise HTTPException(
                 status_code=400,
                 detail=f"El platillo '{platillo.nombre}' no tiene recetas configuradas"
@@ -304,7 +318,7 @@ def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
         # Commit
         db.commit()
         db.refresh(nueva_merma)
-        
+        app_logger.info("La merma ha sido registrada correctamente")
         return {
              "mensaje": f"Merma registrada correctamente para {platillo.nombre}",
             "merma_id": nueva_merma.id,
@@ -313,9 +327,11 @@ def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
             "ingredientes_descontados": movimientos_realizados
         }
     except HTTPException:
+        error_logger.error("Hubo un error de petición HTTP al momento de registrar la merma")
         db.rollback()
         raise
     except Exception as e:
+        error_logger.error("Hubo un error al registrar la merma")
         db.rollback()
         print(f"❌ Error: {str(e)}")
         import traceback
@@ -324,4 +340,5 @@ def registrar_merma(data: schemas.RegistarMerma, db: Session = Depends(get_db)):
 @router.get("/proveedores", response_model=List[schemas.ProveedorSimple])
 def listar_proveedores(db: Session = Depends(get_db)):
     proveedores = db.query(models.Proveedores).order_by(models.Proveedores.nombre).all()
+    app_logger.info("Los proveedores han sido listados correctamente")
     return proveedores

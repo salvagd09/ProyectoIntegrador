@@ -111,7 +111,6 @@ const PaymentManager = () => {
           return paymentDate.getTime() === yesterday.getTime();
         });
         break;
-      
       case 'week':
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -120,7 +119,6 @@ const PaymentManager = () => {
           return paymentDate >= weekAgo;
         });
         break;
-      
       case 'month':
         const monthAgo = new Date(today);
         monthAgo.setMonth(monthAgo.getMonth() - 1);

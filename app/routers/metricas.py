@@ -5,7 +5,11 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from app.database import get_db
 from app import models
-
+from app.logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 router = APIRouter(prefix="/api/metricas", tags=["métricas"])
 
 @router.get("/ticket-promedio")
@@ -54,10 +58,9 @@ def obtener_ticket_promedio(
             func.avg(models.Pedidos.monto_total).label('ticket_promedio'),
             func.count(models.Pedidos.id).label('total_pedidos')
         ).filter(filtro_base).first()
-        
+        app_logger.info("Se obtuvo ticket promedio correctamente")
         ticket_promedio = float(resultado.ticket_promedio) if resultado.ticket_promedio else 0.0
         total_pedidos = resultado.total_pedidos if resultado.total_pedidos else 0
-        
         return {
             "ticket_promedio": round(ticket_promedio, 2),
             "total_pedidos": total_pedidos,
@@ -66,8 +69,8 @@ def obtener_ticket_promedio(
                 "fecha_fin": fecha_fin
             }
         }
-        
     except Exception as e:
+        error_logger.error("Error al calcular el ticket promedio")
         raise HTTPException(status_code=500, detail=f"Error calculando ticket promedio: {str(e)}")
 
 @router.get("/tiempo-promedio")
@@ -119,6 +122,7 @@ def obtener_tiempo_promedio(
         print(f"🔍 DEBUG: {len(pedidos)} pedidos con horas registradas")
         
         if not pedidos:
+            app_logger.info("No hay pedidos con las horas establecidas")
             return {
                 "tiempo_promedio": 0,
                 "total_pedidos": 0,
@@ -233,7 +237,6 @@ def obtener_ventas_mensuales(
             5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
             9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
         }
-        
         resultado = []
         for venta in ventas_mensuales:
             resultado.append({
@@ -241,14 +244,14 @@ def obtener_ventas_mensuales(
                 "ventas": float(venta.ventas) if venta.ventas else 0.0,
                 "cantidad_pedidos": venta.cantidad_pedidos
             })
-        
         # Verificar cuántos pagos encontró
         total_pagos = sum(item['cantidad_pedidos'] for item in resultado)
         print(f"📊 PAGOS ENCONTRADOS EN MÉTRICAS: {total_pagos}")
-        
+        app_logger.info("Se obtuvieron los datos de las ventas mensuales")
         return resultado
         
     except Exception as e:
+        error_logger.errors("Error en obtener las ventas mensuales")
         raise HTTPException(status_code=500, detail=f"Error obteniendo ventas mensuales: {str(e)}")
 
 @router.get("/todas")
@@ -265,14 +268,14 @@ def obtener_todas_metricas(
         ticket_data = obtener_ticket_promedio(fecha_inicio, fecha_fin, db)
         tiempo_data = obtener_tiempo_promedio(fecha_inicio, fecha_fin, db)
         ventas_data = obtener_ventas_mensuales(fecha_inicio, fecha_fin, db)
-        
+        app_logger.info("Se obtuvieron todas las métricas")
         return {
             "ticket_promedio": ticket_data,
             "tiempo_promedio": tiempo_data,
             "ventas_mensuales": ventas_data
         }
-        
     except Exception as e:
+        error_logger.error("Error al obtener todas las métricas")
         raise HTTPException(status_code=500, detail=f"Error obteniendo todas las métricas: {str(e)}")
 
 @router.get("/top5-platillos-mensual")
@@ -324,6 +327,7 @@ def obtener_top5_platillos_mensual(
                 query = query.filter(extract('month', models.Pedidos.fecha_creacion) == mes_numero)
                 print(f"🔍 Filtrando por mes: {mes} (número: {mes_numero})")
             else:
+                app_logger.warning(f'El mes {mes} no es válido')
                 raise HTTPException(status_code=400, detail=f"Mes '{mes}' no válido")
 
         # Ejecutar consulta
@@ -377,7 +381,7 @@ def obtener_top5_platillos_mensual(
         print(f"📊 Encontrados {len(resultado_final)} meses con datos")
         if mes:
             print(f" Filtrado aplicado para: {mes}")
-
+        app_logger.info("Se obtuvieron los 5 platillos más vendidos del mes")
         return {
             "año_analizado": año_actual,
             "mes_filtrado": mes,
@@ -389,9 +393,11 @@ def obtener_top5_platillos_mensual(
         }
 
     except HTTPException:
+        error_logger.error("Error de petición HTTP para obtener los pedidos")
         raise
     except Exception as e:
         print(f"🚨 ERROR en top5-platillos-mensual: {str(e)}")
+        error_logger.error("Error 500 para obtener los 5 platillos del mes")
         raise HTTPException(
             status_code=500, 
             detail=f"Error calculando top 5 platillos mensual: {str(e)}"

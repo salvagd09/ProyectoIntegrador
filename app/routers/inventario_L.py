@@ -1,12 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, selectinload, joinedload
-from sqlalchemy import func,exists
+from sqlalchemy import func,exists,or_
 from typing import List, Optional
 from decimal import Decimal
 from datetime import date
 from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria, serializar_db_object
+from app.logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 router = APIRouter(
     prefix="/inventario_L",
     tags=["Inventario_L"]
@@ -25,6 +30,7 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
     ).first()
     
     if not ingrediente_db:
+        app_logger.warning(f'El ingrediente {ingrediente_db.nombre} no se encuentra ')
         raise HTTPException(
             status_code=404, 
             detail=f"Ingrediente ID {lote_data.ingrediente_id} no encontrado"
@@ -85,11 +91,11 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         fecha_vencimiento=lote_cargado.fecha_vencimiento,
         fecha_ingreso=lote_cargado.fecha_ingreso,
         numero_lote=lote_cargado.numero_lote,
-        nombre_ingrediente=ingrediente_nombre if ingrediente_nombre else "N/A",
         ingrediente_unidad=ingrediente_unidad if ingrediente_unidad else "unidad",
         nombre_proveedor=lote_cargado.proveedoresLI.nombre if lote_cargado.proveedoresLI else None,
         empleado_id=empleado_id_final  # ✅ Agregar manualmente
     )
+    app_logger.info(f'El lote {lote_cargado.numero_lote} ha sido registrado')
     return response
 #Para que el botón tenga solo productos que han sufrido de movimientos
 @router.get("/ingredientes-con-lotes", response_model=List[schemas.IngredienteSimple])
@@ -104,6 +110,7 @@ def listar_ingredientes_con_lotes(db: Session = Depends(get_db)):
     ).distinct().all()
     ids_lista = [id_tupla[0] for id_tupla in ids_con_lotes]
     if not ids_lista:
+        app_logger.warning("No hay ingredientes con lotes activos")
         raise HTTPException(
             status_code=404, 
             detail="No hay ingredientes con lotes activos"
@@ -114,6 +121,7 @@ def listar_ingredientes_con_lotes(db: Session = Depends(get_db)):
         models.Ingrediente.nombre.asc()
     ).all()
     # ✅ Ahora los objetos se cargan correctamente
+    app_logger.info("Se han listado ingredientes con lotes")
     return [
         schemas.IngredienteSimple(
             id=ing.id,
@@ -134,9 +142,9 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
     lotes_db = db.query(models.Lotes_Inventarios).filter(
         models.Lotes_Inventarios.ingrediente_id == ingrediente_id,
         models.Lotes_Inventarios.stock_actual > Decimal('0'),
-        #Para que no se muestren los lotes vencidos
-        (models.Lotes_Inventarios.fecha_vencimiento >= hoy) | 
-        (models.Lotes_Inventarios.fecha_vencimiento.is_(None))
+       or_(
+        models.Lotes_Inventarios.fecha_vencimiento > hoy,  
+       )
     ).order_by(
         models.Lotes_Inventarios.fecha_vencimiento.asc(),
         models.Lotes_Inventarios.fecha_ingreso.asc()
@@ -148,6 +156,7 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
     
     # Verificar si se encontraron lotes
     if not lotes_db:
+        app_logger.warning("No hay lotes activos para este ingrediente")
         raise HTTPException(status_code=404, detail="No se encontraron lotes activos para este ingrediente.")
 
     # Preparar la respuesta
@@ -167,6 +176,7 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
             nombre_proveedor=lote.proveedoresLI.nombre if lote.proveedoresLI else None
         )
         resultados.append(response)
+    app_logger.info("Se han logrado listar lotes activos por ingrediente")
     return resultados
 # Registrar una salida de stock
 @router.post("/salida/{ingrediente_id}", response_model=List[schemas.MovimientoInventarioResponse], status_code=status.HTTP_200_OK)
@@ -200,8 +210,8 @@ def registrar_salida_stock(
     # Verificar si hay stock suficiente
     stock_total = sum(lote.stock_actual for lote in lotes_activos)
     if stock_total < cantidad_requerida: # type: ignore
+        app_logger.warning("No hay stock suficiente para registrar salida")
         raise HTTPException(status_code=400, detail=f"Stock insuficiente. Se requiere {cantidad_requerida:.3f}, pero solo hay {stock_total:.3f} de {ingrediente_id}")
-    
     # Procesar la salida de stock usando FIFO
     ingrediente_db = db.query(models.Ingrediente).filter(models.Ingrediente.id == ingrediente_id).first()
     ingrediente_nombre = ingrediente_db.nombre if ingrediente_db else "N/A"
@@ -264,7 +274,7 @@ def registrar_salida_stock(
         response = schemas.MovimientoInventarioResponse.model_validate(mov)
         response.nombre_ingrediente = str(ingrediente_nombre)
         respuestas.append(response)
-
+    app_logger.info("La salida ha sido registrada correctamente")
     return respuestas
 # Listar historial de movimientos de inventario
 @router.get("/movimientos/historial", response_model=List[schemas.MovimientoInventarioResponse])
@@ -294,6 +304,7 @@ def listar_historial_movimientos(
     
     # Verificar si se encontraron movimientos
     if not movimientos:
+        app_logger.warning("No hay movimientos con los criterios especificados")
         raise HTTPException(status_code=404, detail="No se encontraron movimientos con los criterios especificados")
 
     # Preparar la respuesta
@@ -311,4 +322,5 @@ def listar_historial_movimientos(
         response.nombre_ingrediente = nombre_ingrediente
         response.nombre_empleado = nombre_empleado
         resultados.append(response)
+    app_logger.info("Se ha conseguido obtener el historial de movimientos deseado")
     return resultados

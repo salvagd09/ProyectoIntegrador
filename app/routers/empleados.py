@@ -2,6 +2,11 @@ from fastapi import APIRouter,Depends,HTTPException
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from sqlalchemy import join, select
+from app.logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 from app import database, schemas, models
 router=APIRouter(prefix="/empleados",tags=["empleados"])
 def get_db():
@@ -26,6 +31,7 @@ def MostrarEmpleados(db:Session=Depends(get_db)):
             "telefono":empleado.telefono,
             "correo_electronico":empleado.email
         })
+    app_logger.info("Todos los empleados han sido mostrados de forma correcta")
     return mostrar_empleados
 @router.post("/agregar")
 def AgregarEmpleado(data:schemas.AgregarEmpleado,db: Session=Depends(get_db)):
@@ -48,6 +54,7 @@ def AgregarEmpleado(data:schemas.AgregarEmpleado,db: Session=Depends(get_db)):
     db.commit()
     db.refresh(nuevo_empleado)
     rol_nombre = db.query(models.Roles.nombre).filter(models.Roles.id == data.rol).scalar()
+    app_logger.info("El empleado ha sido agregado")
     return{
         "id": nuevo_empleado.id,
         "nombre": nuevo_empleado.nombre,
@@ -61,6 +68,7 @@ def AgregarEmpleado(data:schemas.AgregarEmpleado,db: Session=Depends(get_db)):
 def EditarEmpleado(id:int,data:schemas.EditarEmpleado,db:Session=Depends(get_db)):
     empleado=db.query(models.Empleado).filter(models.Empleado.id==id).first()
     if not empleado:
+        app_logger.warning(f'El empleado {empleado.nombre} {empleado.apellido} no existe')
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
     
     if data.contrasenaUs:
@@ -70,7 +78,6 @@ def EditarEmpleado(id:int,data:schemas.EditarEmpleado,db:Session=Depends(get_db)
     if data.PIN:
         empleado.pin_code_hash = pwd_context.hash(data.PIN) # type: ignore
         del data.PIN
-
     campos_mapeo = {
         "nombres": "nombre",
         "apellidos": "apellido",
@@ -93,6 +100,7 @@ def EditarEmpleado(id:int,data:schemas.EditarEmpleado,db:Session=Depends(get_db)
         .scalar()
     )
     #  Devolver el mismo formato que el GET
+    app_logger.info("El empleado ha sido editado correctamente")
     return {
         "id": empleado.id,
         "nombre": empleado.nombre,
@@ -107,7 +115,9 @@ def EditarEmpleado(id:int,data:schemas.EditarEmpleado,db:Session=Depends(get_db)
 def eliminar_empleado(id: int, db: Session = Depends(get_db)):
     empleado = db.query(models.Empleado).filter(models.Empleado.id == id).first()
     if not empleado:
+        app_logger.warning(f'El empleado {empleado.nombre} no ha sido encontrado')
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
     db.delete(empleado)
     db.commit()
+    app_logger.info("El empleado ha sido borrado correctamente")
     return {"mensaje": "Empleado eliminado correctamente"}

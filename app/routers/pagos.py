@@ -10,13 +10,15 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Pagos, Pedidos, EstadoPagoEnum, MetodoPagoEnum, EstadoPedidoEnum
-
-router = APIRouter()
-
+from app.logging_config import setup_loggers
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
+router = APIRouter(tags=["pagos"])
 # Configuración
 CULQI_SECRET_KEY = os.getenv("CULQI_SECRET_KEY", "sk_test_UTCQSGcXW8bCyU59")
 CULQI_BASE_URL = "https://api.culqi.com/v2"
-
 # Modelos esenciales
 class LinkPagoRequest(BaseModel):
     pedido_id: int
@@ -55,8 +57,8 @@ async def registrar_pago(request: PagoRequest, db: Session = Depends(get_db)):
         # Verificar pedido
         pedido = db.query(Pedidos).filter(Pedidos.id == request.pedido_id).first()
         if not pedido:
+            app_logger.warning("No se han logrado registrar este pago")
             raise HTTPException(status_code=404, detail="Pedido no encontrado")
-        
         # Mapear método de pago
         metodo_pago_enum = None
         if request.metodo_pago.lower() == "efectivo":
@@ -84,7 +86,7 @@ async def registrar_pago(request: PagoRequest, db: Session = Depends(get_db)):
         pedido.estado = EstadoPedidoEnum.completado
         db.commit()
         db.refresh(nuevo_pago)
-        
+        app_logger.info("Pago registrado exitosamente")
         return PagoResponse(
             success=True,
             pago_id=nuevo_pago.id,
@@ -92,8 +94,10 @@ async def registrar_pago(request: PagoRequest, db: Session = Depends(get_db)):
         )
         
     except HTTPException:
+        error_logger.error("Error de solicitud HTTP para el registro de pagos")
         raise
     except Exception as e:
+        error_logger.error("Error 500 al momento de registrar el pago")
         db.rollback()
         return PagoResponse(
             success=False,
@@ -125,7 +129,7 @@ async def obtener_historial_pagos(db: Session = Depends(get_db)):
                 "referencia_pago": pago.referencia_pago,
                 "discount": 0
             })
-        
+        app_logger.info("Se ha obtenido todo el historial de pago")
         return {
             "success": True,
             "pagos": historial,
@@ -133,6 +137,7 @@ async def obtener_historial_pagos(db: Session = Depends(get_db)):
         }
         
     except Exception as e:
+        error_logger.error("No se pudo obtenrer el historial de pagos")
         return {
             "success": False,
             "pagos": [],
@@ -143,10 +148,8 @@ async def obtener_historial_pagos(db: Session = Depends(get_db)):
 async def generar_link_pago(request: LinkPagoRequest):
     """Genera link de pago para pagos digitales"""
     try:
-        print(f"🔗 Generando link para pedido: {request.pedido_id}")
-        
+        print(f" Generando link para pedido: {request.pedido_id}")
         await asyncio.sleep(1.0)
-        
         # Simulación de link
         link_id = f"link_{request.pedido_id}_{random.randint(1000, 9999)}"
         payment_url = f"https://demo-pago.culqi.com/pay/{link_id}"
@@ -158,7 +161,7 @@ async def generar_link_pago(request: LinkPagoRequest):
             "estado": "pendiente",
             "fecha_creacion": datetime.now()
         }
-        
+        app_logger.info("Se generó el pago de forma correcta")
         return LinkPagoResponse(
             success=True,
             payment_url=payment_url,
@@ -168,16 +171,38 @@ async def generar_link_pago(request: LinkPagoRequest):
         )
         
     except Exception as e:
+        error_logger.error("No se pudo generar el link de pago")
         return LinkPagoResponse(
             success=False,
             mensaje=f"Error generando link: {str(e)}"
         )
-
 # Endpoint de salud
-@router.get("/health")
+@router.get("/healthP")
 async def health_check():
+    culqi_key = os.getenv('CULQI_SECRET_KEY')
+    culqi_configured = bool(culqi_key)
+    # Información de links de pago
+    links_info = {
+        "activos": len(links_activos),
+    }
+    # Status general
+    all_checks_passed = culqi_configured
     return {
-        "status": "healthy",
+        "status": "healthy" if all_checks_passed else "degraded",
         "service": "pagos",
-        "links_activos": len(links_activos)
+        "checks": {
+            "culqi": {
+                "status": "healthy" if culqi_configured else "unhealthy",
+                "configured": culqi_configured,
+                "provider": "Culqi"
+            },
+            "payment_links": {
+                "status": "healthy",
+                "links_activos": links_info["activos"]
+            }
+        },
+        "metadata": {
+            "module": "pagos",
+            "version": "1.0.0"
+        }
     }

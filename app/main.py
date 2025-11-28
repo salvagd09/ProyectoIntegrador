@@ -1,7 +1,9 @@
-
-from fastapi import FastAPI
+from fastapi import FastAPI,status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+from sqlalchemy import text
+from datetime import datetime,timezone
 import os
 
 load_dotenv()
@@ -28,9 +30,6 @@ from app.routers.menu import router as menu_router
 from app.routers.inventario_L import router as inventario_L_router
 from app.routers.upload_image import router as upload_image_router
 from app.routers.metricas import router as metricas_router
-
-app = FastAPI(title="Sistema de Pedidos")
-
 app = FastAPI(title="Sistema de Pedidos")
 
 app = FastAPI(title="Sistema de Pedidos")
@@ -62,19 +61,63 @@ app.include_router(upload_image_router)
 app.include_router(delivery_router)
 app.include_router(pagos_router)
 app.include_router(metricas_router)
-
 # --- Ruta raíz ---
 @app.get("/")
 def root():
     return {"msg": "Bienvenido a GestaFood"}
-
 # --- Ruta de salud para verificar configuración ---
 @app.get("/health")
 async def health():
-    return {
-        "status": "healthy", 
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "GestaFood API",
-        "database": os.getenv('DATABASE_PUBLIC_URL', 'not found'),
-        "culqi": "configured" if os.getenv('CULQI_SECRET_KEY') else "demo_mode",
-        "message": "✅ Servidor funcionando correctamente"
+        "version": "1.0.0",
+        "checks": {}
     }
+    all_healthy = True
+    # 1. Verifica Base de Datos
+    try:
+        from app.database import SessionLocal
+        db = SessionLocal()
+        # Hace una query real para verificar conectividad
+        db.execute(text("SELECT 1"))
+        db.close()
+        health_status["checks"]["database"] = {
+            "status": "healthy",
+            "message": "Database connection successful",
+            "response_time_ms": 0  # Útil para medir el tiempo real
+        }
+    except Exception as e:
+        all_healthy = False
+        health_status["checks"]["database"] = {
+            "status": "unhealthy",
+            "message": f"Database connection failed: {str(e)}",
+            "error": type(e).__name__
+        }
+    # 2. Verifica Configuración sin exponer credenciales
+    health_status["checks"]["configuration"] = {
+        "status": "healthy",
+        "database_configured": bool(os.getenv('DATABASE_PUBLIC_URL')),
+        "culqi_configured": bool(os.getenv('CULQI_SECRET_KEY')),
+        "cloudinary_configured": bool(os.getenv('CLOUDINARY_URL'))
+    }
+    # 3. Verificar sistema de archivos logs
+    try:
+        logs_writable = os.access('logs', os.W_OK)
+        health_status["checks"]["filesystem"] = {
+            "status": "healthy" if logs_writable else "degraded",
+            "logs_directory": "writable" if logs_writable else "read-only"
+        }
+    except Exception as e:
+        health_status["checks"]["filesystem"] = {
+            "status": "unhealthy",
+            "message": str(e)
+        }
+    if not all_healthy:
+        health_status["status"] = "unhealthy"
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=health_status
+        )
+    return health_status  

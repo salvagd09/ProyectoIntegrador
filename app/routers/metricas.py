@@ -274,3 +274,125 @@ def obtener_todas_metricas(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo todas las métricas: {str(e)}")
+
+@router.get("/top5-platillos-mensual")
+def obtener_top5_platillos_mensual(
+    mes: Optional[str] = Query(None, description="Mes específico (ej: 'Enero', 'Febrero')"),
+    año: Optional[int] = Query(None, description="Año específico"),
+    db: Session = Depends(get_db)
+):
+    """
+    Obtiene los 5 platillos más vendidos por mes con filtro opcional
+    """
+    try:
+        # Mapeo de nombres de mes a números
+        meses_nombre_a_numero = {
+            'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4,
+            'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8,
+            'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+        }
+        
+        # Determinar el año (actual por defecto)
+        año_actual = año or datetime.now().year
+        
+        # Construir consulta base
+        query = db.query(
+            extract('year', models.Pedidos.fecha_creacion).label('año'),
+            extract('month', models.Pedidos.fecha_creacion).label('mes_numero'),
+            models.Detalles_Pedido.producto_id,
+            models.Platillo.nombre.label('nombre_platillo'),
+            func.sum(models.Detalles_Pedido.cantidad).label('total_vendido'),
+            func.count(models.Detalles_Pedido.id).label('veces_pedido')
+        ).join(
+            models.Detalles_Pedido, models.Detalles_Pedido.pedido_id == models.Pedidos.id
+        ).join(
+            models.Platillo, models.Platillo.id == models.Detalles_Pedido.producto_id
+        ).filter(
+            extract('year', models.Pedidos.fecha_creacion) == año_actual,
+            models.Pedidos.estado.in_([
+                models.EstadoPedidoEnum.servido,
+                models.EstadoPedidoEnum.entregado,
+                models.EstadoPedidoEnum.completado
+            ])
+        )
+
+        # Aplicar filtro por mes si se proporciona
+        if mes:
+            mes_lower = mes.lower()
+            if mes_lower in meses_nombre_a_numero:
+                mes_numero = meses_nombre_a_numero[mes_lower]
+                query = query.filter(extract('month', models.Pedidos.fecha_creacion) == mes_numero)
+                print(f"🔍 Filtrando por mes: {mes} (número: {mes_numero})")
+            else:
+                raise HTTPException(status_code=400, detail=f"Mes '{mes}' no válido")
+
+        # Ejecutar consulta
+        resultados = query.group_by(
+            extract('year', models.Pedidos.fecha_creacion),
+            extract('month', models.Pedidos.fecha_creacion),
+            models.Detalles_Pedido.producto_id,
+            models.Platillo.nombre
+        ).order_by(
+            extract('year', models.Pedidos.fecha_creacion),
+            extract('month', models.Pedidos.fecha_creacion),
+            func.sum(models.Detalles_Pedido.cantidad).desc()
+        ).all()
+
+        # Procesar resultados y agrupar por mes
+        meses = {
+            1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+            5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto', 
+            9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+        }
+
+        # Estructurar datos por mes
+        datos_por_mes = {}
+        for resultado in resultados:
+            mes_key = f"{int(resultado.año)}-{int(resultado.mes_numero)}"
+            
+            if mes_key not in datos_por_mes:
+                datos_por_mes[mes_key] = {
+                    "año": int(resultado.año),
+                    "mes_numero": int(resultado.mes_numero),
+                    "mes_nombre": meses.get(int(resultado.mes_numero), f"Mes {int(resultado.mes_numero)}"),
+                    "platillos": []
+                }
+            
+            # Solo agregar si es de los top 5 del mes
+            if len(datos_por_mes[mes_key]["platillos"]) < 5:
+                datos_por_mes[mes_key]["platillos"].append({
+                    "producto_id": resultado.producto_id,
+                    "nombre": resultado.nombre_platillo,
+                    "total_vendido": int(resultado.total_vendido),
+                    "veces_pedido": resultado.veces_pedido
+                })
+
+        # Convertir a lista ordenada
+        resultado_final = sorted(
+            datos_por_mes.values(),
+            key=lambda x: (x["año"], x["mes_numero"]),
+            reverse=True
+        )
+
+        print(f"📊 Encontrados {len(resultado_final)} meses con datos")
+        if mes:
+            print(f" Filtrado aplicado para: {mes}")
+
+        return {
+            "año_analizado": año_actual,
+            "mes_filtrado": mes,
+            "periodo": {
+                "fecha_inicio": datetime(año_actual, 1, 1).strftime("%Y-%m-%d"),
+                "fecha_fin": datetime.now().strftime("%Y-%m-%d")
+            },
+            "top_platillos_por_mes": resultado_final
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"🚨 ERROR en top5-platillos-mensual: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error calculando top 5 platillos mensual: {str(e)}"
+        )

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, selectinload, joinedload
-from sqlalchemy import func,exists
+from sqlalchemy import func,exists,or_
 from typing import List, Optional
 from decimal import Decimal
 from datetime import date
 from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria, serializar_db_object
-from logging_config import setup_loggers
+from app.logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")
@@ -91,7 +91,6 @@ def registrar_ingreso_lote(lote_data: schemas.LoteCreate, db: Session = Depends(
         fecha_vencimiento=lote_cargado.fecha_vencimiento,
         fecha_ingreso=lote_cargado.fecha_ingreso,
         numero_lote=lote_cargado.numero_lote,
-        nombre_ingrediente=ingrediente_nombre if ingrediente_nombre else "N/A",
         ingrediente_unidad=ingrediente_unidad if ingrediente_unidad else "unidad",
         nombre_proveedor=lote_cargado.proveedoresLI.nombre if lote_cargado.proveedoresLI else None,
         empleado_id=empleado_id_final  # ✅ Agregar manualmente
@@ -143,9 +142,9 @@ def listar_lotes_por_ingrediente(ingrediente_id: int, db: Session = Depends(get_
     lotes_db = db.query(models.Lotes_Inventarios).filter(
         models.Lotes_Inventarios.ingrediente_id == ingrediente_id,
         models.Lotes_Inventarios.stock_actual > Decimal('0'),
-        #Para que no se muestren los lotes vencidos
-        (models.Lotes_Inventarios.fecha_vencimiento >= hoy) | 
-        (models.Lotes_Inventarios.fecha_vencimiento.is_(None))
+       or_(
+        models.Lotes_Inventarios.fecha_vencimiento > hoy,  
+       )
     ).order_by(
         models.Lotes_Inventarios.fecha_vencimiento.asc(),
         models.Lotes_Inventarios.fecha_ingreso.asc()

@@ -4,7 +4,7 @@ from sqlalchemy import func
 from typing import List
 from datetime import datetime, date
 from app import database, schemas, models
-from logging_config import setup_loggers
+from app.logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

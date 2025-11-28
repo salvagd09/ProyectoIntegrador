@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from passlib.context import CryptContext
 from typing import Optional
-from logging_config import setup_loggers
+from app.logging_config import setup_loggers
 import logging
 setup_loggers()
 logger = logging.getLogger("auth_logger")

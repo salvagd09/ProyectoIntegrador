@@ -4,7 +4,7 @@ from typing import List
 from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria 
-from logging_config import setup_loggers
+from app.logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

@@ -6,7 +6,7 @@ from decimal import Decimal
 from app import models, schemas
 from app.database import get_db
 from app.utils import registrar_auditoria, serializar_db_object, transformar_producto_con_receta
-from logging_config import setup_loggers
+from app.logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

@@ -116,7 +116,6 @@ function Pedidos_Aplicativo() {
   const pedidosListos = pedidos.filter(p => p.pedido.estado === 'listo').length;
   const pedidosEntregados = pedidos.filter(p => p.pedido.estado === 'entregado').length;
   const pedidosDelivery = pedidosFiltrados.filter(p => p.pedido.tipo_pedido === 'delivery');
-  const pedidosRecojo = pedidos.filter(p => p.pedido.tipo_pedido === 'recojo_local');
   const getBadgeStyle = (plataforma) => {
     // Mapeo temático para plataformas
     if (plataforma === 'rappi') return { backgroundColor: '#ed673aff', color: 'white' };
@@ -308,7 +307,7 @@ function Pedidos_Aplicativo() {
         <PedidosPorConfirmar/>
         <Row className="g-4">
             {/* Columna de Delivery */}
-            <Col md={6}>
+            <Col md={12}>
                 <div className={styles.orderListContainer}>
                     <h2 
                         className="h4 fw-bold mb-3" 
@@ -321,26 +320,6 @@ function Pedidos_Aplicativo() {
                     ) : (
                         <div className={styles.orderGrid}>
                             {pedidosDelivery.map(({ pedido, detalles, pago }) => (
-                                <PedidoCard key={pedido.id} pedido={pedido} detalles={detalles} pago={pago} />
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </Col>
-            {/* Columna de Recojo */}
-            <Col md={6}>
-                <div className={styles.orderListContainer}>
-                    <h2 
-                        className="h4 fw-bold mb-3" 
-                        style={{color: 'var(--color-title)'}}
-                    >
-                        <i className="fa-solid fa-bag-shopping me-2"></i> Pedidos de Recojo ({pedidosRecojo.length})
-                    </h2>
-                    {pedidosRecojo.length === 0 ? (
-                        <p style={{color: 'var(--color-muted)'}}>No hay pedidos de recojo activos</p>
-                    ) : (
-                        <div className={styles.orderGrid}>
-                            {pedidosRecojo.map(({ pedido, detalles, pago }) => (
                                 <PedidoCard key={pedido.id} pedido={pedido} detalles={detalles} pago={pago} />
                             ))}
                         </div>

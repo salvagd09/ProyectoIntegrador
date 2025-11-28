@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 from datetime import datetime,timezone
 import os
+
 load_dotenv()
 from app.cloudinary_config import cloudinary
 # --- SOLUCIÓN FORZADA PARA VARIABLES DE ENTORNO ---

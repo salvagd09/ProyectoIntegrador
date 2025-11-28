@@ -172,20 +172,18 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
                 detail=f"Pedido #{id} no encontrado"
             )
         estado_anterior = pedido.estado
+        
         # Determinar nuevo estado
-        if pedido.estado == models.EstadoPedidoEnum.pendiente: # type: ignore
+        if pedido.estado == models.EstadoPedidoEnum.pendiente:
             nuevo_estado = models.EstadoPedidoEnum.en_preparacion
-        elif pedido.estado == models.EstadoPedidoEnum.en_preparacion: # type: ignore
+        elif pedido.estado == models.EstadoPedidoEnum.en_preparacion:
             nuevo_estado = models.EstadoPedidoEnum.listo
-        elif pedido.estado == models.EstadoPedidoEnum.listo: # type: ignore
-            # Aquí la lógica es un poco más compleja, ya que compara con un string
-            # DEBES COMPARAR CON LOS VALORES DE ENUM
-            if pedido.tipo_pedido == models.TipoPedidoEnum.delivery: # type: ignore
+        elif pedido.estado == models.EstadoPedidoEnum.listo:
+            if pedido.tipo_pedido == models.TipoPedidoEnum.delivery:
                 nuevo_estado = models.EstadoPedidoEnum.entregado
             else:
                 nuevo_estado = models.EstadoPedidoEnum.servido
         else:
-            # Ahora, la comparación final es segura porque compara objetos Enum
             raise HTTPException(
                 app_logger.warning("El estado no es válido"),
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -193,10 +191,17 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
             )
         
         # Actualizar el pedido
-        pedido.estado = nuevo_estado # type: ignore
+        pedido.estado = nuevo_estado
 
-        if (estado_anterior==models.EstadoPedidoEnum.pendiente and nuevo_estado == models.EstadoPedidoEnum.en_preparacion): # type: ignore
-            descontar_insumos_pedido(id,db)
+        # Registrar hora_fin cuando se completa
+        if nuevo_estado in [models.EstadoPedidoEnum.entregado, models.EstadoPedidoEnum.servido]:
+            if pedido.hora_fin is None:
+                pedido.hora_fin = datetime.now()
+
+        if (estado_anterior == models.EstadoPedidoEnum.pendiente and 
+            nuevo_estado == models.EstadoPedidoEnum.en_preparacion):
+            descontar_insumos_pedido(id, db)
+        
         # Actualizar todos los detalles en una sola query (MÁS EFICIENTE)
         detalles_actualizados = db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == id
@@ -309,13 +314,13 @@ def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Se
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"La cantidad debe ser mayor a 0"
                 )
-        # ✅ ELIMINAR items antiguos con synchronize_session=False
+        
         db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == id
         ).delete(synchronize_session=False)
-        # ✅ FORZAR la ejecución del DELETE antes de continuar
+        
         db.flush()
-        # Agregar los nuevos items
+        
         for detalle in pedido_data.items:
             nuevo_detalle = models.Detalles_Pedido(
                 pedido_id=id,
@@ -462,7 +467,7 @@ def obtener_pagos_completados(db: Session = Depends(get_db)):
         error_logger.error("Se genera un error 500 al momento de mostra pedidos pagados")
         raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ ENDPOINT NUEVO: Procesar pago delivery
+# ENDPOINT NUEVO: Procesar pago delivery
 @router.post("/procesar-pago-delivery/")
 def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session = Depends(get_db)):
     try:
@@ -497,6 +502,8 @@ def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session 
 
         # Cambiar estado del pedido a 'Completado'
         pedido.estado = models.EstadoPedidoEnum.completado
+        if pedido.hora_fin is None:
+            pedido.hora_fin = datetime.now()
 
         db.commit()
         db.refresh(nuevo_pago)
@@ -524,3 +531,104 @@ def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session 
         error_logger.error("Existe un error 500 para procesar pago de delivery")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e)) 
+
+# ENDPOINT PARA PEDIDOS SERVIDOS LISTOS PARA PAGAR
+@router.get("/pedidos-servidos-pago/")
+def obtener_pedidos_servidos_para_pago(db: Session = Depends(get_db)):
+    """
+    Obtener pedidos listos para pagar:
+    - Físicos: estado 'servido' 
+    - Delivery: estado 'entregado'
+    - Que no tengan pago completado
+    """
+    try:
+        # Buscar pedidos servidos/entregados sin pago completado
+        pedidos = db.query(models.Pedidos).filter(
+            models.Pedidos.estado.in_(["servido", "entregado"]),
+            ~models.Pedidos.pagos.any(models.Pagos.estado == "pagado")
+        ).options(
+            joinedload(models.Pedidos.mesas),
+            joinedload(models.Pedidos.Dpedido).joinedload(models.Detalles_Pedido.platillos),
+            joinedload(models.Pedidos.PedidosD),
+            joinedload(models.Pedidos.pedidosR),
+            joinedload(models.Pedidos.pagos)
+        ).all()
+
+        resultado = []
+        
+        for pedido in pedidos:
+            # Determinar tipo y obtener datos específicos
+            if pedido.tipo_pedido == "mesa":
+                # PEDIDO FÍSICO
+                tipo = "fisico"
+                cliente_nombre = "Cliente en Local"
+                cliente_telefono = ""
+                direccion = None
+                mesa_info = f"Mesa {pedido.mesas.numero}" if pedido.mesas else "Sin mesa"
+                
+            elif pedido.tipo_pedido == "delivery":
+                # PEDIDO DELIVERY
+                tipo = "delivery"
+                delivery_info = db.query(models.Pedidos_Delivery).filter(
+                    models.Pedidos_Delivery.pedido_id == pedido.id
+                ).first()
+                cliente_nombre = delivery_info.nombre_cliente if delivery_info else "Cliente Delivery"
+                cliente_telefono = delivery_info.telefono_cliente if delivery_info else ""
+                direccion = delivery_info.direccion_cliente if delivery_info else ""
+                mesa_info = None
+                
+            elif pedido.tipo_pedido == "recojo_local":
+                # PEDIDO RECOJO LOCAL
+                tipo = "recojo_local"
+                recojo_info = db.query(models.PedidosRecojoLocal).filter(
+                    models.PedidosRecojoLocal.pedido_id == pedido.id
+                ).first()
+                cliente_nombre = recojo_info.nombre_cliente if recojo_info else "Cliente Recojo"
+                cliente_telefono = recojo_info.telefono_cliente if recojo_info else ""
+                direccion = "Recojo en local"
+                mesa_info = None
+            else:
+                continue
+
+            # Obtener items del pedido
+            items = []
+            for detalle in pedido.Dpedido:
+                items.append({
+                    "id": detalle.id,
+                    "nombre": detalle.platillos.nombre if detalle.platillos else "Producto",
+                    "cantidad": detalle.cantidad,
+                    "precio_unitario": float(detalle.precio_unitario),
+                    "subtotal": float(detalle.precio_unitario * detalle.cantidad)
+                })
+
+            # Calcular monto pendiente (por si hay pagos parciales)
+            monto_pagado = sum(pago.monto for pago in pedido.pagos if pago.estado == "pagado")
+            monto_pendiente = float(pedido.monto_total) - monto_pagado
+
+            pedido_data = {
+                "id": pedido.id,
+                "tipo": tipo,
+                "estado": pedido.estado,
+                "monto_total": float(pedido.monto_total),
+                "monto_pendiente": monto_pendiente,
+                "cliente_nombre": cliente_nombre,
+                "cliente_telefono": cliente_telefono,
+                "direccion": direccion,
+                "mesa": mesa_info,
+                "fecha_creacion": pedido.fecha_creacion.isoformat() if pedido.fecha_creacion else None,
+                "items": items
+            }
+            
+            resultado.append(pedido_data)
+
+        return {
+            "success": True,
+            "pedidos": resultado,
+            "total": len(resultado)
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }

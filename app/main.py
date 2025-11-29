@@ -30,7 +30,6 @@ from app.routers.menu import router as menu_router
 from app.routers.inventario_L import router as inventario_L_router
 from app.routers.upload_image import router as upload_image_router
 from app.routers.metricas import router as metricas_router
-app = FastAPI(title="Sistema de Pedidos")
 
 app = FastAPI(title="Sistema de Pedidos")
 
@@ -38,9 +37,13 @@ app = FastAPI(title="Sistema de Pedidos")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # Localhost para desarrollo
         "http://localhost:5173", "http://127.0.0.1:5173", 
         "http://localhost:3000", "http://127.0.0.1:3000", 
-        "http://localhost:8000", "http://127.0.0.1:8000"
+        "http://localhost:8000", "http://127.0.0.1:8000",
+        # Producción
+        "https://proyectointegrador-production-d5ec.up.railway.app",
+        "https://frontendproyectointegrador-production.up.railway.app"
         ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -61,10 +64,12 @@ app.include_router(upload_image_router)
 app.include_router(delivery_router)
 app.include_router(pagos_router)
 app.include_router(metricas_router)
+
 # --- Ruta raíz ---
 @app.get("/")
 def root():
     return {"msg": "Bienvenido a GestaFood"}
+
 # --- Ruta de salud para verificar configuración ---
 @app.get("/health")
 async def health():

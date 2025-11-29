@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Container, Button, Card, Row, Col, Form, InputGroup, Modal } from 'react-bootstrap';
 import styles from '../Modulos/Menu.module.css';
 import ImageUploader from '../Modulos/ImageUploader';
-const API_BASE_URL = "http://localhost:8000";
+import { API_BASE_URL } from "../Configuracion/api.jsx";
 function Menu() {
   // Constantes de categorías
   const [productos, setProductos] = useState([]); // Almacena todos los productos cargados de la API

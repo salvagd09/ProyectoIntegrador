@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from app import models, schemas
-from app.database import get_db
-from app.utils import registrar_auditoria 
-from app.logging_config import setup_loggers
+import models, schemas
+from database import get_db
+from utils import registrar_auditoria 
+from logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

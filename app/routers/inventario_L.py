@@ -4,10 +4,10 @@ from sqlalchemy import func,exists,or_
 from typing import List, Optional
 from decimal import Decimal
 from datetime import date
-from app import models, schemas
-from app.database import get_db
-from app.utils import registrar_auditoria, serializar_db_object
-from app.logging_config import setup_loggers
+import models, schemas
+from database import get_db
+from utils import registrar_auditoria, serializar_db_object
+from logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

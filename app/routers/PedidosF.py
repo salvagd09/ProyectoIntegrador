@@ -2,10 +2,10 @@ from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session,joinedload
 from typing import List
 from datetime import datetime
-from  app.logging_config import setup_loggers
-from app.routers.inventario_L import registrar_salida_stock
-from app import database
-from app import models, schemas 
+from logging_config import setup_loggers
+from routers.inventario_L import registrar_salida_stock
+import database
+import models, schemas 
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

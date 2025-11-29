@@ -1,6 +1,7 @@
 import { Table, Button, Modal, Form, Container, Row, Col } from "react-bootstrap";
 import { useState, useEffect } from "react";
 import styles from './Usuario.module.css';
+import { API_BASE_URL } from "../Configuracion/api.jsx";
 // Estilos 
   const headerStyle = { 
     backgroundColor: 'var(--color-header)', 
@@ -110,7 +111,7 @@ function Usuario() {
     setShowModalE(true);
   };
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/empleados/")
+    fetch(`${API_BASE_URL}/empleados/`)
       .then((res) => res.json())
       .then((data) => setUsuarios(data))
       .catch((err) => console.log(err));
@@ -131,13 +132,13 @@ function Usuario() {
         return;
     }
     try {
-      const respuesta = await fetch("http://127.0.0.1:8000/empleados/agregar", {
+      const respuesta = await fetch(`${API_BASE_URL}/empleados/agregar`, {
         method: "POST",
         headers: { "Content-type": "application/json" },
         body: JSON.stringify(nuevoUsuario),
       });
       if (respuesta.ok) {         
-        await fetch("http://127.0.0.1:8000/empleados/")
+        await fetch(`${API_BASE_URL}/empleados/`)
         .then((res) => res.json())
         .then((data) => setUsuarios(data));
         showMessageModal("El empleado fue creado correctamente", true);
@@ -173,7 +174,7 @@ function Usuario() {
     };
     try {
       const respuesta = await fetch(
-        `http://127.0.0.1:8000/empleados/editar/${usuarioSeleccionado.id}`,
+        `${API_BASE_URL}/empleados/editar/${usuarioSeleccionado.id}`,
         {
           method: "PUT",
           headers: { "Content-type": "application/json" },
@@ -181,7 +182,7 @@ function Usuario() {
         }
       );
       if (!respuesta.ok) throw new Error("No se pudo editar el usuario");
-      await fetch("http://127.0.0.1:8000/empleados/")
+      await fetch(`${API_BASE_URL}/empleados/`)
       .then((res) => res.json())
       .then((data) => setUsuarios(data));
       showMessageModal("Empleado editado correctamente", true);
@@ -194,7 +195,7 @@ function Usuario() {
   async function EliminarUsuario(id) {
     try {
       const eliminacion = await fetch(
-        `http://127.0.0.1:8000/empleados/eliminar/${usuarioSeleccionado.id}`,
+        `${API_BASE_URL}/empleados/eliminar/${usuarioSeleccionado.id}`,
         {
           method: "DELETE",
         }

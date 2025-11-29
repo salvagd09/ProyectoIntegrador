@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 #Para la exposición
 #El url se va a obtenr cuando se despliegue el backend a producción
-RAILWAY_URL = "https://tu-backend.up.railway.app"
+RAILWAY_URL = "https://proyectointegrador-production-d5ec.up.railway.app"
 LOCAL_URL = "http://localhost:8000"
 # Detectar automáticamente
 def get_api_url():

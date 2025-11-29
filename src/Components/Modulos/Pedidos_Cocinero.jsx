@@ -16,7 +16,7 @@ export default function Pedidos_Cocinero() {
       setEmpleadoId(user.id);
     }
     // Cargar pedidos
-    fetch("http://127.0.0.1:8000/pedidosF/pedidosM")
+    fetch(`${API_BASE_URL}/pedidosF/pedidosM`)
       .then((res) => res.json())
       .then((data) => setPedidos(data))
       .catch((err) => console.error(err));
@@ -37,7 +37,7 @@ export default function Pedidos_Cocinero() {
     }
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/pedidosF/${id}/estado`, 
+        `${API_BASE_URL}/pedidosF/${id}/estado`, 
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

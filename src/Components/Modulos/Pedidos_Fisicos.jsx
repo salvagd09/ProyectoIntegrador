@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Button, Card, ListGroup, Form, Row, Col, Modal, Table } from "react-bootstrap"; 
 import styles from './PedidosFisicos.module.css';
+import { API_BASE_URL } from "../Configuracion/api.jsx";
 const formatText = (text) => {
     if (!text) return '';
     return text.replace(/_/g, ' ')
@@ -142,7 +143,7 @@ export default function Pedidos_Fisicos() {
   };
 
   const fetchPedidos = () => { 
-    fetch("http://127.0.0.1:8000/pedidosF/pedidosM")
+    fetch(`${API_BASE_URL}/pedidosF/pedidosM`)
           .then((res) => res.json())
           .then((data) => setPedidos(data))
           .catch((err) => console.error(err));
@@ -150,7 +151,7 @@ export default function Pedidos_Fisicos() {
 
   // Fetch Platillos
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/pedidosF/platillos")
+    fetch(`${API_BASE_URL}/pedidosF/platillos`)
       .then((res) => res.json())
       .then((data) => setPlatillos(data))
       .catch((err) => console.error(err));
@@ -158,7 +159,7 @@ export default function Pedidos_Fisicos() {
 
   // Fetch Mesas
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/pedidosF/mesas")
+    fetch(`${API_BASE_URL}/pedidosF/mesas`)
       .then((res) => res.json())
       .then((data) => setMesas(data))
       .catch((err) => console.error(err));
@@ -202,7 +203,7 @@ export default function Pedidos_Fisicos() {
     };
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/pedidosF/agregarPedido",
+        `${API_BASE_URL}/pedidosF/agregarPedido`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -396,7 +397,7 @@ export default function Pedidos_Fisicos() {
       console.log("Datos a enviar:", pedidoActualizado);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/pedidosF/editar/${pedidoAEditar.id}`,
+        `${API_BASE_URL}/pedidosF/editar/${pedidoAEditar.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -432,7 +433,7 @@ export default function Pedidos_Fisicos() {
     }
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/pedidosF/${id}/estado`,
+        `${API_BASE_URL}/pedidosF/${id}/estado`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -461,13 +462,13 @@ export default function Pedidos_Fisicos() {
   async function EliminarPedido(id) {
     try {
       const eliminacion = await fetch(
-        `http://127.0.0.1:8000/pedidosF/eliminarPM/${id}`,
+        `${API_BASE_URL}/pedidosF/eliminarPM/${id}`,
         {
           method: "PUT",
           headers: { "Content-type": "application/json" },
         }
       );
-      await fetch(`http://127.0.0.1:8000/pedidosF/eliminarDetalles/${id}`, {
+      await fetch(`${API_BASE_URL}/pedidosF/eliminarDetalles/${id}`, {
         method: "DELETE",
       });
       if (!eliminacion.ok) return alert("Error al eliminar el pedido");

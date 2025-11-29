@@ -14,7 +14,7 @@ import {
 } from "react-bootstrap";
 import styles from '../Modulos/Insumos.module.css';
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../Configuracion/api.jsx";
 
 function Insumos() {
   const obtenerRol = () => {
@@ -546,7 +546,7 @@ function FormMermas({merma, empleadoId, onGuardar, onCancelar}){
   const [platillos,setPlatillos] = useState([])
 
   useEffect(()=> {
-      fetch("http://127.0.0.1:8000/pedidosF/platillos")
+      fetch(`${API_BASE_URL}/pedidosF/platillos`)
         .then((res) => res.json())
         .then((data) => {
           setPlatillos(data);      

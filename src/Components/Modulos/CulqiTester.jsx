@@ -49,7 +49,7 @@ export default function CulqiTester({
         setLoading(true);
         try {
           // Enviar token al backend para procesar el pago
-          const response = await fetch("http://127.0.0.1:8000/api/pagos/procesar-tarjeta", {
+          const response = await fetch(`${API_BASE_URL}/api/pagos/procesar-tarjeta`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

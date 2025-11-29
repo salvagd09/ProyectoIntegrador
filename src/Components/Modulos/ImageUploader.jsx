@@ -3,7 +3,7 @@ import { Form, Button, ProgressBar, InputGroup } from 'react-bootstrap';
 
 import styles from '../Modulos/Menu.module.css';
 
-const API_BASE_URL = "http://localhost:8000";
+import { API_BASE_URL } from "../Configuracion/api.jsx";
 
 const ImageUploader = ({ onUploadSuccess, currentImageUrl, inputStyle }) => {
     const [file, setFile] = useState(null);

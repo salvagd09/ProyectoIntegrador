@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 
+import {API_BASE_URL} from '../Configuracion/api.jsx';
+
 const PaymentManager = () => {
   const [payments, setPayments] = useState([]);
   const [allPayments, setAllPayments] = useState([]);
@@ -59,7 +61,7 @@ const PaymentManager = () => {
 
   const obtenerHistorialPagos = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/pagos/historial');
+      const response = await fetch(`${API_BASE_URL}/api/pagos/historial`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -74,7 +76,7 @@ const PaymentManager = () => {
 
   const obtenerPedidosServidos = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/pedidosF/pedidos-servidos-pago/');
+      const response = await fetch(`${API_BASE_URL}/pedidosF/pedidos-servidos-pago`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -177,7 +179,7 @@ const PaymentManager = () => {
     try {
       const monto = selectedPedido.monto_pendiente;
 
-      const response = await fetch("http://127.0.0.1:8000/api/pagos/generar-link", {
+      const response = await fetch(`${API_BASE_URL}/api/pagos/generar-link`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -230,7 +232,7 @@ const PaymentManager = () => {
         referencia_pago: `DELIVERY-${selectedPedido.id}-${Date.now()}`
       };
 
-      const response = await fetch('http://127.0.0.1:8000/api/pagos/registrar', {
+      const response = await fetch(`${API_BASE_URL}/api/pagos/registrar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pagoData),
@@ -262,7 +264,7 @@ const PaymentManager = () => {
         referencia_pago: cargoId
       };
 
-      const response = await fetch('http://127.0.0.1:8000/api/pagos/registrar', {
+      const response = await fetch(`${API_BASE_URL}/api/pagos/registrar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pagoData),

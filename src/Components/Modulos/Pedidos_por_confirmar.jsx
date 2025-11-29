@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Col, Card, Button, Alert, Badge } from 'react-bootstrap';
+import { API_BASE_URL } from "../Configuracion/api.jsx";
+
 export function PedidosPorConfirmar() {
-  const API_BASE_URL="HTTP://localhost:8000";
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(false);
   const cardBg = { 

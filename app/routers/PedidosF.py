@@ -2,8 +2,14 @@ from fastapi import APIRouter,Depends,HTTPException,status
 from sqlalchemy.orm import Session,joinedload
 from typing import List
 from datetime import datetime
+from  app.logging_config import setup_loggers
 from app.routers.inventario_L import registrar_salida_stock
-from .. import models, database,schemas
+from app import database
+from app import models, schemas 
+import logging
+setup_loggers()
+app_logger = logging.getLogger("app_logger")
+error_logger = logging.getLogger("error_logger")
 router=APIRouter(prefix="/pedidosF",tags=["pedidosF"])
 def get_db():
     db = database.SessionLocal()
@@ -52,9 +58,9 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
                     detail=f"Stock insuficiente de {insumo.nombre}"
                 )
             
-            # Descontar correctamente
+            #  Descontar correctamente
             insumo.cantidad_actual -= cantidad_float
-            # AGREGAR empleado_id al llamado
+            #  AGREGAR empleado_id al llamado
             registrar_salida_stock(
                 ingrediente_id=insumo_id,
                 cantidad_a_consumir=cantidad,
@@ -65,9 +71,11 @@ def descontar_insumos_pedido(pedido_id: int, db: Session):
                 db=db
             )
     except HTTPException:
+        error_logger.error("No se pudo realizar la petición HTTP")
         db.rollback()  # ✅ Rollback en caso de error
         raise
     except Exception as e:
+        error_logger.error("Error 500 para descontar insumos")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 #Para colocar platillos disponibles en el select
@@ -81,6 +89,7 @@ def listar_productos(db: Session = Depends(get_db)):
             "nombre": producto.nombre,
             "precio":producto.precio
         })
+    app_logger.info("Platillos existentes para el pedido")
     return mostrar_menu
 #Para colocar mesas disponibles en el select
 @router.get("/mesas")
@@ -92,8 +101,8 @@ def Mostrar_mesas(db:Session=Depends(get_db)):
             "id":mesa.id,
             "numero": mesa.numero
         })
+    app_logger.info("Las mesas disponibles han sido mostradas")
     return mostrar_mesas
-
 @router.get("/pedidosM", response_model=List[schemas.MostrarPedido])
 def Mostrar_Pedidos(db: Session = Depends(get_db)):
     pedidos = db.query(models.Pedidos).all()
@@ -101,7 +110,6 @@ def Mostrar_Pedidos(db: Session = Depends(get_db)):
     for pedido in pedidos:
         mesa_numero = f"Mesa {pedido.mesas.numero}" if pedido.mesas else "Para delivery"
         hora = pedido.fecha_creacion.strftime("%H:%M")
-        
         items = [
             {
                 "producto_id": int(detalle.producto_id),
@@ -111,7 +119,6 @@ def Mostrar_Pedidos(db: Session = Depends(get_db)):
             }
             for detalle in pedido.Dpedido
         ]
-        
         mostrar_pedidos.append({
             "id": pedido.id,
             "mesa": mesa_numero,
@@ -121,6 +128,7 @@ def Mostrar_Pedidos(db: Session = Depends(get_db)):
             "monto_total": float(pedido.monto_total), # type: ignore
             "items": items
         })
+    app_logger.info("Los pedidos son mostrados de forma correcta")
     return mostrar_pedidos
 
 @router.put("/eliminarPM/{id}")
@@ -128,10 +136,12 @@ def cancelar_Pedidos(id: int, db: Session = Depends(get_db)):
     # Buscar el pedido
     pedido = db.query(models.Pedidos).filter(models.Pedidos.id == id).first()
     if not pedido:
+        app_logger.warning("No existe tal pedido")
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
     pedido.estado=models.EstadoPedidoEnum.cancelado # type: ignore # type: ignore
     db.commit()
     db.refresh(pedido)
+    app_logger.info(f'El pedido {pedido.id} ha sido eliminado')
     return {"mensaje": "Pedido cancelado correctamente"}
 
 @router.delete("/eliminarDetalles/{id}")
@@ -141,14 +151,16 @@ def eliminar_detalles_pedidos(id:int,db:Session=Depends(get_db)):
     if registros_a_eliminar>0:
         detalles_pedidos.delete(synchronize_session="fetch")
         db.commit()
+        app_logger.info(f'Los platillos del pedido {id} tambien han sido eliminados')
         return {"mensaje": f"Se eliminaron {registros_a_eliminar} detalles para el pedido {id}"}
     else:
         raise HTTPException(
+            app_logger.warning(f'No se encontradron los detalles del pedido {id}'),
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No se encontraron detalles para el pedido con ID {id}"
         )
     return
-##Cambiar estado de una mesa a otra y restar cantidad de insumos
+##Cambiar estado de un pedido y restar cantidad de insumos
 @router.put("/{id}/estado")
 def cambiar_Estado(id: int, db: Session = Depends(get_db)):
     try:
@@ -173,6 +185,7 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
                 nuevo_estado = models.EstadoPedidoEnum.servido
         else:
             raise HTTPException(
+                app_logger.warning("El estado no es válido"),
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Estado '{pedido.estado.value}' no válido o ya está completo"
             )
@@ -196,7 +209,7 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
         
         db.commit()
         db.refresh(pedido)
-        
+        app_logger.info(f'El pedido físico {id} ha cambiado de estado' )
         return {
             "mensaje": "Estado actualizado correctamente",
             "pedido_id": id,
@@ -206,9 +219,11 @@ def cambiar_Estado(id: int, db: Session = Depends(get_db)):
         }
         
     except HTTPException:
+        error_logger.error("No se pudo enviar la petición HTTP de cambiar de estado en PedidosF")
         raise
     except Exception as e:
         db.rollback()
+        error_logger.error("Error 500 al momento de cambiar de estado de un pedido")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error: {str(e)}"
@@ -220,6 +235,7 @@ def agregar_Pedido(data:schemas.AgregarPedido,db:Session=Depends(get_db)):
             models.Mesas.id ==data.mesa_id
         ).first()
         if not mesa:
+            app_logger.warning("Esa mesa no está disponible")
             raise HTTPException(status_code=404, detail="Mesa no encontrada")
         nuevo_pedido=models.Pedidos(mesa_id=data.mesa_id,empleado_id=data.empleado_id,estado=data.estado,tipo_pedido=data.tipo_pedido,monto_total=data.monto_total,fecha_creacion=datetime.now())
         db.add(nuevo_pedido)
@@ -237,7 +253,8 @@ def agregar_Pedido(data:schemas.AgregarPedido,db:Session=Depends(get_db)):
         detalles = db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == nuevo_pedido.id
         ).all()
-        # Retornar el pedido creado
+        # 4. Retornar el pedido creado
+        app_logger.info(f'El pedido ha sido {nuevo_pedido.id} registrado correctamente')
         return {
             "id": nuevo_pedido.id,
             "mesa": f"Mesa {mesa.numero}",
@@ -256,9 +273,11 @@ def agregar_Pedido(data:schemas.AgregarPedido,db:Session=Depends(get_db)):
                 for d in detalles
             ]}
     except HTTPException:
+        error_logger.error("Error en la petición HTTP para agregar un pedido")
         db.rollback()
         raise
     except Exception as e:
+        error_logger.error("Error 500 para agregar un pedido")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -268,11 +287,13 @@ def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Se
         pedido = db.query(models.Pedidos).filter(models.Pedidos.id == id).first()
         if not pedido:
             raise HTTPException(
+                app_logger.warning(f'El pedido {pedido.id} no ha sido encontrado'),
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Pedido #{id} no encontrado"
             )
         if not pedido_data.items or len(pedido_data.items) == 0:
             raise HTTPException(
+                app_logger.warning(f'El pedido {pedido.id} no tiene un platillo mínimo'),
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El pedido debe tener como minimo un platillo"
             )
@@ -283,11 +304,13 @@ def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Se
             ).first()
             if not producto:
                 raise HTTPException(
+                    app_logger.warning(f'No hay el producto {producto.nombre}'),
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="No se encontro este producto"
                 )
             if item.cantidad < 1:
                 raise HTTPException(
+                    app_logger.warning(f'La cantidad del producto {producto.nombre} debe ser mayor a 0'),
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"La cantidad debe ser mayor a 0"
                 )
@@ -308,13 +331,10 @@ def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Se
                 estado="pendiente"                                 
             )
             db.add(nuevo_detalle)
-        
         # Actualizar monto total
         pedido.monto_total = pedido_data.monto_total # type: ignore
-        
         db.commit()
         db.refresh(pedido)
-        
         detalles_actualizados = db.query(models.Detalles_Pedido).filter(
             models.Detalles_Pedido.pedido_id == id
         ).all()
@@ -336,10 +356,12 @@ def modificar_pedido(id: int, pedido_data: schemas.PedidoEditarSolicitud, db: Se
             ]
         }
     except HTTPException:
+        error_logger.error("Error en la solicitud HTTP para modificar pedido")
         db.rollback()
         raise
     except Exception as e:
         db.rollback()
+        error_logger.error("Error 500 en la solicitud para modificar el pedido")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al editar el pedido: {str(e)}"
@@ -353,19 +375,16 @@ def obtener_pedidos_delivery_pendientes_pago(db: Session = Depends(get_db)):
             models.Pedidos.estado == models.EstadoPedidoEnum.entregado,
             ~models.Pedidos.pagos.any(models.Pagos.estado == models.EstadoPagoEnum.pagado)
         ).all()
-
         resultado = []
         for pedido in pedidos:
             # Obtener información de delivery
             delivery_info = db.query(models.Pedidos_Delivery).filter(
                 models.Pedidos_Delivery.pedido_id == pedido.id
             ).first()
-
             # Obtener detalles del pedido
             detalles = db.query(models.Detalles_Pedido).filter(
                 models.Detalles_Pedido.pedido_id == pedido.id
             ).all()
-
             detalles_lista = []
             for detalle in detalles:
                 producto = db.query(models.Platillo).filter(models.Platillo.id == detalle.producto_id).first()
@@ -375,7 +394,6 @@ def obtener_pedidos_delivery_pendientes_pago(db: Session = Depends(get_db)):
                     "cantidad": detalle.cantidad,
                     "precio_unitario": float(detalle.precio_unitario)
                 })
-
             resultado.append({
                 "pedido": {
                     "id": pedido.id,
@@ -390,25 +408,25 @@ def obtener_pedidos_delivery_pendientes_pago(db: Session = Depends(get_db)):
                 },
                 "detalles": detalles_lista
             })
-
+        app_logger.info("Se muestran todos los pedidos pendientes de pago en delivery")
         return resultado
-
     except Exception as e:
+        error_logger.error("Error al obtener pedidos pendientes de pago en delivery")
         raise HTTPException(status_code=500, detail=str(e))
 
-# ENDPOINT NUEVO: Obtener pagos completados (solo delivery)
+#  ENDPOINT NUEVO: Obtener pagos completados (solo delivery)
 @router.get("/pagos-completados/")
 def obtener_pagos_completados(db: Session = Depends(get_db)):
-    try:    # ✅ Cargar TODO con joins anticipados (evita N+1 queries)
+    try:    #  Carga todo con joins anticipados (evita N+1 queries)
         pagos = db.query(models.Pagos).join(
             models.Pedidos
         ).options(
             joinedload(models.Pagos.pedidosP)  # Cargar pedido
-            .joinedload(models.Pedidos.PedidosD),  # Cargar delivery_info
+            .joinedload(models.Pedidos.PedidosD),  # Cargar info del delivery
             
-            joinedload(models.Pagos.pedidosP)  # Cargar pedido otra vez
-            .joinedload(models.Pedidos.Dpedido)  # Cargar detalles
-            .joinedload(models.Detalles_Pedido.platillos)  # Cargar productos
+            joinedload(models.Pagos.pedidosP)  # Vuelve a cargar el pedido
+            .joinedload(models.Pedidos.Dpedido)  # Carga  detalles
+            .joinedload(models.Detalles_Pedido.platillos)  # Carga los productos
         ).filter(
             models.Pedidos.tipo_pedido == models.TipoPedidoEnum.delivery,
             models.Pagos.estado == models.EstadoPagoEnum.pagado
@@ -426,7 +444,6 @@ def obtener_pagos_completados(db: Session = Depends(get_db)):
                 "cantidad": detalle.cantidad,
                 "precio_unitario": float(detalle.precio_unitario)
             } for detalle in pedido.Dpedido]  # Ya cargado
-
             resultado.append({
                 "id": pago.id,
                 "orderId": f"DEL-{pedido.id}",
@@ -444,9 +461,10 @@ def obtener_pagos_completados(db: Session = Depends(get_db)):
                 "createdAt": pago.fecha_pago.strftime("%Y-%m-%d %H:%M") if pago.fecha_pago else pedido.fecha_creacion.strftime("%Y-%m-%d %H:%M"),
                 "plataforma": delivery_info.plataforma.value if delivery_info else "N/A"
             })
-
+        app_logger.info("Se muestra el pedido con pago completado")
         return resultado
     except Exception as e:
+        error_logger.error("Se genera un error 500 al momento de mostra pedidos pagados")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ENDPOINT NUEVO: Procesar pago delivery
@@ -494,7 +512,7 @@ def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session 
         delivery_info = db.query(models.Pedidos_Delivery).filter(
             models.Pedidos_Delivery.pedido_id == pedido.id
         ).first()
-
+        app_logger.info(f'El pedido {pedido.id} ha sido pagado exitosamente')
         return {
             "mensaje": "Pago procesado exitosamente",
             "pago_id": nuevo_pago.id,
@@ -505,11 +523,12 @@ def procesar_pago_delivery(pago_data: schemas.ProcesarPagoDelivery, db: Session 
                 "plataforma": delivery_info.plataforma,
             }
         }
-
     except HTTPException:
+        error_logger.error("Existe un error de petición HTTP para procesar pago de delivery")
         db.rollback()
         raise
     except Exception as e:
+        error_logger.error("Existe un error 500 para procesar pago de delivery")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e)) 
 

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
-from app import models, schemas
+import models, schemas
 from enum import Enum
 from datetime import datetime, date
 from decimal import Decimal 

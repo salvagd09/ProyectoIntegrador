@@ -76,7 +76,7 @@ const PaymentManager = () => {
 
   const obtenerPedidosServidos = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pedidosF/pedidos-servidos-pago`);
+      const response = await fetch(`${API_BASE_URL}/pedidosF/pedidos-servidos-pago/`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {

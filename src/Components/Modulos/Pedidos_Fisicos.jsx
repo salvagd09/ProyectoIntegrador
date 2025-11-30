@@ -131,7 +131,7 @@ export default function Pedidos_Fisicos() {
 
   const STATUS_COLORS = {
     pendiente: { color: 'var(--color-btn-delete)', icon: 'fa-hourglass-half' },
-    en_preparacion: { color: 'var(--color-btn)', icon: 'fa-cook' },
+    en_preparacion: { color: 'var(--color-btn)', icon: 'fa-bowl-food' },
     listo: { color: 'var(--color-secondary)', icon: 'fa-check-circle' },
     servido: { color: 'var(--color-accent)', icon: 'fa-utensils' },
     entregado: { color: 'var(--color-accent)', icon: 'fa-truck' },
@@ -620,24 +620,30 @@ export default function Pedidos_Fisicos() {
             <div className={styles.pedidosGridColumnas}>
                 {/* Pendiente */}
                 <div className={styles.columna}>
-                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.pendiente.color}}>⏳ Pendiente</h3>
+                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.pendiente.color}}>
+                        <i class="fa-solid fa-hourglass"></i> Pendiente
+                    </h3>
                     {pedidosVisibles.filter((p) => p.estado === "pendiente").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
                 {/* En preparación */}
                 <div className={styles.columna}>
-                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.en_preparacion.color}}>👨‍🍳 En Preparación</h3>
+                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.en_preparacion.color}}>
+                        <i class="fa-solid fa-person-military-pointing"></i> En Preparación
+                    </h3>
                     {pedidosVisibles.filter((p) => p.estado === "en_preparacion").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
 
                 {/* Listo */}
                 <div className={styles.columna}>
-                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.listo.color}}>✅ Listo</h3>
+                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.listo.color}}>
+                        <i class="fa-solid fa-square-check"></i> Listo</h3>
                     {pedidosVisibles.filter((p) => p.estado === "listo").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
 
                 {/* Servido y Entregado */}
                 <div className={styles.columna}>
-                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.servido.color}}>🍽️ Servido o Entregado</h3>
+                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.servido.color}}>
+                        <i class="fa-solid fa-receipt"></i> Servido o Entregado</h3>
                     {pedidosVisiblesLyS.filter((p) => p.estado === "servido" || p.estado === "entregado").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
             </div>

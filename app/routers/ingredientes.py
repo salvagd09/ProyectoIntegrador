@@ -2,15 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
-from app import models, schemas
-from app.database import get_db
-from app.logging_config import setup_loggers
+import models, schemas
+from database import get_db
+from logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")
 error_logger = logging.getLogger("error_logger")
 # Importamos la auditoría y serialización para el registro de cambios
-from app.utils import registrar_auditoria, serializar_db_object 
+from utils import registrar_auditoria, serializar_db_object 
+
 router = APIRouter(
     prefix="/ingredientes",
     tags=["Inventario - Ingredientes"]

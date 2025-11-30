@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from passlib.context import CryptContext
 from typing import Optional
-from app.logging_config import setup_loggers
+from logging_config import setup_loggers
 import logging
 setup_loggers()
 logger = logging.getLogger("auth_logger")
-from app import database, schemas, models
+import database, schemas, models
 router = APIRouter(prefix="/auth", tags=["Auth"])
 #Para encriptar la contraseña que se envían y coincida
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")

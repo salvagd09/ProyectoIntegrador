@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.routers.inventario_L import registrar_salida_stock
+from routers.inventario_L import registrar_salida_stock
 from typing import List,Optional
-from app import database, schemas, models
-from app.logging_config import setup_loggers
+import database, schemas, models
+from logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

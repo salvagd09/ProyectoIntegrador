@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Container, Button, Card, Row, Col, Form, InputGroup, Modal, Table } from 'react-bootstrap';
 import styles from '../Modulos/Menu.module.css';
 
-const API_BASE_URL = "http://localhost:8000";
+import { API_BASE_URL } from "../Configuracion/api.jsx";
 
 function Recetas() {
 // Estados principales

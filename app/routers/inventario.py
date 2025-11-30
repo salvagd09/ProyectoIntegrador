@@ -190,27 +190,6 @@ def actualizar_insumo(insumo_id: int, insumo: schemas.AInsumo, db: Session = Dep
         error_logger.error("Hubo un error al actualizar insumo")
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Error actualizando insumo: {str(e)}")
-
-# DELETE /api/inventario/{insumo_id} - Eliminar insumo
-@router.delete("/{insumo_id}")
-def eliminar_insumo(insumo_id: int, db: Session = Depends(get_db)):
-    try:
-        db_ingrediente = db.query(models.Ingrediente).filter(models.Ingrediente.id == insumo_id).first()
-        
-        if not db_ingrediente:
-            app_logger.warning(f'El insumo {db_ingrediente.nombre} no ha sido encontrado')
-            raise HTTPException(status_code=404, detail="Insumo no encontrado")
-        
-        db.delete(db_ingrediente)
-        db.commit()
-        app_logger.info("El insumo ha sido eliminado")
-        return {"message": "Insumo eliminado correctamente"}
-        
-    except Exception as e:
-        error_logger("Hubo un error al momento de eliminar el insumo")
-        db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error eliminando insumo: {str(e)}")
-
 # POST /api/inventario/movimiento - Registrar movimiento
 @router.post("/movimiento")
 def registrar_movimiento(movimiento_data: dict, db: Session = Depends(get_db)):

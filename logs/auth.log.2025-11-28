@@ -1,0 +1,12 @@
+2025-11-28 11:44:40,697 - INFO - Ingreso del mesero exitoso
+2025-11-28 11:47:02,885 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-28 11:49:30,605 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-28 11:58:01,101 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-28 12:06:51,106 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-28 14:28:22,033 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-28 17:35:39,905 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-28 18:15:57,367 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-28 18:19:00,730 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)
+2025-11-28 18:21:28,641 - INFO - Ingreso del mesero exitoso
+2025-11-28 18:23:44,163 - WARNING - Intento de logging fallido de usuario:SalvadorA
+2025-11-28 18:23:56,226 - INFO - Login exitoso para usuario 'SalvadorA' (id=7, rol=4)

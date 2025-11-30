@@ -1,9 +1,6 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
-
-
 def setup_loggers():
-
     # ======================
     # LOGGER GENERAL (app)
     # ======================
@@ -24,14 +21,12 @@ def setup_loggers():
         ))
         app_handler.setLevel(logging.INFO)
         app_logger.addHandler(app_handler)
-
     # ======================
     # LOGGER DE AUTH
     # ======================
     auth_logger = logging.getLogger("auth_logger")
     auth_logger.setLevel(logging.INFO)
     auth_logger.propagate = False   # <---- MUY IMPORTANTE
-
     if not auth_logger.handlers:
         auth_handler = TimedRotatingFileHandler(
             filename="logs/auth.log",
@@ -45,7 +40,6 @@ def setup_loggers():
         ))
         auth_handler.setLevel(logging.INFO)
         auth_logger.addHandler(auth_handler)
-
     # ======================
     # LOGGER SOLO DE ERRORES
     # ======================

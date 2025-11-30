@@ -6,11 +6,14 @@
 
 # Verificación del funcionamiento de la API
 
-curl https://proyectointegrador-production-d5ec.up.railway.app/health
-
-# Funcional: {"status":"healthy","database":"connected"}
+curl https://proyectointegrador-production-d5ec.up.railway.app/
+# Respuesta: {"msg":"Bienvenido a GestaFood"}
 
 
 ### Backup de Datos:
 ```bash
 python app/Mantenimiento/Scripts/backup_datos.py
+
+
+# Verificación con script externo
+python app/Mantenimiento/Scripts/verificar_sistema.py

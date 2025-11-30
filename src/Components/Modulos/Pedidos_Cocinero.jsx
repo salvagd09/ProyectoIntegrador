@@ -19,6 +19,15 @@ export default function Pedidos_Cocinero() {
     const [pedidosCerrados, setPedidosCerrados] = useState([]);// ← IDs de pedidos cerrados
     const [empleadoId,setEmpleadoId]=useState(null)
     
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmMessage, setConfirmMessage] = useState("");
+    const [isSuccess, setIsSuccess] = useState(true);
+    const [confirmAction, setConfirmAction] = useState(() => () => {});
+
+    const showMessageModal = (message, success = true, action = () => setShowConfirmModal(false)) => {
+        setConfirmMessage(message); setIsSuccess(success); setConfirmAction(() => action); setShowConfirmModal(true);
+    };
+
     // Función para cerrar una tarjeta
     const cerrarTarjeta = (pedidoId) => {
       setPedidosCerrados([...pedidosCerrados, pedidoId]);
@@ -51,7 +60,7 @@ export default function Pedidos_Cocinero() {
   {/*Para pasar de un estado a otro */}
   const cambiarEstadoNombre = async (id, estadoActual) => {
     if (estadoActual === "servido") {
-      alert("Este pedido ya está servido");
+      showMessageModal("Este pedido ya está servido o entregado", false);
       return;
     }
     try {
@@ -76,11 +85,11 @@ export default function Pedidos_Cocinero() {
         )
       );
   
-      alert(`✅ ${data.mensaje}\nNuevo estado: ${data.estado_nuevo}`);
+      showMessageModal(`${data.mensaje}\n Nuevo estado: ${formatText(data.estado_nuevo)}`, true);
   
     } catch (error) {
       console.error("Error al cambiar estado:", error);
-      alert(`❌ Error: ${error.message}`);
+      showMessageModal(`Error: ${error.message}`, false);
     }
   }
 
@@ -97,12 +106,6 @@ export default function Pedidos_Cocinero() {
     borderColor: 'var(--color-muted)' 
   };
   
-  const inputStyle = { 
-    backgroundColor: 'var(--color-bg)', 
-    color: 'var(--color-text)', 
-    borderColor: 'var(--color-accent)' 
-  };
-  
   const btnAdd = { 
     backgroundColor: 'var(--color-accent)', 
     borderColor: 'var(--color-accent)', 
@@ -110,22 +113,16 @@ export default function Pedidos_Cocinero() {
     fontWeight: 'bold' 
   };
 
-  const btnEdit = { 
-    backgroundColor: 'var(--color-secondary)', 
+  const btnAccent = { 
+    backgroundColor: 'var(--color-accent)', 
     borderColor: 'var(--color-accent)', 
     color: 'white', 
     fontWeight: 'bold' 
   };
-  
+
   const btnDelete = { 
     backgroundColor: 'var(--color-btn-delete)', 
     borderColor: 'var(--color-btn-delete)', 
-    color: 'white' 
-  };
-  
-  const btnSecondary = { 
-    backgroundColor: 'var(--color-muted)', 
-    borderColor: 'var(--color-muted)', 
     color: 'white' 
   };
   
@@ -240,6 +237,55 @@ export default function Pedidos_Cocinero() {
               </h3>
                 {pedidosVisibles.filter((p) => p.estado === "listo").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
           </div>
-        </div> 
+        </div>
+        {/* Modal de Confirmación/Mensaje */}
+        {showConfirmModal && (
+            <ModalNotificacionFinal 
+                show={showConfirmModal} 
+                setShow={setShowConfirmModal} 
+                isSuccess={isSuccess}
+                message={confirmMessage}
+                headerStyle={headerStyle}
+                cardStyle={cardStyle}
+                btnAccent={btnAccent}
+            />
+        )}
   </Container>
 )}
+
+const ModalNotificacionFinal = ({ show, setShow, isSuccess, message, headerStyle, cardStyle, btnAccent }) => {
+    const iconColor = isSuccess ? 'var(--color-secondary)' : 'var(--color-btn-delete)';
+    const iconClass = isSuccess ? 'fa-circle-check' : 'fa-circle-xmark';
+    const title = isSuccess ? 'Operación Exitosa' : 'Error en la Acción';
+
+    return show && (
+        <>
+            <div className={`${styles.modalOverlay} d-flex align-items-center justify-content-center`}>
+                <div className={styles.modalContentSmallN} style={cardStyle}>
+                    <div className={styles.modalHeader} style={headerStyle}>
+                        <h5 style={{color: 'var(--color-title)', fontWeight: 'bold'}}>{title}</h5>
+                        <button type="button" className="btn-close" onClick={() => setShow(false)} style={{ filter: 'var(--logo-filter)'}}></button>
+                    </div>
+                    <div className={styles.modalBody} style={{textAlign: 'center'}}>
+                        <i 
+                            className={`fa-solid mb-3 ${iconClass}`} 
+                            style={{ fontSize: '3rem', color: iconColor }}
+                        ></i>
+                        <p className="fw-bold" style={{color: 'var(--color-text)'}}>
+                          {message.split("\n").map((line, index) => (
+                              <span key={index}>
+                                  {line}
+                                  <br />
+                              </span>
+                          ))}
+                        </p>
+                    </div>
+                    <div className={styles.modalFooterN} style={headerStyle}>
+                        <Button style={btnAccent} onClick={() => setShow(false)}>Aceptar</Button>
+                    </div>
+                </div>
+            </div>
+            <div className={styles.modalBackdrop} onClick={() => setShow(false)}></div>
+        </>
+    );
+};

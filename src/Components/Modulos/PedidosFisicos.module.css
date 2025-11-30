@@ -75,6 +75,16 @@
     z-index: 1060;
 }
 
+.modalContentSmallN {
+    position: relative;
+    width: 90%; 
+    max-width: 550px; 
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1060;
+    border: var(--color-btn-secondary);
+}
+
 .modalContentWide {
     position: relative;
     width: 90%; 
@@ -99,6 +109,14 @@
 .modalFooter {
     display: flex;
     justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-top: 1px solid;
+}
+
+.modalFooterN {
+    display: flex;
+    justify-content: center;
     gap: 0.5rem;
     padding: 1rem;
     border-top: 1px solid;

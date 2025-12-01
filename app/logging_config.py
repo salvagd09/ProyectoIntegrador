@@ -1,5 +1,20 @@
 import logging
 from logging.handlers import TimedRotatingFileHandler
+
+def create_handler(filename, level):
+    handler = TimedRotatingFileHandler(
+        filename=f"logs/{filename}",
+        when="midnight",
+        interval=1,
+        backupCount=7,
+        encoding="utf-8"
+    )
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(message)s"
+    ))
+    handler.setLevel(level)
+    return handler
+
 def setup_loggers():
     # ======================
     # LOGGER GENERAL (app)
@@ -26,7 +41,7 @@ def setup_loggers():
     # ======================
     auth_logger = logging.getLogger("auth_logger")
     auth_logger.setLevel(logging.INFO)
-    auth_logger.propagate = False   # <---- MUY IMPORTANTE
+    auth_logger.propagate = False
     if not auth_logger.handlers:
         auth_handler = TimedRotatingFileHandler(
             filename="logs/auth.log",

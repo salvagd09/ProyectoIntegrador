@@ -360,7 +360,7 @@ class PedidosRecojoLocal(Base):
 class Pagos(Base):
     __tablename__="pagos"
 
-    id=Column(Integer,primary_key=True,index=True)
+    id=Column(Integer,primary_key=True,index=True,autoincrement=True)
     pedido_id=Column(Integer,ForeignKey("pedidos.id"),primary_key=True,index=True)
     monto=Column(Float,nullable=False)
     metodo_pago = Column(SQLEnum(MetodoPagoEnum, name="metodo_pago"), nullable=False)

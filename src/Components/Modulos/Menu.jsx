@@ -305,7 +305,7 @@ function Menu() {
         <button className={styles.scrollBtn} onClick={() => scrollCategorias('right')} style={{ border: 'none', background: 'transparent' }}>
             <i className="fa-solid fa-chevron-right" style={{color: 'var(--color-title)'}}></i>
         </button>
-      </div>
+        </div>
         {/* Lista de platillos filtrados */}
         <Row>
           {platillosFiltrados.length === 0 && (

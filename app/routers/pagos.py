@@ -8,9 +8,10 @@ import os
 import asyncio
 from datetime import datetime
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import Pagos, Pedidos, EstadoPagoEnum, MetodoPagoEnum, EstadoPedidoEnum
-from app.logging_config import setup_loggers
+from database import get_db
+from models import Pagos, Pedidos, EstadoPagoEnum, MetodoPagoEnum, EstadoPedidoEnum
+# Configuración de logging
+from logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")

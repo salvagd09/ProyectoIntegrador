@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import '../Modulos/Metricas.css';
 
+import { API_BASE_URL } from "../Configuracion/api.jsx";
+
 const Metricas = () => {
   const [metricas, setMetricas] = useState({
     ticketPromedio: 0,
@@ -31,9 +33,9 @@ const Metricas = () => {
       if (fechaFin) params.append('fecha_fin', fechaFin);
 
       const [ticketRes, tiempoRes, ventasRes] = await Promise.all([
-        fetch(`http://localhost:8000/api/metricas/ticket-promedio?${params}`),
-        fetch(`http://localhost:8000/api/metricas/tiempo-promedio?${params}`),
-        fetch(`http://localhost:8000/api/metricas/ventas-mensuales?${params}`)
+        fetch(`${API_BASE_URL}/api/metricas/ticket-promedio?${params}`),
+        fetch(`${API_BASE_URL}/api/metricas/tiempo-promedio?${params}`),
+        fetch(`${API_BASE_URL}/api/metricas/ventas-mensuales?${params}`)
       ]);
 
       const ticketData = await ticketRes.json();
@@ -58,7 +60,7 @@ const Metricas = () => {
       const params = new URLSearchParams();
       if (mes) params.append('mes', mes);
       
-      const response = await fetch(`http://localhost:8000/api/metricas/top5-platillos-mensual?${params}`);
+      const response = await fetch(`${API_BASE_URL}/api/metricas/top5-platillos-mensual?${params}`);
       const data = await response.json();
       setTopPlatillos(data.top_platillos_por_mes || []);
     } catch (error) {

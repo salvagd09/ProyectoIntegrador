@@ -48,15 +48,4 @@ def setup_loggers():
     error_logger.propagate = False
 
     if not error_logger.handlers:
-        error_handler = TimedRotatingFileHandler(
-            filename="logs/errors.log",
-            when="midnight",
-            interval=1,
-            backupCount=7,
-            encoding="utf-8"
-        )
-        error_handler.setFormatter(logging.Formatter(
-            "%(asctime)s - %(levelname)s - %(message)s"
-        ))
-        error_handler.setLevel(logging.ERROR)
-        error_logger.addHandler(error_handler)
+        error_logger.addHandler(create_handler("errors.log", logging.ERROR))

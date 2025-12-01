@@ -2,6 +2,7 @@ import { useState } from "react";
 import comida from "../assets/comida.png";
 import { useNavigate, Link } from "react-router-dom";
 import { Button, Form, Card, Modal } from 'react-bootstrap';
+import { API_BASE_URL } from "./Configuracion/api.jsx";
 
 function App() {
   const [nombreUsuario, setNombreUsuario] = useState("");
@@ -46,7 +47,7 @@ function App() {
   const handleLoginPassword = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/login-password", {
+      const res = await fetch(`${API_BASE_URL}/auth/login-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,7 +75,7 @@ function App() {
   const handleLoginPin = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch("http://127.0.0.1:8000/auth/login-pin", {
+      const res = await fetch(`${API_BASE_URL}/auth/login-pin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin_code: PIN }),

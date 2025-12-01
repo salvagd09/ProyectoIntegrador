@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Button, Card, ListGroup, Form, Row, Col, Modal, Table } from "react-bootstrap"; 
 import styles from './PedidosFisicos.module.css';
+import { API_BASE_URL } from "../Configuracion/api.jsx";
 const formatText = (text) => {
     if (!text) return '';
     return text.replace(/_/g, ' ')
@@ -130,7 +131,7 @@ export default function Pedidos_Fisicos() {
 
   const STATUS_COLORS = {
     pendiente: { color: 'var(--color-btn-delete)', icon: 'fa-hourglass-half' },
-    en_preparacion: { color: 'var(--color-btn)', icon: 'fa-cook' },
+    en_preparacion: { color: 'var(--color-btn)', icon: 'fa-bowl-food' },
     listo: { color: 'var(--color-secondary)', icon: 'fa-check-circle' },
     servido: { color: 'var(--color-accent)', icon: 'fa-utensils' },
     entregado: { color: 'var(--color-accent)', icon: 'fa-truck' },
@@ -142,7 +143,7 @@ export default function Pedidos_Fisicos() {
   };
 
   const fetchPedidos = () => { 
-    fetch("http://127.0.0.1:8000/pedidosF/pedidosM")
+    fetch(`${API_BASE_URL}/pedidosF/pedidosM`)
           .then((res) => res.json())
           .then((data) => setPedidos(data))
           .catch((err) => console.error(err));
@@ -150,7 +151,7 @@ export default function Pedidos_Fisicos() {
 
   // Fetch Platillos
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/pedidosF/platillos")
+    fetch(`${API_BASE_URL}/pedidosF/platillos`)
       .then((res) => res.json())
       .then((data) => setPlatillos(data))
       .catch((err) => console.error(err));
@@ -158,7 +159,7 @@ export default function Pedidos_Fisicos() {
 
   // Fetch Mesas
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/pedidosF/mesas")
+    fetch(`${API_BASE_URL}/pedidosF/mesas`)
       .then((res) => res.json())
       .then((data) => setMesas(data))
       .catch((err) => console.error(err));
@@ -202,7 +203,7 @@ export default function Pedidos_Fisicos() {
     };
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/pedidosF/agregarPedido",
+        `${API_BASE_URL}/pedidosF/agregarPedido`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -396,7 +397,7 @@ export default function Pedidos_Fisicos() {
       console.log("Datos a enviar:", pedidoActualizado);
 
       const response = await fetch(
-        `http://127.0.0.1:8000/pedidosF/editar/${pedidoAEditar.id}`,
+        `${API_BASE_URL}/pedidosF/editar/${pedidoAEditar.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -432,7 +433,7 @@ export default function Pedidos_Fisicos() {
     }
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/pedidosF/${id}/estado`,
+        `${API_BASE_URL}/pedidosF/${id}/estado`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -461,13 +462,13 @@ export default function Pedidos_Fisicos() {
   async function EliminarPedido(id) {
     try {
       const eliminacion = await fetch(
-        `http://127.0.0.1:8000/pedidosF/eliminarPM/${id}`,
+        `${API_BASE_URL}/pedidosF/eliminarPM/${id}`,
         {
           method: "PUT",
           headers: { "Content-type": "application/json" },
         }
       );
-      await fetch(`http://127.0.0.1:8000/pedidosF/eliminarDetalles/${id}`, {
+      await fetch(`${API_BASE_URL}/pedidosF/eliminarDetalles/${id}`, {
         method: "DELETE",
       });
       if (!eliminacion.ok) return alert("Error al eliminar el pedido");
@@ -619,24 +620,30 @@ export default function Pedidos_Fisicos() {
             <div className={styles.pedidosGridColumnas}>
                 {/* Pendiente */}
                 <div className={styles.columna}>
-                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.pendiente.color}}>⏳ Pendiente</h3>
+                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.pendiente.color}}>
+                        <i class="fa-solid fa-hourglass"></i> Pendiente
+                    </h3>
                     {pedidosVisibles.filter((p) => p.estado === "pendiente").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
                 {/* En preparación */}
                 <div className={styles.columna}>
-                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.en_preparacion.color}}>👨‍🍳 En Preparación</h3>
+                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.en_preparacion.color}}>
+                        <i class="fa-solid fa-person-military-pointing"></i> En Preparación
+                    </h3>
                     {pedidosVisibles.filter((p) => p.estado === "en_preparacion").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
 
                 {/* Listo */}
                 <div className={styles.columna}>
-                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.listo.color}}>✅ Listo</h3>
+                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.listo.color}}>
+                        <i class="fa-solid fa-square-check"></i> Listo</h3>
                     {pedidosVisibles.filter((p) => p.estado === "listo").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
 
                 {/* Servido y Entregado */}
                 <div className={styles.columna}>
-                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.servido.color}}>🍽️ Servido o Entregado</h3>
+                    <h3 className={styles.columnaTitulo} style={{color: STATUS_COLORS.servido.color}}>
+                        <i class="fa-solid fa-receipt"></i> Servido o Entregado</h3>
                     {pedidosVisiblesLyS.filter((p) => p.estado === "servido" || p.estado === "entregado").map((p) => (<PedidoCardComponent key={p.id} p={p} />))}
                 </div>
             </div>

@@ -7,7 +7,7 @@ from datetime import datetime,timezone
 import os
 
 load_dotenv()
-from app.cloudinary_config import cloudinary
+from cloudinary_config import cloudinary
 # --- SOLUCIÓN FORZADA PARA VARIABLES DE ENTORNO ---
 # Establecer variables críticas directamente
 os.environ['DATABASE_PUBLIC_URL'] = 'postgresql://postgres:CKHelhFLVFGKNAaGoKHazUnmiZaWEVgZ@mainline.proxy.rlwy.net:34440/railway'
@@ -17,20 +17,19 @@ os.environ['CULQI_PUBLIC_KEY'] = 'pk_test_vzMuTHoueOMlbUbG'
 print("✅ Variables de entorno configuradas forzadamente")
 
 # Importar routers correctamente
-from app.routers.pagos import router as pagos_router
-from app.routers.PedidosF import router as pedidos_router
-from app.routers.auth import router as auth_router
-from app.routers.mesas import router as mesas_router
-from app.routers.inventario import router as inventario_router
-from app.routers.empleados import router as empleados_router
-from app.routers.delivery import router as delivery_router
-from app.routers.categorias import router as categorias_router
-from app.routers.ingredientes import router as ingredientes_router
-from app.routers.menu import router as menu_router
-from app.routers.inventario_L import router as inventario_L_router
-from app.routers.upload_image import router as upload_image_router
-from app.routers.metricas import router as metricas_router
-app = FastAPI(title="Sistema de Pedidos")
+from routers.pagos import router as pagos_router
+from routers.PedidosF import router as pedidos_router
+from routers.auth import router as auth_router
+from routers.mesas import router as mesas_router
+from routers.inventario import router as inventario_router
+from routers.empleados import router as empleados_router
+from routers.delivery import router as delivery_router
+from routers.categorias import router as categorias_router
+from routers.ingredientes import router as ingredientes_router
+from routers.menu import router as menu_router
+from routers.inventario_L import router as inventario_L_router
+from routers.upload_image import router as upload_image_router
+from routers.metricas import router as metricas_router
 
 app = FastAPI(title="Sistema de Pedidos")
 
@@ -38,9 +37,13 @@ app = FastAPI(title="Sistema de Pedidos")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # Localhost para desarrollo
         "http://localhost:5173", "http://127.0.0.1:5173", 
         "http://localhost:3000", "http://127.0.0.1:3000", 
-        "http://localhost:8000", "http://127.0.0.1:8000"
+        "http://localhost:8000", "http://127.0.0.1:8000",
+        # Producción
+        "https://proyectointegrador-production-d5ec.up.railway.app",
+        "https://frontendproyectointegrador-production.up.railway.app"
         ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -61,10 +64,12 @@ app.include_router(upload_image_router)
 app.include_router(delivery_router)
 app.include_router(pagos_router)
 app.include_router(metricas_router)
+
 # --- Ruta raíz ---
 @app.get("/")
 def root():
     return {"msg": "Bienvenido a GestaFood"}
+
 # --- Ruta de salud para verificar configuración ---
 @app.get("/health")
 async def health():

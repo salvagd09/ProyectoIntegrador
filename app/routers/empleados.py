@@ -2,12 +2,12 @@ from fastapi import APIRouter,Depends,HTTPException
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from sqlalchemy import join, select
-from app.logging_config import setup_loggers
+from logging_config import setup_loggers
 import logging
 setup_loggers()
 app_logger = logging.getLogger("app_logger")
 error_logger = logging.getLogger("error_logger")
-from app import database, schemas, models
+import database, schemas, models
 router=APIRouter(prefix="/empleados",tags=["empleados"])
 def get_db():
     db = database.SessionLocal()

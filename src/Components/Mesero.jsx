@@ -20,6 +20,7 @@ const ROL_MAP = {
     2: "Cocinero",
     3: "Cajero",
 };
+
 function Mesero() {
   const ubicacion = useLocation();
   const navigate = useNavigate();

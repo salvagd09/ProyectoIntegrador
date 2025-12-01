@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import styles from './PedidosAplicativo.module.css';
 import { PedidosPorConfirmar } from './Pedidos_por_confirmar.jsx';
+import { API_BASE_URL } from '../Configuracion/api.jsx';
 const formatText = (text) => {
     if (!text) return '';
     return text.replace(/_/g, ' ')
@@ -49,7 +50,7 @@ function Pedidos_Aplicativo() {
   // Obtener pedidos de delivery
   const obtenerPedidos = async () => {
     try {
-      const response = await fetch('http://localhost:8000/delivery/pedidos/');
+      const response = await fetch(`${API_BASE_URL}/delivery/pedidos/`);
       if (!response.ok) throw new Error('Error al obtener pedidos');
       const data = await response.json();
       setPedidos(data);
@@ -61,7 +62,7 @@ function Pedidos_Aplicativo() {
   // Obtener estadísticas
   const obtenerEstadisticas = async () => {
     try {
-      const response = await fetch('http://localhost:8000/delivery/estadisticas/hoy');
+      const response = await fetch(`${API_BASE_URL}/delivery/estadisticas/hoy`);
       if (!response.ok) throw new Error('Error al obtener estadísticas');
       const data = await response.json();
       setEstadisticas(data);
@@ -73,7 +74,7 @@ function Pedidos_Aplicativo() {
   const actualizarEstado = async (pedidoId, nuevoEstado) => {
     if (!confirm(`¿Cambiar estado a "${nuevoEstado}"?`)) return;
     try {
-      const response = await fetch(`http://localhost:8000/delivery/pedidos/${pedidoId}/estado`, {
+      const response = await fetch(`${API_BASE_URL}/delivery/pedidos/${pedidoId}/estado`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

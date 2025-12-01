@@ -3,6 +3,8 @@ import { Container, Button, Form, Row, Col, Modal, Card } from "react-bootstrap"
 
 import styles from './Mesas.module.css';
 
+import { API_BASE_URL } from "../Configuracion/api.jsx";
+
 function Mesas() {
     // Constante de rol de usuario
     const rol = localStorage.getItem("userRole");
@@ -86,7 +88,7 @@ function Mesas() {
     };
     // Función de actualización de mesas
     const fetchMesas = () => {
-        fetch("http://127.0.0.1:8000/mesas/")
+        fetch(`${API_BASE_URL}/mesas/`)
             .then((res) => res.json())
             .then((data) => setMesas(data))
             .catch((err) => console.error(err));
@@ -97,7 +99,7 @@ function Mesas() {
     }, []);
 
     function ocupar(mesa) {
-        fetch(`http://127.0.0.1:8000/mesas/${mesa.id}/estado`, {
+        fetch(`${API_BASE_URL}/mesas/${mesa.id}/estado`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" }
         })
@@ -125,7 +127,7 @@ function Mesas() {
             return;
         };
         const nuevaMesa = { numero: numeroMesa, capacidad: cantidadMesa, estado: "libre" };
-        fetch("http://127.0.0.1:8000/mesas/agregarM", {
+        fetch(`${API_BASE_URL}/mesas/agregarM`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nuevaMesa),
@@ -158,7 +160,7 @@ function Mesas() {
             capacidad: parseInt(editCantidadMesa),
         };
 
-        const url = `http://127.0.0.1:8000/mesas/${editMesaId}/editar`;
+        const url = `${API_BASE_URL}/mesas/${editMesaId}/editar`;
 
         // Lógica de FETCH
         try { 

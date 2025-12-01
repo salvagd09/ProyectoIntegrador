@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Container, Button, Card, Row, Col, Form, InputGroup, Modal } from 'react-bootstrap';
 import styles from '../Modulos/Menu.module.css';
+import { API_BASE_URL } from "../Configuracion/api.jsx";
 import ImageUploader from '../Modulos/ImageUploader';
-const API_BASE_URL = "http://localhost:8000";
+
 function Menu() {
   // Constantes de categorías
   const [productos, setProductos] = useState([]); // Almacena todos los productos cargados de la API
@@ -85,7 +86,7 @@ function Menu() {
     setError(null);
     try {
       // Cargar Categorías
-      const catResponse = await fetch(`${API_BASE_URL}/categorias`);
+      const catResponse = await fetch(`${API_BASE_URL}/categorias/`);
       if (!catResponse.ok) throw new Error("Fallo al cargar categorías");
       const catData = await catResponse.json();
       setCategorias(catData);
@@ -114,7 +115,7 @@ function Menu() {
       const endpoint = estadoActual 
         ? `${API_BASE_URL}/menu/${platillo.id}` // DELETE para desactivar
         : `${API_BASE_URL}/menu/reactivar/${platillo.id}`; // PUT para reactivar
-      // Determinar el método HTTP
+      // Determinar el método HTTPS
       const method = estadoActual ? 'DELETE' : 'PUT';
       // Realizar la solicitud
       try {

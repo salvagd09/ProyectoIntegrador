@@ -10,14 +10,18 @@ const formatText = (text) => {
                 .join(' ')
                 .toUpperCase(' ');
 };
-const formatTime = (dateString) => {
-    try {
-        const date = new Date(dateString);
-        // Si la fecha es válida, formateamos la hora
-        return date.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
-    } catch (e) {
-        console.error("Error al establecer la hora:",e);
-    }
+const formatTime = (time) => {
+    if (!time) return "—";
+    if (!/^\d{2}:\d{2}(:\d{2})?$/.test(time)) return "—";
+
+    const today = new Date().toISOString().split("T")[0];
+    const dateTime = new Date(`${today}T${time}`);
+    
+    return dateTime.toLocaleTimeString("es-PE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+    });
 };
 
 export default function Pedidos_Fisicos() {

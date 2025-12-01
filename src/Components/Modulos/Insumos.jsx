@@ -91,8 +91,8 @@ function Insumos() {
   };
 
   const btnAccent = { 
-    backgroundColor: 'var(--color-accent)', 
-    borderColor: 'var(--color-accent)', 
+    backgroundColor: 'var(--color-secondary)', 
+    borderColor: 'var(--color-secondary)', 
     color: 'white', 
     fontWeight: 'bold' 
   };
@@ -375,10 +375,10 @@ function Insumos() {
               <tr>
                 <th className={styles.tableHead}>Insumo</th>
                 <th className={styles.tableHead}>Cantidad</th>
-                <th className={styles.tableHead}>Precio</th>
+                <th width="150" className={styles.tableHead}>Precio</th>
                 <th className={styles.tableHead}>Descripción</th>
                 <th className={styles.tableHead}>Valor Total</th>
-                <th className={styles.tableHead}>¿Es perecible?</th>
+                <th width="100" className={styles.tableHead}>¿Es perecible?</th>
                 {rol === "admin" && <th width="200" className={styles.tableHead}>Acción</th>}
               </tr>
             </thead>
@@ -411,33 +411,39 @@ function Insumos() {
                       <br />
                       <small style={{color: 'var(--color-muted)'}}>Mín: {insumo.minimo} {insumo.unidad_medida}</small>
                     </td>
-                    <td style={{color: 'var(--color-bg)'}}>S/ {insumo.precio.toFixed(2)}</td>
+                    <td> <strong>S/ {insumo.precio.toFixed(2)}</strong></td>
                     <td>
-                      <Badge style={{backgroundColor: 'var(--color-muted)', color: 'white'}}>{insumo.categoria}</Badge>
+                      <span>{insumo.categoria}</span>
                     </td>
                     <td>
                       <strong style={{color: 'var(--color-accent)'}}>S/ {(insumo.cantidad_actual * insumo.precio).toFixed(2)}</strong>
                     </td>
                     <td>
-                      <strong style={{color: 'var(--color-bg)'}}>{insumo.perecible ? "Sí" : "No"}</strong>
+                      <strong>{insumo.perecible ? "Sí" : "No"}</strong>
                     </td>
                     {rol === "admin" && (
                       <td>
-                        <div className="d-flex gap-2">
+                        <div className="d-flex align-items-center gap-2">
                           <Button 
                             style={btnWarning}
                             size="sm" 
+                            className="px-2 py-1 d-flex align-items-center"
                             onClick={() => { setInsumoEditando(insumo); setShowModal(true); }}
                           >
-                            ✏️ Editar
+                            <i className="fa-solid fa-pen-to-square me-1"></i> Editar
                           </Button>
-                          {insumo.perecible &&(<Button variant="success" onClick={() => {
-                              setInsumoSeleccionadoParaLotes(insumo.id);
-                              setShowModalLotesNV(true);
-                            }} className="m-2">
-                              Ver lotes no vencidos
+                          {insumo.perecible && (
+                            <Button 
+                              style={btnAccent}
+                              size="sm"
+                              className="px-2 py-1 d-flex align-items-center"
+                              onClick={() => { 
+                                setInsumoSeleccionadoParaLotes(insumo.id);
+                                setShowModalLotesNV(true);
+                            }}
+                          >
+                              <i className="fa-solid fa-box-open me-1"></i>Lotes
                             </Button>)}
-                           
                         </div>
                       </td>
                     )}

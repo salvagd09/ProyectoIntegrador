@@ -193,7 +193,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2500;
+    z-index: 3500;
 }
 
 .modalContent {
@@ -213,7 +213,7 @@
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    z-index: 1060;
+    z-index: 2500;
 }
 
 .modalHeader {
@@ -289,7 +289,7 @@
 /* Estilo de las celdas y filas de la tabla */
 .themedTable th,
 .themedTable td {
-    padding: 1.2rem 1rem !important; 
+    padding: 1rem 1rem !important; 
     vertical-align: middle; 
     text-align: center;
     border-color: var(--color-muted) !important;

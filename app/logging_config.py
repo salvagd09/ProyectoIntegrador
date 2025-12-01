@@ -7,7 +7,6 @@ def setup_loggers():
     app_logger = logging.getLogger("app_logger")
     app_logger.setLevel(logging.INFO)
     app_logger.propagate = False
-
     if not app_logger.handlers:
         app_handler = TimedRotatingFileHandler(
             filename="logs/app.log",
@@ -26,7 +25,8 @@ def setup_loggers():
     # ======================
     auth_logger = logging.getLogger("auth_logger")
     auth_logger.setLevel(logging.INFO)
-    auth_logger.propagate = False   # <---- MUY IMPORTANTE
+    auth_logger.propagate = False
+    
     if not auth_logger.handlers:
         auth_handler = TimedRotatingFileHandler(
             filename="logs/auth.log",
@@ -46,6 +46,16 @@ def setup_loggers():
     error_logger = logging.getLogger("error_logger")
     error_logger.setLevel(logging.ERROR)
     error_logger.propagate = False
-
     if not error_logger.handlers:
-        error_logger.addHandler(create_handler("errors.log", logging.ERROR))
+        error_handler = TimedRotatingFileHandler(
+            filename="logs/errors.log",  
+            when="midnight",
+            interval=1,
+            backupCount=7,
+            encoding="utf-8"
+        )
+        error_handler.setFormatter(logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s"
+        ))
+        error_handler.setLevel(logging.ERROR)
+        error_logger.addHandler(error_handler)

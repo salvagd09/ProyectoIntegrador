@@ -79,14 +79,12 @@ def listar_pedidos_delivery(db: Session = Depends(get_db)):
                 }
             })
         return resultados
-        
     except Exception as e:
         raise HTTPException(
             error_logger.error("Hay un error 500 para listar pedidos"),
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al listar pedidos: {str(e)}"
         )
-
 @router.patch("/pedidos/{pedido_id}/estado")
 def actualizar_estado_delivery(
     pedido_id: int,
